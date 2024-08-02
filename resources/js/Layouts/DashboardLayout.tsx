@@ -6,7 +6,7 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link } from '@inertiajs/react';
 import { User } from '@/types';
 
-export default function Authenticated({ user, header, children }: PropsWithChildren<{ user: User, header?: ReactNode }>) {
+export default function DashboardLayout({ user, header, children }: PropsWithChildren<{ user: User, header?: ReactNode }>) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     return (
@@ -119,57 +119,47 @@ export default function Authenticated({ user, header, children }: PropsWithChild
                 </div>
             </nav>
 
-            {header && (
-                <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{header}</div>
-                </header>
-            )}
+
 
             <div className="flex flex-col md:flex-row">
-                <aside className="relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-black">
-                    <div className="p-6">
-                        <a href="index.html"
-                           className="text-white text-3xl font-semibold uppercase hover:text-gray-300">Admin</a>
-                        <button
-                            className="w-full bg-white cta-btn font-semibold py-2 mt-5 rounded-br-lg rounded-bl-lg rounded-tr-lg shadow-lg hover:shadow-xl hover:bg-gray-300 flex items-center justify-center">
-                            <i className="fas fa-plus mr-3"></i> New Report
-                        </button>
-                    </div>
+                <aside className="relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-gray-800">
+
                     <nav className="text-white text-base font-semibold pt-3">
-                        <a href="index.html"
+
+                        <Link href={route('dashboard')}
                            className="flex items-center active-nav-link text-white py-4 pl-6 nav-item">
-                            <i className="fas fa-tachometer-alt mr-3"></i>
+
                             Dashboard
-                        </a>
-                        <a href="blank.html"
+                        </Link>
+                        <Link href={route('instances.index')}
                            className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
-                            <i className="fas fa-sticky-note mr-3"></i>
-                            Blank Page
-                        </a>
-                        <a href="tables.html"
-                           className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
-                            <i className="fas fa-table mr-3"></i>
-                            Tables
-                        </a>
-                        <a href="forms.html"
-                           className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
-                            <i className="fas fa-align-left mr-3"></i>
-                            Forms
-                        </a>
-                        <a href="tabs.html"
-                           className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
-                            <i className="fas fa-tablet-alt mr-3"></i>
-                            Tabbed Content
-                        </a>
-                        <a href="calendar.html"
-                           className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
-                            <i className="fas fa-calendar mr-3"></i>
-                            Calendar
-                        </a>
+
+                            Instances
+                        </Link>
+                        <Link href={route('pages.index')}
+                              className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
+
+                            Pages
+                        </Link>
+                        <Link href={route('flows.index')}
+                              className="flex items-center text-white opacity-75 hover:opacity-100 py-4 pl-6 nav-item">
+
+                            Flows
+                        </Link>
+
+
+
+
+
                     </nav>
 
                 </aside>
                 <div className="w-full flex flex-col h-screen overflow-y-hidden">
+                    {header && (
+                        <header className="bg-white shadow">
+                            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{header}</div>
+                        </header>
+                    )}
                     <main>{children}</main>
                 </div>
 

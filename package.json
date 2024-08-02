@@ -26,6 +26,7 @@
     "dependencies": {
         "@grapesjs/react": "^1.0.0",
         "@plasmicapp/loader-react": "^1.0.361",
+        "@xyflow/react": "^12.0.3",
         "grapesjs": "^0.21.12"
     }
 }

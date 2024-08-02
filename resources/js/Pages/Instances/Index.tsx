@@ -1,7 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head } from '@inertiajs/react';
 import { PageProps } from '@/types';
-import CustomEditor from "@/Pages/Pages/edit";
+import CustomEditor from "@/Pages/Pages/Editor";
 
 export default function Dashboard({ auth }: PageProps) {
     return (
@@ -10,7 +10,7 @@ export default function Dashboard({ auth }: PageProps) {
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Instances</h2>}
         >
             <Head title="Instances" />
-            <CustomEditor />
+
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">

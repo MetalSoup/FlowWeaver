@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InstanceController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/instances', [InstanceController::class, 'index'])->name('instances.index');
+    Route::resource('/pages', PageController::class);
+    Route::resource('/flows', FlowController::class);
 });
 
 require __DIR__.'/auth.php';
