@@ -17,9 +17,17 @@ class FlowController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return inertia('Flows/Create');
+    }
+
     public function store(FlowRequest $request)
     {
-        return new FlowResource(Flow::create($request->validated()));
+        $flow = new FlowResource(Flow::create($request->validated()));
+        return inertia('Flows/Edit', [
+            'flow' => new FlowResource($flow),
+        ]);
     }
 
     public function show(Flow $flow)

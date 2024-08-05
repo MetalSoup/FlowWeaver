@@ -21,19 +21,19 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
 
 
 
-    const sequence = flow.data.sequence;
-    const initialFlow = JSON.parse(sequence);
+
+
    // console.log(initialFlow);
 
 
     const initialNodes = [
-        ...initialFlow.nodes,
-        /*{ id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
-        { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },*/
+
+        { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
+        { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },
     ];
     const initialNodeCount = initialNodes.length;
-    const initialEdges = [/*{ id: 'e1-2', source: '1', target: '2' }*/
-        ...initialFlow.edges
+    const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }
+
     ];
 
     let id = initialNodeCount;
@@ -94,8 +94,10 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
             // @ts-ignore
             const thisFlow = rfInstance.toObject();
             let sequence = JSON.stringify(thisFlow);
+
+
             // use FlowController update to save the sequence
-            router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: sequence});
+            router.post(route('flows.store'), {name: "new_flow", sequence: sequence, instance_id:1});
 
 
 
@@ -110,9 +112,9 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Flow - {flow.data.name}</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Create new flow</h2>}
         >
-            <Head title={"Edit Flow - " + flow.data.name} />
+            <Head title={"New Flow"} />
             <div className={"flex flex-col md:flex-row h-full"}>
             <FlowSideBar className={"relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-gray-200"} />
             <div className={"w-full h-full"}>
