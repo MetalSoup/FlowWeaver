@@ -28,7 +28,9 @@ class PageController extends Controller
 
     public function show(Page $page)
     {
-        return new PageResource($page);
+        return inertia('Pages/Show', [
+            'page' => new PageResource($page)
+        ]);
     }
 
     public function edit(Page $page)

@@ -32,7 +32,22 @@ class FlowController extends Controller
 
     public function show(Flow $flow)
     {
-        return new FlowResource($flow);
+        $sequence = json_decode($flow->sequence,true);
+        $edges = collect($sequence['edges']);
+        $nodes = collect($sequence['nodes']);
+        $start_node = $nodes->where('type','input');
+
+        //find edge that starts on start node
+        $start_edge = $edges->where('source',$start_node->first()['id']);
+
+
+        $first_node = $nodes->where('id',$start_edge->first()['target']);
+        // run first node function
+        Flow::runNodeFunction($first_node,$edges,$nodes);
+
+
+
+
     }
 
     public function edit(Flow $flow)

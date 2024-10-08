@@ -14,6 +14,19 @@ import {
 import '@xyflow/react/dist/style.css';
 import {useCallback, useState} from "react";
 import FlowSideBar from "@/Pages/Flows/FlowSideBar";
+import WebhookNode from "@/Nodes/WebhookNode";
+import ComparisonNode from "@/Nodes/ComparisonNode";
+import BranchNode from "@/Nodes/BranchNode";
+
+
+const nodeTypes = {
+    WebHook: WebhookNode,
+    Comparison: ComparisonNode,
+    Branch: BranchNode
+
+
+};
+
 
 
 
@@ -22,16 +35,32 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
 
 
     const sequence = flow.data.sequence;
-    const initialFlow = JSON.parse(sequence);
-   // console.log(initialFlow);
+    const initialFlow = JSON.parse(sequence) ? JSON.parse(sequence) : {};
+
+
+
+    // check if the flow nodes is defined otherwise set it to an empty array
+    initialFlow.nodes = initialFlow.nodes ? initialFlow.nodes : [];
 
 
     const initialNodes = [
-        ...initialFlow.nodes,
+
+
+        ...initialFlow.nodes ,
         /*{ id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
-        { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },*/
+        {
+            id: '2',
+            type: 'WebHook',
+
+            style: { border: '1px solid #777', padding: 10 },
+            position: { x: 300, y: 50 },
+            data: { color: '#f6f6f6', onChange: () => {} },
+        },
+        { id: '3', position: { x: 0, y: 100 }, data: { label: '2' } },*/
+
     ];
     const initialNodeCount = initialNodes.length;
+    initialFlow.edges = initialFlow.edges ? initialFlow.edges : [];
     const initialEdges = [/*{ id: 'e1-2', source: '1', target: '2' }*/
         ...initialFlow.edges
     ];
@@ -114,8 +143,8 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
         >
             <Head title={"Edit Flow - " + flow.data.name} />
             <div className={"flex flex-col md:flex-row h-full"}>
-            <FlowSideBar className={"relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-gray-200"} />
-            <div className={"w-full h-full"}>
+
+            <div className={"w-full h-full bg-gray-100 dark:bg-gray-800"}>
 
 
 
@@ -127,17 +156,23 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                         onConnect={onConnect}
                         onDrop={onDrop}
                         onDragOver={onDragOver}
+                        nodeTypes={nodeTypes}
                         onInit={setRfInstance}
+
+
                         fitView
 
                     >
                         <Panel position="top-right">
-                            <button onClick={onSave}>save</button>
+                            <button className={"dark:text-white"} onClick={onSave}>save</button>
                             {/*<button onClick={onRestore}>restore</button>
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
+                        <Panel position="top-left">
+                            <FlowSideBar className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"} />
+                        </Panel>
 
-                        <Background variant="dots" gap={12} size={1} />
+                        <Background variant={"lines"} color={"#66666644"} gap={20} size={1} />
                         <Controls />
                         <MiniMap zoomable pannable />
                     </ReactFlow>

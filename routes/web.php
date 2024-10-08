@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\FieldController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InstanceController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Models\Flow;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,6 +19,10 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/flow/{id}', [FlowController::class, 'show'])->name('flow.show'); //not working
+
+
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -28,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/instances', [InstanceController::class, 'index'])->name('instances.index');
     Route::resource('/pages', PageController::class);
     Route::resource('/flows', FlowController::class);
+    Route::resource('/fields', FieldController::class);
 });
 
 require __DIR__.'/auth.php';

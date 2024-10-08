@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.react-flow__node
+{
+    background-color: #ffffffee;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+    color: #333;
+    font-size: 1rem;
+    overflow: hidden;
+}
+
+.react-flow__handle-left
+{
+    left:0.5rem !important;
+
+}
+
+.react-flow__handle-right
+{
+    right:0.5rem !important;
+
+}
+
+
