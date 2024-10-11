@@ -31,11 +31,35 @@ class Flow extends Model
 
     static function doBranch($node, $edges, $nodes): void
     {
-        //do branch stuff
-        echo "running branch " . $node->first()['id'] . "<br>";
 
-        //find next edge and run next node function
-        $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'next');
+
+    //first check if branch condition has an override.
+/*        dump($node->first()['id']);
+        dump($edges);*/
+
+
+
+        $booleanOverride = $edges->where('target', $node->first()['id'])->where('targetHandle', $node->first()['id'].'-boolean-override');
+
+        if (!empty($booleanOverride->first()['source']))
+        {
+            $comparisonNode = $nodes->where('id', $booleanOverride->first()['source']);
+            $branch_condition = self::doComparison($comparisonNode, $edges, $nodes);
+        }
+
+         else {
+            // dd($node->first()['data']);
+
+             $branch_condition = $node->first()['data']['isTrue'];
+         }
+
+
+         if($branch_condition){
+             $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'trueNext');
+         }
+         else {
+             $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'falseNext');
+         }
         if (!empty($next_edge->first()['target']))
         {
             $next_node = $nodes->where('id', $next_edge->first()['target']);
@@ -46,13 +70,26 @@ class Flow extends Model
     static function doComparison($node, $edges, $nodes): bool
     {
         //do comparison stuff
-        dump($node);
+
+        //todo: get left and right overrides. If not set, get from node data as below
 
 
-        echo "running comparison " . $node->first()['id'] . "<br>";
-        return true;
 
-        //comparison should only return true or false
+        $leftComparand = $node->first()['data']['leftComparand'];
+        $rightComparand = $node->first()['data']['rightComparand'];
+        $operator = $node->first()['data']['operator'];
+        // do comparison and return true or false
+        return match ($operator) {
+            '==' => $leftComparand == $rightComparand,
+            '!=' => $leftComparand != $rightComparand,
+            '>' => $leftComparand > $rightComparand,
+            '<' => $leftComparand < $rightComparand,
+            '>=' => $leftComparand >= $rightComparand,
+            '<=' => $leftComparand <= $rightComparand,
+            'regex' => preg_match('/'.trim($rightComparand,'/').'/', $leftComparand), // todo make sure this works as expected
+            default => false,
+        };
+
 
     }
 
@@ -62,7 +99,6 @@ class Flow extends Model
         //do webhook stuff
 
 
-        echo "running webhook: " . $node->first()['data']['url'] . "<br>";
 
 
 
@@ -80,15 +116,24 @@ class Flow extends Model
     {
 
         //dump($node->first()['type']);
+        echo "running node function: " . $node->first()['type'] . $node->first()['id'] ."<br>";
 
         if(!empty($node->first()['type'])){
             //echo $node->first()['type'] . "<br>";
             $function = "do" . $node->first()['type'];
-            self::$function($node, $edges, $nodes);
+            //check if function exists before running it
+            if (method_exists('App\Models\Flow', $function)) {
+                self::$function($node, $edges, $nodes);
+            }
+            else {
+                echo "Function ".$function." doesn't exist";
+            }
+
+
         }
         else {
-            echo "no function to runlkl";
-        };
+            echo "no function to run";
+        }
 
 
 

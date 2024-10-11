@@ -4,12 +4,17 @@ import {SingleFlowProps} from "@/types";
 import {
     addEdge,
     Background,
+    BackgroundVariant,
     Controls,
-    MiniMap, Panel,
+    MiniMap,
+    Panel,
     ReactFlow,
+    ReactFlowInstance,
     ReactFlowProvider,
     useEdgesState,
-    useNodesState, useReactFlow
+    useNodesState,
+    useReactFlow,
+    OnInit
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {useCallback, useState} from "react";
@@ -28,15 +33,11 @@ const nodeTypes = {
 };
 
 
-
-
-function FlowEditor({ auth, flow } : SingleFlowProps) {
-
+function FlowEditor({auth, flow}: SingleFlowProps) {
 
 
     const sequence = flow.data.sequence;
     const initialFlow = JSON.parse(sequence) ? JSON.parse(sequence) : {};
-
 
 
     // check if the flow nodes is defined otherwise set it to an empty array
@@ -46,7 +47,7 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
     const initialNodes = [
 
 
-        ...initialFlow.nodes ,
+        ...initialFlow.nodes,
         /*{ id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
         {
             id: '2',
@@ -59,25 +60,25 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
         { id: '3', position: { x: 0, y: 100 }, data: { label: '2' } },*/
 
     ];
-    const initialNodeCount = initialNodes.length;
+
     initialFlow.edges = initialFlow.edges ? initialFlow.edges : [];
     const initialEdges = [/*{ id: 'e1-2', source: '1', target: '2' }*/
         ...initialFlow.edges
     ];
 
-    let id = initialNodeCount;
-    const getId = () => `dnd_node_${id++}`;
 
-/*    const initialViewport= [
-        ...initialFlow.viewport
-    ]*/
+    const getId = () => `node_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+    /*    const initialViewport= [
+            ...initialFlow.viewport
+        ]*/
 
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const { screenToFlowPosition } = useReactFlow();
+    const {screenToFlowPosition} = useReactFlow();
     const onConnect = useCallback(
-        (params:any) => setEdges((eds) => addEdge(params, eds)),
+        (params: any) => setEdges((eds) => addEdge(params, eds)),
         [setEdges],
     );
 
@@ -87,7 +88,7 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
     }, []);
 
     const onDrop = useCallback(
-        (event:any) => {
+        (event: any) => {
             event.preventDefault();
 
             const type = event.dataTransfer.getData('application/reactflow');
@@ -97,42 +98,42 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                 return;
             }
 
-            // project was renamed to screenToFlowPosition
-            // and you don't need to subtract the reactFlowBounds.left/top anymore
-            // details: https://reactflow.dev/whats-new/2023-11-10
+            const nodeID = getId();
+
+
             const position = screenToFlowPosition({
                 x: event.clientX,
                 y: event.clientY,
             });
             const newNode = {
-                id: getId(),
+                id: nodeID,
                 type,
                 position,
-                data: { label: `${type} node` },
+                data: {label: `${type} node`, id: nodeID},
             };
 
             setNodes((nds) => nds.concat(newNode));
         },
         [screenToFlowPosition],
     );
-    const [rfInstance, setRfInstance] = useState(null);
-    const flowKey = 'example-flow';
+    const [rfInstance, setRfInstance] = useState<ReactFlowInstance<any, any> | null>(null);
     const onSave = useCallback(() => {
 
         if (rfInstance) {
-            // @ts-ignore
+
             const thisFlow = rfInstance.toObject();
             let sequence = JSON.stringify(thisFlow);
             // use FlowController update to save the sequence
             router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: sequence});
 
 
-
-
-
         }
     }, [rfInstance]);
 
+
+    const handleInit: OnInit<any, any> = (instance: ReactFlowInstance<any, any>) => {
+        setRfInstance(instance);
+    };
 
 
     // @ts-ignore
@@ -141,11 +142,10 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Flow - {flow.data.name}</h2>}
         >
-            <Head title={"Edit Flow - " + flow.data.name} />
+            <Head title={"Edit Flow - " + flow.data.name}/>
             <div className={"flex flex-col md:flex-row h-full"}>
 
-            <div className={"w-full h-full bg-gray-100 dark:bg-gray-800"}>
-
+                <div className={"w-full h-full bg-gray-100 dark:bg-gray-800"}>
 
 
                     <ReactFlow
@@ -157,7 +157,8 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                         onDrop={onDrop}
                         onDragOver={onDragOver}
                         nodeTypes={nodeTypes}
-                        onInit={setRfInstance}
+                        onInit={handleInit}
+                        deleteKeyCode={['Backspace', 'Delete']}
 
 
                         fitView
@@ -169,21 +170,17 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
                         <Panel position="top-left">
-                            <FlowSideBar className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"} />
+                            <FlowSideBar
+                                className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"}/>
                         </Panel>
 
-                        <Background variant={"lines"} color={"#66666644"} gap={20} size={1} />
-                        <Controls />
-                        <MiniMap zoomable pannable />
+                        <Background variant={BackgroundVariant.Lines} color={"#66666644"} gap={20} size={1}/>
+                        <Controls/>
+                        <MiniMap zoomable pannable/>
                     </ReactFlow>
 
 
-
-
-
-
-
-            </div>
+                </div>
             </div>
 
         </DashboardLayout>
@@ -191,8 +188,8 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
 }
 
 
-export default ({ auth, flow } : SingleFlowProps) => (
+export default ({auth, flow}: SingleFlowProps) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow} />
+        <FlowEditor auth={auth} flow={flow}/>
     </ReactFlowProvider>
 )

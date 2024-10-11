@@ -2,17 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-
-.react-flow__node
-{
-    background-color: #ffffffee;
-    border: 1px solid #ddd;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
-    color: #333;
-    font-size: 1rem;
-    overflow: hidden;
+.react-flow__node {
+    z-index: -1 !important;
 }
+
+
+.react-flow__edge .react-flow__edge-path {
+    stroke: white;
+    stroke-width: 2px;
+    fill: none;
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge.selectable:focus .react-flow__edge-path,
+.react-flow__edge.selectable:focus-visible.react-flow__edge-path {
+    stroke: white !important;
+    stroke-width: 2px;
+    stroke-dasharray: 2px;
+    stroke-dashoffset: 3px;
+    fill: none;
+}
+
+
 
 .react-flow__handle-left
 {
@@ -20,10 +30,48 @@
 
 }
 
+
+
+
 .react-flow__handle-right
 {
     right:0.5rem !important;
 
 }
 
+.react-flow__handle
+{
+    border:none !important;
+
+}
+
+
+.react-flow__handle.override
+{
+    background-color: red;
+    /*
+    background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNi4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTczIDM5Yy0xNC44LTkuMS0zMy40LTkuNC00OC41LS45UzAgNjIuNiAwIDgwTDAgNDMyYzAgMTcuNCA5LjQgMzMuNCAyNC41IDQxLjlzMzMuNyA4LjEgNDguNS0uOUwzNjEgMjk3YzE0LjMtOC43IDIzLTI0LjIgMjMtNDFzLTguNy0zMi4yLTIzLTQxTDczIDM5eiIvPjwvc3ZnPg==");
+    */
+
+    background-repeat: no-repeat;
+    background-position: center;
+    height:1rem;
+    width:1rem;
+    border-radius: 0;
+    background-size: contain;
+}
+
+.react-flow__handle.override.valid
+{
+
+    background-color: green;
+    /*background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNi4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTczIDM5Yy0xNC44LTkuMS0zMy40LTkuNC00OC41LS45UzAgNjIuNiAwIDgwTDAgNDMyYzAgMTcuNCA5LjQgMzMuNCAyNC41IDQxLjlzMzMuNyA4LjEgNDguNS0uOUwzNjEgMjk3YzE0LjMtOC43IDIzLTI0LjIgMjMtNDFzLTguNy0zMi4yLTIzLTQxTDczIDM5eiIvPjwvc3ZnPg==");*/
+}
+
+.react-flow__handle.override.connected {
+    background-color: blue;
+    /*
+    background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNi4wIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTczIDM5Yy0xNC44LTkuMS0zMy40LTkuNC00OC41LS45UzAgNjIuNiAwIDgwTDAgNDMyYzAgMTcuNCA5LjQgMzMuNCAyNC41IDQxLjlzMzMuNyA4LjEgNDguNS0uOUwzNjEgMjk3YzE0LjMtOC43IDIzLTI0LjIgMjMtNDFzLTguNy0zMi4yLTIzLTQxTDczIDM5eiIvPjwvc3ZnPg==");
+    */
+}
 

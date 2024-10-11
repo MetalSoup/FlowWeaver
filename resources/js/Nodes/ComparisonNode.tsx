@@ -1,32 +1,38 @@
 import {Handle, Position} from '@xyflow/react';
-import TextInput from "@/Components/TextInput";
-import {json} from "node:stream/consumers";
-import {useState} from "react";
 import {Select} from "@headlessui/react";
+import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
+import InputWithOverride from "@/Nodes/InputWithOverride";
+import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
+import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 
 
-
-// @ts-ignore
-export default function ComparisonNode({data, isConnectable}) {
-
-    if (!data.details) {
-        data.details = { fields: [] };
-    } else if (!Array.isArray(data.details.fields)) {
-        data.details.fields = [];
+export default function ComparisonNode({data, isConnectable}: { data: any, isConnectable: any }) {
+    // get current node id to include in handle ids
+    const nodeID: string = data.id;
+    // Set undefined values to default values
+    if (!data.operator) {
+        data.operator = "==";
+    }
+    if (!data.leftComparand) {
+        data.leftComparand = "";
+    }
+    if (!data.rightComparand) {
+        data.rightComparand = "";
     }
 
-    const [fields, setFields] = useState(data.details.fields || {name: '' , value: ''});
+
+    const leftComparandChange = (event: { target: { value: any; }; }) => {
 
 
-    const addField = () => {
-        setFields([...fields, { name: '' }]);
-        data.details.fields = fields;
-    };
-
-    const onChangeURL = (event: { target: { value: any; }; }) => {
+        data.leftComparand = event.target.value;
 
 
-        data.url = event.target.value;
+    }
+
+    const rightComparandChange = (event: { target: { value: any; }; }) => {
+
+
+        data.rightComparand = event.target.value;
 
 
     }
@@ -35,123 +41,41 @@ export default function ComparisonNode({data, isConnectable}) {
         data.operator = event.target.value;
     }
 
-    const onChangeField = (event: { target: { value: any; }; }) => {
-        // update all fields
-        setFields(fields.map((field: any) => {
-            return {
-                ...field,
-                name: event.target.value
-            };
-        }));
-    }
-
-
-
-
-
 
     return (
         <>
+            <NodeBody>
 
-            <div className="relative bg-gray-300 dark:bg-gray-700 dark:text-white p-2 pl-4">
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    style={{position: 'absolute', top: '50%'}}
-                    onConnect={(params) => console.log('handle onConnect', params)}
-                    isConnectable={isConnectable}
-                    id="previous"
-                />
-                <h2>Comparison</h2>
-            </div>
-
-            <input
-                className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                id="grid-comparand-left"
-                type="text"
-                placeholder=""
-                onChange={onChangeURL}
-                defaultValue={data.comparandLeft}
-
-            />
-            <Handle
-                type="target"
-                position={Position.Left}
-                id="comparandRightOverride"
-                style={{bottom: 30, top: 'auto'}}
-                isConnectable={isConnectable}
-            />
-
-            <Handle
-                type="target"
-                position={Position.Left}
-                id="comparandRightOverride"
-                style={{bottom: 10, top: 'auto'}}
-                isConnectable={isConnectable}
-            />
-
-            <input
-                className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                id="grid-comparand-right"
-                type="text"
-                placeholder=""
-                onChange={onChangeURL}
-                defaultValue={data.comparandRight}
-
-            />
+                <NodeHeading>
+                    Comparison
+                </NodeHeading>
 
 
-            <div className="relative dark:bg-gray-600 bg-gray-100 dark:text-white">
-                <div className="hook_url">
+                <InputWithOverride value={data.leftComparand} isConnectable={isConnectable}
+                                   onChange={leftComparandChange} nodeID={nodeID}
+                                   id={"leftComparand"}></InputWithOverride>
+                <Select defaultValue={data.operator} onChange={onChangeOperator}
+                        className={"nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}>
+                    <option value={"=="}>Equal to</option>
+                    <option value={">"}>Greater than</option>
+                    <option value={"<"}>Less than</option>
+                    <option value={"!="}>Not equal to</option>
+                    <option value={"regex"}>Matches Regular expression</option>
+                </Select>
+                <InputWithOverride value={data.rightComparand} isConnectable={isConnectable}
+                                   onChange={rightComparandChange} nodeID={nodeID}
+                                   id={"rightComparand"}></InputWithOverride>
 
-                    <div className="w-full">
-                        <label className="block uppercase tracking-wide font-bold mb-2 p-2"
-                               htmlFor="grid-first-name">
-                            Comparison
-                        </label>
-
-                        <div className="relative">
-                            <Handle
-                                type="target"
-                                position={Position.Left}
-                                style={{position: 'absolute', top: '50%'}}
-                                onConnect={(params) => console.log('handle onConnect', params)}
-                                isConnectable={isConnectable}
-                                id={"comparison_operator"}
-                            />
-                            <div className="p-2">
-                                <Select defaultValue={data.operator} onChange={onChangeOperator}
-                                        className={"nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}>
-                                    <option value={"=="}>Equal to</option>
-                                    <option value={">"}>Greater than</option>
-                                    <option value={"<"}>Less than</option>
-                                    <option value={"!="}>Not equal to</option>
-                                </Select>
-
-                            </div>
-                        </div>
-
-                    </div>
-
-
+                <div className={"relative mb-4"}>
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="boolOutput"
+                        isConnectable={isConnectable}
+                    />
                 </div>
-            </div>
-
-
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="trueNext"
-                style={{bottom: 30, top: 'auto'}}
-                isConnectable={isConnectable}
-            />
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="falseNext"
-                style={{bottom: 10, top: 'auto'}}
-                isConnectable={isConnectable}
-            />
+            </NodeBody>
         </>
+
     );
 }

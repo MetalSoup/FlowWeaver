@@ -1,0 +1,15 @@
+.react-flow__node .nodeBody
+{
+
+    border: 1px solid #222;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+    font-size: 1rem;
+    overflow: hidden;
+}
+
+.react-flow__node.selected .nodeBody
+{
+    border: 1px solid white;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+}

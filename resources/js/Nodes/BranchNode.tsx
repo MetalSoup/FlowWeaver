@@ -1,24 +1,24 @@
 import {Handle, Position} from '@xyflow/react';
-import TextInput from "@/Components/TextInput";
-import {json} from "node:stream/consumers";
 import {useState} from "react";
-import {Select} from "@headlessui/react";
-import Checkbox from "@/Components/Checkbox";
+import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
+import CheckBoxWithOverride from "@/Nodes/CheckBoxWithOverride";
+import NodeBody from './NodeComponents/NodeBody';
+import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 
 
-
-// @ts-ignore
-export default function BranchNode({data, isConnectable}) {
+export default function BranchNode({data, isConnectable}: { data: any, isConnectable: any }) {
 
     if (!data.details) {
-        data.details = { fields: [] };
+        data.details = {fields: []};
     } else if (!Array.isArray(data.details.fields)) {
         data.details.fields = [];
+    }
+    if (!data.isTrue) {
+        data.isTrue = false;
     }
 
 
     const [isTrue, setIsTrue] = useState(data.isTrue || false);
-
 
 
     const onChangeBool = (event: { target: { checked: boolean; }; }) => {
@@ -27,72 +27,44 @@ export default function BranchNode({data, isConnectable}) {
     }
 
 
-
-
-
-
+    const nodeID: string = data.id;
 
 
     return (
         <>
-
-            <div className="relative bg-gray-300 dark:bg-gray-700 dark:text-white p-2 pl-4">
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    style={{position: 'absolute', top: '50%'}}
-                    onConnect={(params) => console.log('handle onConnect', params)}
-                    isConnectable={isConnectable}
-                    id="previous"
-                />
-                <h2>Branch</h2>
-            </div>
-            <div className={"relative"}>
-                <label>Is True?</label>
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    id="booleanOverride"
-                    isConnectable={isConnectable}
-                />
-                <Checkbox
-                    className=""
-                    id="grid-boolean"
-                    type="checkbox"
-                    placeholder=""
-                    onChange={onChangeBool}
-                    checked={isTrue}
-
-                /></div>
+            <NodeBody>
 
 
-            <div className={"relative text-right pr-5"}>True
-                <Handle
-                    type="source"
-                    position={Position.Right}
-                id="trueNext"
-
-                isConnectable={isConnectable}
-            />
-            </div>
-            <div className={"relative text-right pr-5"}>False
-                <Handle
-                type="source"
-                position={Position.Right}
-                id="falseNext"
-
-                isConnectable={isConnectable}
-            />
-            </div>
+                <NodeHeading className={"dark:bg-red-500"}>
+                    Branch
+                </NodeHeading>
+                <NodeStartHandle id={"previous"} nodeID={nodeID}
+                                 onConnect={(params: any) => console.log('handle onConnect', params)}
+                                 isConnectable={isConnectable}
+                                 />
+                <CheckBoxWithOverride isConnectable={isConnectable} onChange={onChangeBool} id={"boolean"}
+                                      isTrue={isTrue} nodeID={nodeID}>Condition</CheckBoxWithOverride>
 
 
+                <div className={"relative text-right pr-5"}>Is True
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="trueNext"
 
+                        isConnectable={isConnectable}
+                    />
+                </div>
+                <div className={"relative text-right pr-5"}>Is False
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="falseNext"
 
-
-
-
-
-
+                        isConnectable={isConnectable}
+                    />
+                </div>
+            </NodeBody>
 
 
         </>

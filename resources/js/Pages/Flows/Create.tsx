@@ -3,7 +3,7 @@ import {Head, router} from '@inertiajs/react';
 import {SingleFlowProps} from "@/types";
 import {
     addEdge,
-    Background,
+    Background, BackgroundVariant,
     Controls,
     MiniMap, Panel,
     ReactFlow,
@@ -139,7 +139,7 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
 
-                        <Background variant="dots" gap={12} size={1} />
+                        <Background variant={BackgroundVariant.Lines} gap={12} size={1} />
                         <Controls />
                         <MiniMap zoomable pannable />
                     </ReactFlow>
