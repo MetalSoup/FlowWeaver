@@ -19,9 +19,15 @@
     stroke-width: 2px;
     stroke-dasharray: 2px;
     stroke-dashoffset: 3px;
+    animation: dashdraw .5s linear infinite;
     fill: none;
 }
 
+@keyframes dashdraw {
+    0% {
+        stroke-dashoffset: 10
+    }
+}
 
 
 .react-flow__handle-left

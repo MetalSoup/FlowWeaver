@@ -1,4 +1,3 @@
-//include css file
 import './NodeBody.css';
 export default function NodeBody({  children, className }: { children?: any, className?: string }) {
     return (
