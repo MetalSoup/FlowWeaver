@@ -4,6 +4,7 @@ import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import CheckBoxWithOverride from "@/Nodes/CheckBoxWithOverride";
 import NodeBody from './NodeComponents/NodeBody';
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
+import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 
 
 export default function BranchNode({data, isConnectable}: { data: any, isConnectable: any }) {
@@ -35,35 +36,44 @@ export default function BranchNode({data, isConnectable}: { data: any, isConnect
             <NodeBody>
 
 
-                <NodeHeading className={"dark:bg-red-500"}>
+
+
+
+                <NodeHeading className={"dark:bg-green-800"}>
                     Branch
                 </NodeHeading>
-                <NodeStartHandle id={"previous"} nodeID={nodeID}
-                                 onConnect={(params: any) => console.log('handle onConnect', params)}
-                                 isConnectable={isConnectable}
-                                 />
+                <div className={"flex min-w-48 pb-5"}>
+                    <div className="flex-none w-14">
+                        <NodeStartHandle
+                            id={"previous"} nodeID={nodeID}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            isConnectable={isConnectable}
+                        />
+                    </div>
+
+                    <div className="flex-1 text-right">
+                        <NodeEndHandle
+                            isConnectable={isConnectable}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            id={"trueNext"}
+                            nodeID={nodeID}>
+                            True
+                        </NodeEndHandle>
+                        <NodeEndHandle
+                            isConnectable={isConnectable}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            id={"falseNext"}
+                            nodeID={nodeID}>
+                            False
+                        </NodeEndHandle>
+
+                    </div>
+                </div>
+
                 <CheckBoxWithOverride isConnectable={isConnectable} onChange={onChangeBool} id={"boolean"}
                                       isTrue={isTrue} nodeID={nodeID}>Condition</CheckBoxWithOverride>
 
 
-                <div className={"relative text-right pr-5"}>Is True
-                    <Handle
-                        type="source"
-                        position={Position.Right}
-                        id="trueNext"
-
-                        isConnectable={isConnectable}
-                    />
-                </div>
-                <div className={"relative text-right pr-5"}>Is False
-                    <Handle
-                        type="source"
-                        position={Position.Right}
-                        id="falseNext"
-
-                        isConnectable={isConnectable}
-                    />
-                </div>
             </NodeBody>
 
 

@@ -1,10 +1,10 @@
 import {Handle, Position} from '@xyflow/react';
-import TextInput from "@/Components/TextInput";
-import {json} from "node:stream/consumers";
 import {useState} from "react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
+import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
+import InputWithOverride from "@/Nodes/InputWithOverride";
 
 
 // @ts-ignore
@@ -52,8 +52,33 @@ export default function WebhookNode({data, isConnectable}) {
                 <NodeHeading>
                     Webhook
                 </NodeHeading>
-                <NodeStartHandle onConnect={(params: any) => console.log('handle onConnect', params)}
-                                 isConnectable={isConnectable} nodeID={nodeID}  id={"previous"}/>
+
+                <div className={"flex min-w-48 pb-5"}>
+                    <div className="flex-none w-14">
+                        <NodeStartHandle
+                            id={"previous"} nodeID={nodeID}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            isConnectable={isConnectable}
+                        />
+                    </div>
+
+                    <div className="flex-1 text-right">
+                        <NodeEndHandle
+                            isConnectable={isConnectable}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            id={"next"}
+                            nodeID={nodeID}>
+
+                        </NodeEndHandle>
+
+
+                    </div>
+                </div>
+
+                <InputWithOverride isConnectable={isConnectable} onChange={onChangeURL} id={"webhookURL"} value={data.url} nodeID={nodeID}>
+
+                </InputWithOverride>
+
                 <div className="relative dark:bg-gray-600 bg-gray-100 dark:text-white">
                     <div className="hook_url">
 
@@ -63,27 +88,7 @@ export default function WebhookNode({data, isConnectable}) {
                                 URL
                             </label>
 
-                            <div className="relative">
-                                <Handle
-                                    type="target"
-                                    position={Position.Left}
-                                    style={{position: 'absolute', top: '50%'}}
-                                    onConnect={(params) => console.log('handle onConnect', params)}
-                                    isConnectable={isConnectable}
-                                    id={"webhook_url"}
-                                />
-                                <div className="p-2">
-                                    <input
-                                        className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                        id="grid-first-name"
-                                        type="text"
-                                        placeholder=""
-                                        onChange={onChangeURL}
-                                        defaultValue={data.url}
 
-                                    />
-                                </div>
-                            </div>
 
                         </div>
 
