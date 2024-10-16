@@ -22,6 +22,41 @@ class Flow extends Model
     static array $nodeOutputs = [];
 
 
+    static function doRawHtml($node, $edges, $nodes): void
+    {
+
+        $htmlOverride = $edges->where('target', $node->first()['id'])->where('targetHandle', $node->first()['id'] . '-html-override');
+        dump($htmlOverride);
+
+
+        if (!empty($htmlOverride->first()['source'])) {
+            $sourceNode = $nodes->where('id', $htmlOverride->first()['source']);
+            dump($sourceNode);
+        } else {
+
+            echo $node->first()['data']['html'] ?? "";
+        }
+
+
+        $next_edge = self::getNext_edge($edges, $node);
+        if (!empty($next_edge->first()['target'])) {
+            $next_node = $nodes->where('id', $next_edge->first()['target']);
+            self::runNodeFunction($next_node, $edges, $nodes);
+        }
+    }
+
+    /**
+     * @param $edges
+     * @param $node
+     * @return mixed
+     */
+    public static function getNext_edge($edges, $node)
+    {
+        $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'].'-next');
+        return $next_edge;
+    }
+
+
     public function runNext($sequence, mixed $position): void
     {
 
@@ -212,7 +247,7 @@ class Flow extends Model
 
 
         //find next edge and run next node function
-        $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
+        $next_edge = self::getNext_edge($edges, $node);
         if (!empty($next_edge->first()['target'])) {
             $next_node = $nodes->where('id', $next_edge->first()['target']);
             self::runNodeFunction($next_node, $edges, $nodes);
@@ -258,9 +293,9 @@ class Flow extends Model
     function branch($sequence, $position = 0): void
     {
         if ($sequence[$position]['branchCondition']) {
-            runNext($sequence, $sequence[$position]['trueRunFunction']);
+            self::runNext($sequence, $sequence[$position]['trueRunFunction']);
         } else {
-            runNext($sequence, $sequence[$position]['falseRunFunction']);
+            self::runNext($sequence, $sequence[$position]['falseRunFunction']);
         }
 
 
@@ -272,7 +307,7 @@ class Flow extends Model
         return $this->belongsTo(Instance::class);
     }
 
-    protected function casts()
+    protected function casts(): array
     {
         return [
             'sequence' => 'array',

@@ -41,6 +41,10 @@ export default ({className = ''}) => {
                  onDragStart={(event) => onDragStart(event, 'GetVariable')} draggable>
                 Get Variable
             </div>
+            <div className="dndnode branch dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
+                 onDragStart={(event) => onDragStart(event, 'RawHtml')} draggable>
+                Output HTML
+            </div>
         </aside>
     );
 };

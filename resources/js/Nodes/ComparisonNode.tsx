@@ -1,10 +1,10 @@
 import {Handle, Position} from '@xyflow/react';
 import {Select} from "@headlessui/react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
-import InputWithOverride from "@/Nodes/InputWithOverride";
+import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
-import SelectWithoutOverride from "@/Nodes/SelectWithoutOverride";
+import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 
 

@@ -1,11 +1,11 @@
 import {Handle, Position} from '@xyflow/react';
 import {Select} from "@headlessui/react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
-import InputWithOverride from "@/Nodes/InputWithOverride";
+import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
-import SelectWithoutOverride from "@/Nodes/SelectWithoutOverride";
-import InputWithoutOverride from "@/Nodes/InputWithoutOverride";
+import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
+import InputWithoutOverride from "@/Nodes/NodeComponents/InputWithoutOverride";
 
 
 export default function SetVariableNode({data, isConnectable}: { data: any, isConnectable: any }) {

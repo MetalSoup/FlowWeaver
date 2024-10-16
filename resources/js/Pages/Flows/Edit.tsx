@@ -24,6 +24,7 @@ import ComparisonNode from "@/Nodes/ComparisonNode";
 import BranchNode from "@/Nodes/BranchNode";
 import SetVariableNode from "@/Nodes/SetVariableNode";
 import GetVariableNode from "@/Nodes/GetVariableNode";
+import RawHtmlNode from "@/Nodes/RawHtmlNode";
 
 
 const nodeTypes = {
@@ -31,7 +32,8 @@ const nodeTypes = {
     Comparison: ComparisonNode,
     Branch: BranchNode,
     SetVariable: SetVariableNode,
-    GetVariable: GetVariableNode
+    GetVariable: GetVariableNode,
+    RawHtml: RawHtmlNode
 
 
 };
@@ -71,7 +73,11 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
     ];
 
 
-    const getId = () => `node_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    //Generate a unique id for the node including node type and random string
+    const getId = (node_type: string) => `${node_type.toLowerCase()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    //add node type to id
+
 
     /*    const initialViewport= [
             ...initialFlow.viewport
@@ -101,8 +107,9 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
             if (typeof type === 'undefined' || !type) {
                 return;
             }
+            console.log(type);
 
-            const nodeID = getId();
+            const nodeID = getId(type);
 
 
             const position = screenToFlowPosition({

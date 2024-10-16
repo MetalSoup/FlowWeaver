@@ -3,9 +3,9 @@ import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
-import InputWithOverride from "@/Nodes/InputWithOverride";
+import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import {Select} from "@headlessui/react";
-import SelectWithoutOverride from "@/Nodes/SelectWithoutOverride";
+import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 
 export default function WebhookNode({data, isConnectable} :{data:any, isConnectable:any}) {

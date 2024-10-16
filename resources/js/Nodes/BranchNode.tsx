@@ -1,7 +1,7 @@
 import {Handle, Position} from '@xyflow/react';
 import {useState} from "react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
-import CheckBoxWithOverride from "@/Nodes/CheckBoxWithOverride";
+import CheckBoxWithOverride from "@/Nodes/NodeComponents/CheckBoxWithOverride";
 import NodeBody from './NodeComponents/NodeBody';
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
