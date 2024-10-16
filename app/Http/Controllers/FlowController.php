@@ -32,8 +32,8 @@ class FlowController extends Controller
 
     public function show(Flow $flow)
     {
-        if($sequence = json_decode($flow->sequence,true)){
 
+        if($sequence = json_decode($flow->sequence,true)){
 
 
         $edges = collect($sequence['edges']);

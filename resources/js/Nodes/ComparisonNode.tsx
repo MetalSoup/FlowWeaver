@@ -4,6 +4,8 @@ import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import InputWithOverride from "@/Nodes/InputWithOverride";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
+import SelectWithoutOverride from "@/Nodes/SelectWithoutOverride";
+import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 
 
 export default function ComparisonNode({data, isConnectable}: { data: any, isConnectable: any }) {
@@ -49,31 +51,31 @@ export default function ComparisonNode({data, isConnectable}: { data: any, isCon
                 <NodeHeading>
                     Comparison
                 </NodeHeading>
+                <div className={"flex min-w-48 pb-5"}>
+                    <div className="flex-1 text-right">
+                    </div>
+                    <NodeOutputHandle isConnectable={isConnectable}
+                                      nodeID={nodeID}
+                                      id={"boolOutput"}>
+                    </NodeOutputHandle>
+                </div>
 
 
                 <InputWithOverride value={data.leftComparand} isConnectable={isConnectable}
                                    onChange={leftComparandChange} nodeID={nodeID}
                                    id={"leftComparand"}></InputWithOverride>
-                <Select defaultValue={data.operator} onChange={onChangeOperator}
-                        className={"nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}>
+                <SelectWithoutOverride value={data.operator} onChange={onChangeOperator}>
                     <option value={"=="}>Equal to</option>
                     <option value={">"}>Greater than</option>
                     <option value={"<"}>Less than</option>
                     <option value={"!="}>Not equal to</option>
                     <option value={"regex"}>Matches Regular expression</option>
-                </Select>
+                </SelectWithoutOverride>
                 <InputWithOverride value={data.rightComparand} isConnectable={isConnectable}
                                    onChange={rightComparandChange} nodeID={nodeID}
                                    id={"rightComparand"}></InputWithOverride>
 
-                <div className={"relative mb-4"}>
-                    <Handle
-                        type="source"
-                        position={Position.Right}
-                        id="boolOutput"
-                        isConnectable={isConnectable}
-                    />
-                </div>
+
             </NodeBody>
         </>
 

@@ -22,12 +22,16 @@ import FlowSideBar from "@/Pages/Flows/FlowSideBar";
 import WebhookNode from "@/Nodes/WebhookNode";
 import ComparisonNode from "@/Nodes/ComparisonNode";
 import BranchNode from "@/Nodes/BranchNode";
+import SetVariableNode from "@/Nodes/SetVariableNode";
+import GetVariableNode from "@/Nodes/GetVariableNode";
 
 
 const nodeTypes = {
     WebHook: WebhookNode,
     Comparison: ComparisonNode,
-    Branch: BranchNode
+    Branch: BranchNode,
+    SetVariable: SetVariableNode,
+    GetVariable: GetVariableNode
 
 
 };
@@ -140,7 +144,7 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Flow - {flow.data.name}</h2>}
+            /*header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Flow - {flow.data.name}</h2>}*/
         >
             <Head title={"Edit Flow - " + flow.data.name}/>
             <div className={"flex flex-col md:flex-row h-full"}>
@@ -174,7 +178,7 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
                                 className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"}/>
                         </Panel>
 
-                        <Background variant={BackgroundVariant.Lines} color={"#66666644"} gap={20} size={1}/>
+                        <Background variant={BackgroundVariant.Lines} color={"rgba(255,255,255,0.1)"} gap={20} size={1}/>
                         <Controls/>
                         <MiniMap zoomable pannable/>
                     </ReactFlow>

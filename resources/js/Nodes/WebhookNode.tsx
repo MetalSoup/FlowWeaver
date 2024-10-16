@@ -1,50 +1,85 @@
-import {Handle, Position} from '@xyflow/react';
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import InputWithOverride from "@/Nodes/InputWithOverride";
+import {Select} from "@headlessui/react";
+import SelectWithoutOverride from "@/Nodes/SelectWithoutOverride";
+import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 
+export default function WebhookNode({data, isConnectable} :{data:any, isConnectable:any}) {
 
-// @ts-ignore
-export default function WebhookNode({data, isConnectable}) {
-
-    if (!data.details) {
-        data.details = {fields: []};
-    } else if (!Array.isArray(data.details.fields)) {
-        data.details.fields = [];
+    if (!Array.isArray(data.fields)) {
+        data.fields = [];
+    }
+    if (!Array.isArray(data.headers)) {
+        data.headers = [];
     }
     const nodeID: string = data.id;
 
-    const [fields, setFields] = useState(data.details.fields || {name: '', value: ''});
-
+    const [fields, setFields] = useState(data.fields || {name: '', value: ''});
+    const [headers, setHeaders] = useState(data.headers || {name: '', value: ''});
+    const [sendAsJson, setSendAsJson] = useState(data.sendAsJson || false);
 
     const addField = () => {
-        setFields([...fields, {name: ''}]);
-        data.details.fields = fields;
+        setFields([...fields, {name: '', value: ''}]);
+        data.fields = fields;
+    };
+
+    const addHeader = () => {
+        setHeaders([...headers, {name: '', value: ''}]);
+        data.headers = headers;
+    };
+
+    const onDeleteField = (index: number) => {
+        const updatedFields = fields.filter((_field: any, i: number) => i !== index);
+        setFields(updatedFields);
+        data.fields = updatedFields;
+    };
+
+    const onDeleteHeader = (index: number) => {
+        const updatedHeaders = headers.filter((_header: any, i: number) => i !== index);
+        setHeaders(updatedHeaders);
+        data.headers = updatedHeaders;
     };
 
     const onChangeURL = (event: { target: { value: any; }; }) => {
-
-
         data.url = event.target.value;
+    };
 
+    const onMethodChange = (event: { target: { value: any; }; }) => {
+        data.method = event.target.value;
+    };
 
-    }
+    const onChangeField = (event: { target: { value: any; id: string; }; }) => {
+        const index = parseInt(event.target.id.split('_')[1], 10);
+        const fieldType = event.target.id.split('_')[0];
 
-    const onChangeField = (event: { target: { value: any; }; }) => {
-        // update all fields
-        setFields(fields.map((field: any) => {
-            return {
-                ...field,
-                name: event.target.value
-            };
-        }));
-    }
+        const updatedFields = fields.map((field: any, i: number) =>
+            i === index ? {...field, [fieldType]: event.target.value} : field
+        );
 
+        setFields(updatedFields);
+        data.fields = updatedFields;
+    };
 
+    const onChangeHeader = (event: { target: { value: any; id: string; }; }) => {
+        const index = parseInt(event.target.id.split('_')[1], 10);
+        const headerType = event.target.id.split('_')[0];
 
+        const updatedHeaders = headers.map((header: any, i: number) =>
+            i === index ? {...header, [headerType]: event.target.value} : header
+        );
+
+        setHeaders(updatedHeaders);
+        data.headers = updatedHeaders;
+    };
+
+    const onSendAsJsonChange = (event: { target: { checked: boolean; }; }) => {
+        setSendAsJson(event.target.checked);
+        data.sendAsJson = event.target.checked;
+    };
 
     return (
         <>
@@ -71,101 +106,92 @@ export default function WebhookNode({data, isConnectable}) {
 
                         </NodeEndHandle>
 
-
+                        <NodeOutputHandle id={"response"} isConnectable={isConnectable}
+                                          onConnect={(params: any) => console.log('handle onConnect', params)}
+                                          nodeID={nodeID}>
+                            Response
+                        </NodeOutputHandle>
                     </div>
                 </div>
 
-                <InputWithOverride isConnectable={isConnectable} onChange={onChangeURL} id={"webhookURL"} value={data.url} nodeID={nodeID}>
+                <InputWithOverride isConnectable={isConnectable} onChange={onChangeURL} id={"webhookURL"}
+                                   value={data.url} nodeID={nodeID} label={"Endpoint URL"}/>
 
-                </InputWithOverride>
-
-                <div className="relative dark:bg-gray-600 bg-gray-100 dark:text-white">
-                    <div className="hook_url">
-
-                        <div className="w-full">
-                            <label className="block uppercase tracking-wide font-bold mb-2 p-2"
-                                   htmlFor="grid-first-name">
-                                URL
-                            </label>
-
-
-
-                        </div>
-
-
-                    </div>
+                <SelectWithoutOverride label={"Method"} onChange={onMethodChange} value={data.method}>
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>DELETE</option>
+                </SelectWithoutOverride>
+                <div className="p-2">
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={sendAsJson}
+                            onChange={onSendAsJsonChange}
+                        />
+                        Send as JSON
+                    </label>
                 </div>
-                <div className={"dark:bg-gray-500 dark:text-white p-2"}>
-                    <h2>Fields</h2>
-                    <div className="w-full">
-                        <label className="block uppercase tracking-wide font-bold mb-2 p-2"
-                               htmlFor="grid-first-name">
-                            Field Name
-                        </label>
 
+                <h2>Fields</h2>
+                {fields.map((field: any, index: number) => (
+                    <div key={index} className={"bg-white/10 pt-3 overflow-hidden mb-3"}>
+                        <InputWithOverride
+                            isConnectable={isConnectable} placeholder={"key"}
+                            onChange={onChangeField} id={"name_" + index} value={field.name}
+                            nodeID={nodeID}/>
+                        <InputWithOverride
+                            isConnectable={isConnectable} placeholder={"value"}
+                            onChange={onChangeField} id={"value_" + index} value={field.value}
+                            nodeID={nodeID}/>
+                        <button
+                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                            onClick={() => onDeleteField(index)}
+                        >
+                            Remove
+                        </button>
+                    </div>
+                ))}
 
-                        {fields.map((field: any, index: number) => {
-                            return (
-                                <div className="relative" key={index}>
-                                    <Handle
-                                        type="source"
-                                        position={Position.Right}
-                                        style={{position: 'absolute', top: '50%'}}
-                                        onConnect={(params) => console.log('handle onConnect', params)}
-                                        isConnectable={isConnectable}
-                                        id={"webhook_field_" + index}
-                                    />
-                                    <div className="p-2">
-                                        <input
-                                            className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                            id="grid-first-name"
-                                            type="text"
-                                            placeholder=""
-                                            defaultValue={field.name}
-                                            onChange={onChangeField}
-                                        />
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <h2>Headers</h2>
+                {headers.map((header: any, index: number) => (
+                    <div key={index} className={"bg-white/10 pt-3 overflow-hidden mb-3"}>
+                        <InputWithOverride
+                            isConnectable={isConnectable} placeholder={"key"}
+                            onChange={onChangeHeader} id={"name_" + index} value={header.name}
+                            nodeID={nodeID}/>
+                        <InputWithOverride
+                            isConnectable={isConnectable} placeholder={"value"}
+                            onChange={onChangeHeader} id={"value_" + index} value={header.value}
+                            nodeID={nodeID}/>
+                        <button
+                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                            onClick={() => onDeleteHeader(index)}
+                        >
+                            Remove
+                        </button>
+                    </div>
+                ))}
 
-
-                        <div className="relative">
-                            <Handle
-                                type="source"
-                                position={Position.Right}
-                                style={{position: 'absolute', top: '50%'}}
-                                onConnect={(params) => console.log('handle onConnect', params)}
-                                isConnectable={isConnectable}
-                                id={"webhook_field"}
-                            />
-                            <div className="p-2">
-
-                                <input
-                                    className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                    id="grid-first-name"
-                                    type="text"
-                                    placeholder=""
-                                />
-                                <button
-                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                                    onClick={addField}
-
-                                >Add Field
-                                </button>
-                            </div>
-                        </div>
+                <div className="relative">
+                    <div className="p-2">
+                        <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            onClick={addField}
+                        >
+                            Add Field
+                        </button>
+                        <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            onClick={addHeader}
+                        >
+                            Add Header
+                        </button>
                     </div>
                 </div>
 
 
-                <Handle
-                    type="source"
-                    position={Position.Right}
-                    id="next"
-                    style={{bottom: 10, top: 'auto'}}
-                    isConnectable={isConnectable}
-                />
             </NodeBody>
         </>
     );

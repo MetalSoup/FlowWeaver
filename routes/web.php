@@ -21,6 +21,16 @@ Route::get('/', function () {
 
 Route::get('/flow/{id}', [FlowController::class, 'show'])->name('flow.show'); //not working
 
+//disable csfr token
+Route::any('/test_post', function(){
+    // disable php debug bar
+     \Debugbar::disable();
+     //return the posted data as json
+        return response()->json(request()->all());
+
+
+})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->name('test_post');
+
 
 
 Route::get('/dashboard', function () {

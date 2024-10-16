@@ -17,6 +17,10 @@ class Flow extends Model
         'sequence',
     ];
 
+    static array $loop = [];
+    static array $customVariables = [];
+    static array $nodeOutputs = [];
+
 
     public function runNext($sequence, mixed $position): void
     {
@@ -32,36 +36,25 @@ class Flow extends Model
     static function doBranch($node, $edges, $nodes): void
     {
 
+        $booleanOverride = $edges->where('target', $node->first()['id'])->where('targetHandle', $node->first()['id'] . '-boolean-override');
 
-    //first check if branch condition has an override.
-/*        dump($node->first()['id']);
-        dump($edges);*/
-
-
-
-        $booleanOverride = $edges->where('target', $node->first()['id'])->where('targetHandle', $node->first()['id'].'-boolean-override');
-
-        if (!empty($booleanOverride->first()['source']))
-        {
+        if (!empty($booleanOverride->first()['source'])) {
             $comparisonNode = $nodes->where('id', $booleanOverride->first()['source']);
             $branch_condition = self::doComparison($comparisonNode, $edges, $nodes);
+        } else {
+
+
+            $branch_condition = $node->first()['data']['isTrue'];
         }
 
-         else {
-            // dd($node->first()['data']);
+        if ($branch_condition) {
 
-             $branch_condition = $node->first()['data']['isTrue'];
-         }
+            $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-trueNext');
+        } else {
+            $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-falseNext');
+        }
 
-
-         if($branch_condition){
-             $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'trueNext');
-         }
-         else {
-             $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'falseNext');
-         }
-        if (!empty($next_edge->first()['target']))
-        {
+        if (!empty($next_edge->first()['target'])) {
             $next_node = $nodes->where('id', $next_edge->first()['target']);
             self::runNodeFunction($next_node, $edges, $nodes);
         }
@@ -72,7 +65,6 @@ class Flow extends Model
         //do comparison stuff
 
         //todo: get left and right overrides. If not set, get from node data as below
-
 
 
         $leftComparand = $node->first()['data']['leftComparand'];
@@ -86,26 +78,142 @@ class Flow extends Model
             '<' => $leftComparand < $rightComparand,
             '>=' => $leftComparand >= $rightComparand,
             '<=' => $leftComparand <= $rightComparand,
-            'regex' => preg_match('/'.trim($rightComparand,'/').'/', $leftComparand), // todo make sure this works as expected
+            'regex' => preg_match('/' . trim($rightComparand, '/') . '/', $leftComparand), // todo make sure this works as expected
             default => false,
         };
 
 
     }
 
+    static function setVariable($name, $value): void
+    {
+        self::$customVariables[$name] = $value;
+        \Session::put('customVariables', self::$customVariables);
+
+    }
+
+    static function getVariable($name): mixed
+    {
+        // check variable in session first.
+        if (\Session::has('customVariables')) {
+            self::$customVariables = \Session::get('customVariables');
+        }
+        return self::$customVariables[$name];
+    }
+
 
     static function doWebhook($node, $edges, $nodes): void
     {
         //do webhook stuff
+        $url = $node->first()['data']['url'] ?? "";
+        $method = $node->first()['data']['method'] ?? 'POST';
+        $fields = $node->first()['data']['fields'];
+        $headers = $node->first()['data']['headers'] ?? [];
+        $sendAsJson = $node->first()['data']['sendAsJson'] ?? false;
+
+        $data = [];
+
+        foreach ($fields as $key => $field) {
+            $connectedEdges = $edges->where('targetHandle', $node->first()['id'] . '-value_' . $key) ?? false;
+            if ($connectedEdges) {
+                //dump($connectedEdges);
+                $source = $connectedEdges->first()['sourceHandle'] ?? false;
+                //dump($source);
 
 
 
+
+
+                if ($source) {
+                    if (empty(self::$nodeOutputs[$source])) {
+                        $sourceNode = $nodes->where('id', $connectedEdges->first()['source']);
+                        if($sourceNode->first()['type'] == 'GetVariable')
+                        {
+                            $variable = $sourceNode->first()['data']['variableName'];
+                            $data[$field['name']] = self::getVariable($variable);
+                        }
+                    }
+                    else
+                    {
+
+                        $data[$field['name']] = self::$nodeOutputs[$source];
+                    }
+                }
+                else {
+                    $data[$field['name']] = $field['value'];
+                }
+
+            }
+        }
+       // dump($data);
+
+
+        //ignore security certificate
+
+        $client = new \GuzzleHttp\Client(['verify' => false]);
+        $headers_array = [];
+        foreach($headers as $header)
+        {
+            $headers_array[$header['name']] = $header['value'];
+        }
+        dump($data);
+
+        if ($method == 'GET') {
+            $parameters = ['headers' => $headers_array, 'query' => $data];
+        } else {
+            if($sendAsJson)
+            {
+                $parameters = ['headers' => $headers_array, 'json' => $data];
+            }
+            else
+            {
+                $parameters = ['headers' => $headers_array, 'form_params' => $data];
+            }
+
+        }
+
+
+        try {
+            $res = $client->request($method, $url, $parameters);
+            $result = $res->getBody()->getContents();
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+
+            $result = "error:".$e->getMessage();
+        }
+        // if result is xml convert it to json
+        if (str_starts_with($result, '<?xml')) {
+            $xml = simplexml_load_string($result);
+            $result = json_encode($xml);
+        }
+        //if result is json, decode it
+        if (json_decode($result)) {
+            $result = json_decode($result);
+        }
+
+        dump($result);
+
+
+        // find out what the output handle is connected to
+        $output_edges = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-response');
+        //check if output edges has content
+
+        self::$nodeOutputs[$node->first()['id'] . '-response'] = $result;
+        if (!empty($output_edges->first()['target'])) {
+            foreach ($output_edges as $output_edge) {
+                $output_node = $nodes->where('id', $output_edge['target']);
+
+                if ($output_node->first()['type'] == 'SetVariable') {
+                    self::setVariable($output_node->first()['data']['variableName'], $result);
+                }
+            }
+        }
+
+        //dump(self::$nodeOutputs);
 
 
         //find next edge and run next node function
-        $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', 'next');
-        if (!empty($next_edge->first()['target']))
-        {
+        $next_edge = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
+        if (!empty($next_edge->first()['target'])) {
             $next_node = $nodes->where('id', $next_edge->first()['target']);
             self::runNodeFunction($next_node, $edges, $nodes);
         }
@@ -115,27 +223,33 @@ class Flow extends Model
     public static function runNodeFunction($node, $edges, $nodes): void
     {
 
-        //dump($node->first()['type']);
-        echo "running node function: " . $node->first()['type'] . $node->first()['id'] ."<br>";
+        // exit if node is in loop array more than 10 times
+        self::$loop[] = $node->first()['id'];
 
-        if(!empty($node->first()['type'])){
+        if (count(array_keys(self::$loop, $node->first()['id'])) > 10) {
+
+            echo "Loop detected - exiting";
+            return;
+        }
+
+
+        //dump($node->first()['type']);
+        echo "running node function: " . $node->first()['type'] . $node->first()['id'] . "<br>";
+
+        if (!empty($node->first()['type'])) {
             //echo $node->first()['type'] . "<br>";
             $function = "do" . $node->first()['type'];
             //check if function exists before running it
             if (method_exists('App\Models\Flow', $function)) {
                 self::$function($node, $edges, $nodes);
-            }
-            else {
-                echo "Function ".$function." doesn't exist";
+            } else {
+                echo "Function " . $function . " doesn't exist";
             }
 
 
-        }
-        else {
+        } else {
             echo "no function to run";
         }
-
-
 
 
     }
