@@ -1,6 +1,7 @@
 import { DragEvent } from "react";
-import WebhookNode from "@/Nodes/WebhookNode";
-import ColorSelectorNode from "@/Nodes/ColorSelectorNode";
+import SideBarNodeButton from "@/Components/SideBarNodeButton";
+
+
 
 
 export default ({className = ''}) => {
@@ -8,6 +9,8 @@ export default ({className = ''}) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
     };
+
+
 
     return (
         <aside className={className}>
@@ -21,30 +24,27 @@ export default ({className = ''}) => {
             <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'output')} draggable>
                 Output Node
             </div>
-            <div className="dndnode webhook dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'WebHook')} draggable>
+
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'WebHook'}>
                 Webhook
-            </div>
-            <div className="dndnode comparison dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'Comparison')} draggable>
-                Comparison
-            </div>
-            <div className="dndnode branch dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'Branch')} draggable>
+            </SideBarNodeButton>
+
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'Branch'}>
                 Branch
-            </div>
-            <div className="dndnode branch dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'SetVariable')} draggable>
+            </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'Comparison'}>
+                Comparison
+            </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'SetVariable'}>
                 Set Variable
-            </div>
-            <div className="dndnode branch dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'GetVariable')} draggable>
+            </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'GetVariable'}>
                 Get Variable
-            </div>
-            <div className="dndnode branch dark:bg-gray-700 p-1 dark:text-white rounded-md cursor-grab"
-                 onDragStart={(event) => onDragStart(event, 'RawHtml')} draggable>
+            </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'RawHtml'}>
                 Output HTML
-            </div>
+            </SideBarNodeButton>
+
         </aside>
     );
 };

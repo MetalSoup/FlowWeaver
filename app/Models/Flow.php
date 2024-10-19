@@ -139,114 +139,89 @@ class Flow extends Model
 
     static function doWebhook($node, $edges, $nodes): void
     {
-        //do webhook stuff
         $url = $node->first()['data']['url'] ?? "";
         $method = $node->first()['data']['method'] ?? 'POST';
         $fields = $node->first()['data']['fields'];
         $headers = $node->first()['data']['headers'] ?? [];
         $sendAsJson = $node->first()['data']['sendAsJson'] ?? false;
+        $isSoap = $node->first()['data']['isSoap'] ?? false;
 
         $data = [];
 
         foreach ($fields as $key => $field) {
             $connectedEdges = $edges->where('targetHandle', $node->first()['id'] . '-value_' . $key) ?? false;
             if ($connectedEdges) {
-                //dump($connectedEdges);
                 $source = $connectedEdges->first()['sourceHandle'] ?? false;
-                //dump($source);
-
-
-
-
-
                 if ($source) {
                     if (empty(self::$nodeOutputs[$source])) {
                         $sourceNode = $nodes->where('id', $connectedEdges->first()['source']);
-                        if($sourceNode->first()['type'] == 'GetVariable')
-                        {
+                        if($sourceNode->first()['type'] == 'GetVariable') {
                             $variable = $sourceNode->first()['data']['variableName'];
                             $data[$field['name']] = self::getVariable($variable);
                         }
-                    }
-                    else
-                    {
-
+                    } else {
                         $data[$field['name']] = self::$nodeOutputs[$source];
                     }
-                }
-                else {
+                } else {
                     $data[$field['name']] = $field['value'];
                 }
-
             }
         }
-       // dump($data);
-
-
-        //ignore security certificate
 
         $client = new \GuzzleHttp\Client(['verify' => false]);
         $headers_array = [];
-        foreach($headers as $header)
-        {
+        foreach($headers as $header) {
             $headers_array[$header['name']] = $header['value'];
         }
-        dump($data);
 
-        if ($method == 'GET') {
-            $parameters = ['headers' => $headers_array, 'query' => $data];
+        if ($isSoap) {
+            $soapBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>';
+            foreach ($data as $key => $value) {
+                $soapBody .= "<$key>$value</$key>";
+            }
+            $soapBody .= '</soap:Body></soap:Envelope>';
+
+            $headers_array['Content-Type'] = 'text/xml; charset=utf-8';
+            $parameters = ['headers' => $headers_array, 'body' => $soapBody];
         } else {
-            if($sendAsJson)
-            {
-                $parameters = ['headers' => $headers_array, 'json' => $data];
+            if ($method == 'GET') {
+                $parameters = ['headers' => $headers_array, 'query' => $data];
+            } else {
+                if($sendAsJson) {
+                    $parameters = ['headers' => $headers_array, 'json' => $data];
+                } else {
+                    $parameters = ['headers' => $headers_array, 'form_params' => $data];
+                }
             }
-            else
-            {
-                $parameters = ['headers' => $headers_array, 'form_params' => $data];
-            }
-
         }
-
 
         try {
             $res = $client->request($method, $url, $parameters);
             $result = $res->getBody()->getContents();
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-
             $result = "error:".$e->getMessage();
         }
-        // if result is xml convert it to json
+
         if (str_starts_with($result, '<?xml')) {
             $xml = simplexml_load_string($result);
             $result = json_encode($xml);
         }
-        //if result is json, decode it
+
         if (json_decode($result)) {
             $result = json_decode($result);
         }
 
-        dump($result);
-
-
-        // find out what the output handle is connected to
-        $output_edges = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-response');
-        //check if output edges has content
-
         self::$nodeOutputs[$node->first()['id'] . '-response'] = $result;
+        $output_edges = $edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-response');
         if (!empty($output_edges->first()['target'])) {
             foreach ($output_edges as $output_edge) {
                 $output_node = $nodes->where('id', $output_edge['target']);
-
                 if ($output_node->first()['type'] == 'SetVariable') {
                     self::setVariable($output_node->first()['data']['variableName'], $result);
                 }
             }
         }
 
-        //dump(self::$nodeOutputs);
-
-
-        //find next edge and run next node function
         $next_edge = self::getNext_edge($edges, $node);
         if (!empty($next_edge->first()['target'])) {
             $next_node = $nodes->where('id', $next_edge->first()['target']);

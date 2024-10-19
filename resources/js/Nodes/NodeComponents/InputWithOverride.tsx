@@ -1,19 +1,19 @@
 import {Handle, Position, useStore} from "@xyflow/react";
 
-export default function InputWithOverride({isConnectable, onChange, id, value, nodeID, placeholder, children, style, label}: {
+export default function InputWithOverride({isConnectable, onChange, id, value, placeholder, children, style, label}: {
     isConnectable: any,
     onChange: any,
     id: string,
     value: string,
-    nodeID: string,
-    placeholder?: string
-    children?: any
-    style?: any
-    label?: string
+    placeholder?: string,
+    children?: any,
+    style?: any,
+    label?: string,
+
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === `${nodeID}-${id}-override`));
+    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === `${id}-override`));
 
 
     return (
@@ -26,20 +26,21 @@ export default function InputWithOverride({isConnectable, onChange, id, value, n
                 <Handle
                     type="target"
                     position={Position.Left}
-                    id={nodeID +"-"+ id + "-override"}
+                    id={id + "-override"}
                     className={`override ${isConnected ? 'connected' : ''}`}
                     isConnectable={isConnectable}
                 />
                 <div className={`px-5`}>
                     <input
                         className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                        id={nodeID +"-"+ id}
+                        id={id}
                         style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px' , ...style}}
                         type="text"
                         placeholder={placeholder}
                         onChange={onChange}
                         defaultValue={value}
                         disabled={isConnected}
+
 
                     />
                 </div>

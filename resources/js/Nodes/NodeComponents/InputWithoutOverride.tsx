@@ -1,11 +1,10 @@
 import {Handle, Position, useStore} from "@xyflow/react";
 
-export default function InputWithoutOverride({isConnectable, onChange, id, value, nodeID, placeholder, children, style, label}: {
-    isConnectable: any,
+export default function InputWithoutOverride({onChange, id, value, placeholder, children, style, label}: {
     onChange: any,
     id: string,
     value: string,
-    nodeID: string,
+
     placeholder?: string
     children?: any
     style?: any

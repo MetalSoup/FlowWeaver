@@ -12,6 +12,7 @@
         "@types/node": "^18.13.0",
         "@types/react": "^18.0.28",
         "@types/react-dom": "^18.0.10",
+        "@types/uuid": "^10.0.0",
         "@vitejs/plugin-react": "^4.2.0",
         "autoprefixer": "^10.4.12",
         "axios": "^1.6.4",
@@ -25,9 +26,11 @@
     },
     "dependencies": {
         "@grapesjs/react": "^1.0.0",
+        "@heroicons/react": "^2.1.5",
         "@plasmicapp/loader-react": "^1.0.361",
         "@xyflow/react": "^12.0.3",
         "grapesjs": "^0.21.12",
-        "interweave": "^13.1.0"
+        "interweave": "^13.1.0",
+        "uuid": "^10.0.0"
     }
 }
