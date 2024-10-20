@@ -26,6 +26,7 @@
     },
     "dependencies": {
         "@grapesjs/react": "^1.0.0",
+        "@hello-pangea/dnd": "^17.0.0",
         "@heroicons/react": "^2.1.5",
         "@plasmicapp/loader-react": "^1.0.361",
         "@xyflow/react": "^12.0.3",

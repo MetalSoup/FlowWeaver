@@ -1,4 +1,5 @@
 import {Handle, Position, useStore} from "@xyflow/react";
+import EditableText from "@/Nodes/NodeComponents/EditableText";
 
 export default function InputWithOverride({isConnectable, onChange, id, value, placeholder, children, style, label}: {
     isConnectable: any,
@@ -31,8 +32,17 @@ export default function InputWithOverride({isConnectable, onChange, id, value, p
                     isConnectable={isConnectable}
                 />
                 <div className={`px-5`}>
-                    <input
+                    <EditableText
+                        value={value}
+                        onChange={onChange}
+                        style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px'}}
                         className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                        placeholder={placeholder}
+                        id={id}
+                        textClassName={"appearance-none block w-full bg-gray-800 text-gray-200 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}
+                    />
+                    {/*<input
+
                         id={id}
                         style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px' , ...style}}
                         type="text"
@@ -42,7 +52,7 @@ export default function InputWithOverride({isConnectable, onChange, id, value, p
                         disabled={isConnected}
 
 
-                    />
+                    />*/}
                 </div>
             </div>
         </>

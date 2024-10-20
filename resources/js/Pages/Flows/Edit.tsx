@@ -147,7 +147,8 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
     };
 
 
-    // @ts-ignore
+
+    const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
     return (
         <DashboardLayout
             user={auth.user}
@@ -170,9 +171,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
                         nodeTypes={nodeTypes}
                         onInit={handleInit}
                         deleteKeyCode={['Backspace', 'Delete']}
+                        minZoom={0.1}
+                        defaultViewport={defaultViewport}
+                        snapToGrid={true}
+                        snapGrid={[20,20]}
 
 
-                        fitView
+
+
 
                     >
                         <Panel position="top-right">
