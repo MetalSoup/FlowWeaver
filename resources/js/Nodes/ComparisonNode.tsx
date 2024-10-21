@@ -1,8 +1,5 @@
-import {Handle, Position} from '@xyflow/react';
-import {Select} from "@headlessui/react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
-import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
@@ -62,18 +59,30 @@ export default function ComparisonNode({data, isConnectable}: { data: any, isCon
 
 
                 <InputWithOverride value={data.leftComparand} isConnectable={isConnectable}
-                                   onChange={leftComparandChange} nodeID={nodeID}
-                                   id={"leftComparand"}></InputWithOverride>
-                <SelectWithoutOverride value={data.operator} onChange={onChangeOperator}>
-                    <option value={"=="}>Equal to</option>
-                    <option value={">"}>Greater than</option>
-                    <option value={"<"}>Less than</option>
-                    <option value={"!="}>Not equal to</option>
-                    <option value={"regex"}>Matches Regular expression</option>
+                                   onChange={leftComparandChange}
+                                   handleID={"leftComparand-override"}
+                                   nodeID={nodeID}
+                ></InputWithOverride>
+
+
+                <SelectWithoutOverride
+                    value={data.operator}
+                    onChange={onChangeOperator}
+                    options={[
+                        { value: "==", label: "Equal to" },
+                        { value: ">", label: "Greater than" },
+                        { value: "<", label: "Less than" },
+                        { value: "!=", label: "Not equal to" },
+                        { value: "regex", label: "Matches Regular expression" }
+
+                    ]}
+                 id={nodeID+`_operator`}>
                 </SelectWithoutOverride>
                 <InputWithOverride value={data.rightComparand} isConnectable={isConnectable}
-                                   onChange={rightComparandChange} nodeID={nodeID}
-                                   id={"rightComparand"}></InputWithOverride>
+                                   onChange={rightComparandChange}
+                                   handleID={"rightComparand-override"}
+                                   nodeID={nodeID}
+                ></InputWithOverride>
 
 
             </NodeBody>

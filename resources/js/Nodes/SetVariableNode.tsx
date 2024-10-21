@@ -6,6 +6,7 @@ import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import InputWithoutOverride from "@/Nodes/NodeComponents/InputWithoutOverride";
+import NodeEndHandle from './NodeComponents/NodeEndHandle';
 
 
 export default function SetVariableNode({data, isConnectable}: { data: any, isConnectable: any }) {
@@ -29,15 +30,37 @@ export default function SetVariableNode({data, isConnectable}: { data: any, isCo
                 <NodeHeading>
                     Set Variable
                 </NodeHeading>
+                <div className={"flex min-w-48 pb-5"}>
+                    <div className="flex-none w-14">
+                        <NodeStartHandle
+                            id={"previous"} nodeID={nodeID}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            isConnectable={isConnectable}
+                        />
+                    </div>
+
+                    <div className="flex-1 text-right">
+                        <NodeEndHandle
+                            isConnectable={isConnectable}
+                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            id={"next"}
+                            nodeID={nodeID}/>
+
+                    </div>
+                </div>
 
 
-                <InputWithoutOverride value={data.variableName} isConnectable={isConnectable}
-                                   onChange={onVariableNameChange} nodeID={nodeID}
-                                   id={"variableName"}></InputWithoutOverride>
+                <InputWithoutOverride
+                    value={data.variableName}
+                    onChange={onVariableNameChange}
+                    id={"variableName"}/>
 
-                <InputWithOverride value={data.variableValue} isConnectable={isConnectable}
-                                   onChange={onVariableValueChange} nodeID={nodeID}
-                                   id={"variableValue"}></InputWithOverride>
+                <InputWithOverride
+                    value={data.variableValue} isConnectable={isConnectable}
+                    onChange={onVariableValueChange}
+                    handleID={"variableValue-override"}
+                    nodeID={nodeID}
+                />
 
 
             </NodeBody>

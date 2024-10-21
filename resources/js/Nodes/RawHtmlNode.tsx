@@ -1,4 +1,3 @@
-import {Handle, Position} from '@xyflow/react';
 import NodeBody from './NodeComponents/NodeBody';
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
@@ -37,15 +36,17 @@ export default function RawHtmlNode({data, isConnectable}: { data: any, isConnec
                             onConnect={(params: any) => console.log('handle onConnect', params)}
                             id={"next"}
                             nodeID={nodeID}>
-
                         </NodeEndHandle>
                     </div>
                 </div>
-                <InputWithOverride label={"HTML"} isConnectable={isConnectable} onChange={onHtml} id={"html"} value={html} nodeID={nodeID}>
-
-                </InputWithOverride>
-
-
+                <InputWithOverride
+                    label={"HTML"}
+                    isConnectable={isConnectable}
+                    onChange={onHtml}
+                    handleID={"html-override"}
+                    value={html}
+                    nodeID={nodeID}
+                />
             </NodeBody>
         </>
     );

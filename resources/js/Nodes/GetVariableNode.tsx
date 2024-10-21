@@ -35,9 +35,9 @@ export default function GetVariableNode({data, isConnectable}: { data: any, isCo
                     </NodeOutputHandle>
                 </div>
 
-                <InputWithoutOverride value={data.variableName} isConnectable={isConnectable}
-                                      onChange={onVariableNameChange} nodeID={nodeID}
-                                      id={"variableName"}></InputWithoutOverride>
+                <InputWithoutOverride value={data.variableName}
+                                      onChange={onVariableNameChange}
+                                      id={nodeID+"_variableName"}></InputWithoutOverride>
 
 
             </NodeBody>

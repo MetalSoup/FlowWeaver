@@ -1,4 +1,3 @@
-import {Handle, Position} from '@xyflow/react';
 import {useState} from "react";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import CheckBoxWithOverride from "@/Nodes/NodeComponents/CheckBoxWithOverride";

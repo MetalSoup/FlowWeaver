@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 interface EditableTextProps {
-    id: string;
+    id?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
     style?: React.CSSProperties;
@@ -32,6 +32,11 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setCurrentText(e.target.value);
         onChange(e);
+    };
+
+    const getLabelForValue = (value: string) => {
+        const option = options.find(option => option.value === value);
+        return option ? option.label : value;
     };
 
     return (
@@ -69,7 +74,9 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                     </select>
                 )
             ) : (
-                <span className={textClassName } style={{ ...style }}>{currentText || placeholder || "Enter Value"}</span>
+                <span className={textClassName} style={{ ...style }}>
+                    {type === 'select' ? getLabelForValue(currentText) : currentText || placeholder || "Enter Value"}
+                </span>
             )}
         </div>
     );

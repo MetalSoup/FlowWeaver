@@ -17,7 +17,7 @@ import {
     OnInit
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {useCallback, useState} from "react";
+import {SetStateAction, useCallback, useState} from "react";
 import FlowSideBar from "@/Pages/Flows/FlowSideBar";
 import WebhookNode from "@/Nodes/WebhookNode";
 import ComparisonNode from "@/Nodes/ComparisonNode";
@@ -25,6 +25,7 @@ import BranchNode from "@/Nodes/BranchNode";
 import SetVariableNode from "@/Nodes/SetVariableNode";
 import GetVariableNode from "@/Nodes/GetVariableNode";
 import RawHtmlNode from "@/Nodes/RawHtmlNode";
+import EditableText from "@/Nodes/NodeComponents/EditableText";
 
 
 const nodeTypes = {
@@ -48,41 +49,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
 
     // check if the flow nodes is defined otherwise set it to an empty array
     initialFlow.nodes = initialFlow.nodes ? initialFlow.nodes : [];
-
-
-    const initialNodes = [
-
-
-        ...initialFlow.nodes,
-        /*{ id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
-        {
-            id: '2',
-            type: 'WebHook',
-
-            style: { border: '1px solid #777', padding: 10 },
-            position: { x: 300, y: 50 },
-            data: { color: '#f6f6f6', onChange: () => {} },
-        },
-        { id: '3', position: { x: 0, y: 100 }, data: { label: '2' } },*/
-
-    ];
+    const initialNodes = [...initialFlow.nodes];
 
     initialFlow.edges = initialFlow.edges ? initialFlow.edges : [];
-    const initialEdges = [/*{ id: 'e1-2', source: '1', target: '2' }*/
-        ...initialFlow.edges
-    ];
+    const initialEdges = [...initialFlow.edges];
 
 
     //Generate a unique id for the node including node type and random string
     const getId = (node_type: string) => `${node_type.toLowerCase()}_${Math.random().toString(36).substring(2, 9)}`;
-
-    //add node type to id
-
-
-    /*    const initialViewport= [
-            ...initialFlow.viewport
-        ]*/
-
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -107,15 +81,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
             if (typeof type === 'undefined' || !type) {
                 return;
             }
-            console.log(type);
 
             const nodeID = getId(type);
-
 
             const position = screenToFlowPosition({
                 x: event.clientX,
                 y: event.clientY,
             });
+
             const newNode = {
                 id: nodeID,
                 type,
@@ -147,8 +120,15 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
     };
 
 
-
     const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
+
+    const [flowName, setFlowName] = useState(flow.data.name);
+    const onChangeName = (event: { target: { value: SetStateAction<string>; }; }) => {
+        setFlowName(event.target.value ? event.target.value : "Untitled Flow");
+        flow.data.name = flowName;
+
+    }
+
     return (
         <DashboardLayout
             user={auth.user}
@@ -181,12 +161,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
 
 
                     >
+
                         <Panel position="top-right">
                             <button className={"dark:text-white"} onClick={onSave}>save</button>
                             {/*<button onClick={onRestore}>restore</button>
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
                         <Panel position="top-left">
+                            <EditableText value={flow.data.name} onChange={onChangeName} textClassName={"text-2xl font-bold text-white"}/>
                             <FlowSideBar
                                 className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"}/>
                         </Panel>

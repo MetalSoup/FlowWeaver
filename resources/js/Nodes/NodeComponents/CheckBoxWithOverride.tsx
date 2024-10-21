@@ -12,7 +12,7 @@ export default function CheckBoxWithOverride({ isConnectable, onChange, id, isTr
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === `${nodeID}-${id}-override`));
+    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === `${id}-override`));
 
 
     return (
@@ -20,7 +20,7 @@ export default function CheckBoxWithOverride({ isConnectable, onChange, id, isTr
             <Handle
                 type="target"
                 position={Position.Left}
-                id={nodeID +"-"+ id+"-override"}
+                id={id+"-override"}
                 className={`override ${isConnected ? 'connected' : ''}`}
                 isConnectable={isConnectable}
             />

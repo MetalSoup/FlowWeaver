@@ -1,3 +1,4 @@
+/*
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, router} from '@inertiajs/react';
 import {SingleFlowProps} from "@/types";
@@ -39,9 +40,9 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
     let id = initialNodeCount;
     const getId = () => `dnd_node_${id++}`;
 
-/*    const initialViewport= [
+/!*    const initialViewport= [
         ...initialFlow.viewport
-    ]*/
+    ]*!/
 
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -135,8 +136,8 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                     >
                         <Panel position="top-right">
                             <button onClick={onSave}>save</button>
-                            {/*<button onClick={onRestore}>restore</button>
-                            <button onClick={onAdd}>add node</button>*/}
+                            {/!*<button onClick={onRestore}>restore</button>
+                            <button onClick={onAdd}>add node</button>*!/}
                         </Panel>
 
                         <Background variant={BackgroundVariant.Lines} gap={12} size={1} />
@@ -163,3 +164,4 @@ export default ({ auth, flow } : SingleFlowProps) => (
         <FlowEditor auth={auth} flow={flow} />
     </ReactFlowProvider>
 )
+*/

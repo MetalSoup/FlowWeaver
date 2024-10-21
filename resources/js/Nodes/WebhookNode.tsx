@@ -163,14 +163,20 @@ export default function WebhookNode({ data, isConnectable }: { data: any, isConn
                     </div>
                 </div>
 
-                <InputWithOverride isConnectable={isConnectable} onChange={onChangeURL} id={nodeID+"_webhookURL"}
-                                   value={data.url} label={"Endpoint URL"} />
+                <InputWithOverride
+                    isConnectable={isConnectable}
+                    onChange={onChangeURL}
+                    handleID={"webhookURL-override"}
+                    value={data.url}
+                    label={"Endpoint URL"}
+                    nodeID={nodeID}
+                />
 
                 <SelectWithoutOverride
                     label={"Method"}
                     onChange={onMethodChange}
                     value={data.method || "GET"}
-                    id={nodeID+"_method"}
+                    id={"method"}
 
                     options={[
                         { value: "GET", label: "GET" },
@@ -224,14 +230,22 @@ export default function WebhookNode({ data, isConnectable }: { data: any, isConn
                                             >
                                                 <div className={"flex-col"}>
                                                     <InputWithOverride
-                                                        isConnectable={isConnectable} placeholder={"key"}
-                                                        onChange={onChangeField} id={"key_" + field.id} value={field.key}
+                                                        isConnectable={isConnectable}
+                                                        placeholder={"key"}
+                                                        onChange={onChangeField}
+                                                        handleID={"key_" + field.id + "-override"}
+                                                        value={field.key}
+                                                        nodeID={nodeID}
                                                     />
                                                 </div>
                                                 <div className={"flex-col"}>
                                                     <InputWithOverride
-                                                        isConnectable={isConnectable} placeholder={"value"}
-                                                        onChange={onChangeField} id={"value_" + field.id} value={field.value}
+                                                        isConnectable={isConnectable}
+                                                        placeholder={"value"}
+                                                        onChange={onChangeField}
+                                                        handleID={"value_" + field.id + "-override"}
+                                                        value={field.value}
+                                                        nodeID={nodeID}
                                                     />
                                                 </div>
                                                 <button
@@ -270,14 +284,22 @@ export default function WebhookNode({ data, isConnectable }: { data: any, isConn
                                             >
                                                 <div className={"flex-col"}>
                                                     <InputWithOverride
-                                                        isConnectable={isConnectable} placeholder={"key"}
-                                                        onChange={onChangeHeader} id={"key_" + header.id} value={header.key}
+                                                        isConnectable={isConnectable}
+                                                        placeholder={"key"}
+                                                        onChange={onChangeHeader}
+                                                        handleID={"key_" + header.id + "-override"}
+                                                        value={header.key}
+                                                        nodeID={nodeID}
                                                     />
                                                 </div>
                                                 <div className={"flex-col"}>
                                                     <InputWithOverride
-                                                        isConnectable={isConnectable} placeholder={"value"}
-                                                        onChange={onChangeHeader} id={"value_" + header.id} value={header.value}
+                                                        isConnectable={isConnectable}
+                                                        placeholder={"value"}
+                                                        onChange={onChangeHeader}
+                                                        handleID={"value_" + header.id + "-override"}
+                                                        value={header.value}
+                                                        nodeID={nodeID}
                                                     />
                                                 </div>
                                                 <button

@@ -1,10 +1,11 @@
 import {Handle, Position, useStore} from "@xyflow/react";
 import EditableText from "@/Nodes/NodeComponents/EditableText";
 
-export default function InputWithOverride({isConnectable, onChange, id, value, placeholder, children, style, label}: {
+export default function InputWithOverride({isConnectable,nodeID, onChange, handleID, value, placeholder, children, style, label}: {
     isConnectable: any,
+    nodeID: string,
     onChange: any,
-    id: string,
+    handleID: string,
     value: string,
     placeholder?: string,
     children?: any,
@@ -14,7 +15,7 @@ export default function InputWithOverride({isConnectable, onChange, id, value, p
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === `${id}-override`));
+    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === handleID && edge.target === nodeID));
 
 
     return (
@@ -27,7 +28,7 @@ export default function InputWithOverride({isConnectable, onChange, id, value, p
                 <Handle
                     type="target"
                     position={Position.Left}
-                    id={id + "-override"}
+                    id={handleID}
                     className={`override ${isConnected ? 'connected' : ''}`}
                     isConnectable={isConnectable}
                 />
@@ -38,7 +39,6 @@ export default function InputWithOverride({isConnectable, onChange, id, value, p
                         style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px'}}
                         className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                         placeholder={placeholder}
-                        id={id}
                         textClassName={"appearance-none block w-full bg-gray-800 text-gray-200 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}
                     />
                     {/*<input

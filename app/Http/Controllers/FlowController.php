@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FlowRequest;
 use App\Http\Resources\FlowResource;
 use App\Models\Flow;
+use App\RunFlow;
 use Illuminate\Support\Facades\Log;
 
 class FlowController extends Controller
@@ -46,7 +47,8 @@ class FlowController extends Controller
 
         $first_node = $nodes->where('id',$start_edge->first()['target']);
         // run first node function
-        Flow::runNodeFunction($first_node,$edges,$nodes);
+        $runFlow = new RunFlow($first_node,$edges,$nodes);
+        //Flow::runNodeFunction($first_node,$edges,$nodes);
         }
         else {
             Log::info('No sequence found for flow: '.$flow->id);
