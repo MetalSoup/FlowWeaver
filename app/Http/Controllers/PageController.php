@@ -11,9 +11,8 @@ class PageController extends Controller
 {
     public function index()
     {
-        //get logged in user
-        $user = auth()->user();
-        $pages = Page::where('user_id',$user->id)->get();
+        $selectedInstanceId = session('selected_instance');
+        $pages = Page::where('instance_id',$selectedInstanceId)->get();
         //dd(PageResource::collection($pages));
         return inertia('Pages/Index',[
             'pages' => PageResource::collection($pages)
@@ -23,6 +22,10 @@ class PageController extends Controller
 
     public function store(PageRequest $request)
     {
+        $selectedInstanceId = session('selected_instance');
+        $data = $request->validated();
+        $data['instance_id'] = $selectedInstanceId;
+
         return new PageResource(Page::create($request->validated()));
     }
 
@@ -35,6 +38,10 @@ class PageController extends Controller
 
     public function edit(Page $page)
     {
+        $selectedInstanceId = session('selected_instance');
+        if($page->instance_id != $selectedInstanceId){
+            abort(403);
+        }
         return inertia('Pages/Edit', [
             'page' => new PageResource($page)
         ]);
@@ -42,6 +49,10 @@ class PageController extends Controller
 
     public function update(PageRequest $request, Page $page)
     {
+        $selectedInstanceId = session('selected_instance');
+        if($page->instance_id != $selectedInstanceId){
+            abort(403);
+        }
         $page->update($request->validated());
 
         return new PageResource($page);
@@ -49,6 +60,10 @@ class PageController extends Controller
 
     public function destroy(Page $page)
     {
+        $selectedInstanceId = session('selected_instance');
+        if($page->instance_id != $selectedInstanceId){
+            abort(403);
+        }
         $page->delete();
 
         return response()->json();

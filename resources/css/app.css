@@ -8,6 +8,10 @@
 }
 */
 
+body
+{
+    margin-bottom: 0 !important;
+}
 
 .react-flow__edge .react-flow__edge-path {
     stroke: white;

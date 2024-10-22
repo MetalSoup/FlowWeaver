@@ -5,7 +5,7 @@ use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InstanceController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
-use App\Models\Flow;
+use App\Http\Middleware\CheckInstanceSelectedMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,7 +19,6 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/flow/{id}', [FlowController::class, 'show'])->name('flow.show'); //not working
 
 //disable csfr token
 Route::any('/test_post', function(){
@@ -37,14 +36,29 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+//these routes should be in /dashboard/
+
+Route::get('/flow/{flow}/{startNode?}', [FlowController::class, 'show'])->name('flow.show');
+
+
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/instances', [InstanceController::class, 'index'])->name('instances.index');
-    Route::resource('/pages', PageController::class);
-    Route::resource('/flows', FlowController::class);
-    Route::resource('/fields', FieldController::class);
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        Route::get('/instances/select', [InstanceController::class, 'select'])->name('instances.select');
+        Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection');
+        Route::resource('/instances', InstanceController::class);
+        Route::middleware(CheckInstanceSelectedMiddleware::class)->group(function () {
+
+            Route::resource('/pages', PageController::class);
+            Route::resource('/flows', FlowController::class);
+            Route::resource('/fields', FieldController::class);
+        });
+
+
+    });
 });
 
 require __DIR__.'/auth.php';

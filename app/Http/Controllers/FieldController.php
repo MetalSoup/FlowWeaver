@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\FieldResource;
 use App\Models\Field;
 use App\Http\Requests\StoreFieldRequest;
 use App\Http\Requests\UpdateFieldRequest;
@@ -14,6 +15,13 @@ class FieldController extends Controller
     public function index()
     {
         //
+        $selectedInstanceId = session('selected_instance');
+        $fields = Field::where('instance_id', $selectedInstanceId)->get();
+
+        return inertia('Fields/Index', [
+            'fields' => FieldResource::collection($fields),
+        ]);
+
     }
 
     /**
@@ -30,6 +38,17 @@ class FieldController extends Controller
     public function store(StoreFieldRequest $request)
     {
         //
+        $selectedInstanceId = session('selected_instance');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+        ]);
+        $validated['instance_id'] = $selectedInstanceId;
+
+        Field::create($validated);
+
+        return redirect()->route('fields.index');
+
     }
 
     /**

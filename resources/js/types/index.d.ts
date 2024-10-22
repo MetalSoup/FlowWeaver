@@ -79,4 +79,17 @@ export type SingleFlowProps<T extends Record<string, unknown> = Record<string, u
     };
 };
 
+export type SingleInstanceProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
+    auth: {
+        user: User;
+    };
+    instance: {
+        id: number;
+        name: string;
+        created_at: string;
+        updated_at: string;
+
+    };
+};
+
 

@@ -5,10 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\Instance;
 use App\Http\Requests\StoreInstanceRequest;
 use App\Http\Requests\UpdateInstanceRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class InstanceController extends Controller
 {
+
+
+    public function select()
+    {
+        //dd('select');
+        $instances = auth()->user()->instances;
+        return inertia('Instances/Select', [
+            'instances' => $instances,
+        ]);
+        //return view('instances.select', compact('instances'));
+    }
+
+    public function storeSelection(Request $request)
+    {
+       // $instance = Instance::find($request);
+
+        //dd($request);
+        $request->validate(['instance_id' => 'required|exists:instances,id']);
+        $request->session()->put('selected_instance', $request->instance_id);
+        return redirect()->route('dashboard');
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -27,6 +50,9 @@ class InstanceController extends Controller
     public function create()
     {
         //
+        return Inertia::render('Instances/Edit', [
+            'instance' => new Instance,
+        ]);
     }
 
     /**
@@ -35,6 +61,8 @@ class InstanceController extends Controller
     public function store(StoreInstanceRequest $request)
     {
         //
+        $instance = Instance::create($request->validated());
+        return redirect()->route('instances.edit', $instance->id);
     }
 
     /**
@@ -51,6 +79,9 @@ class InstanceController extends Controller
     public function edit(Instance $instance)
     {
         //
+        return Inertia::render('Instances/Edit', [
+            'instance' => $instance,
+        ]);
     }
 
     /**

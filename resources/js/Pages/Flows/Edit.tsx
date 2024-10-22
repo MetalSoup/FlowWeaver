@@ -6,7 +6,6 @@ import {
     Background,
     BackgroundVariant,
     Controls,
-    MiniMap,
     Panel,
     ReactFlow,
     ReactFlowInstance,
@@ -17,7 +16,7 @@ import {
     OnInit
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {SetStateAction, useCallback, useState} from "react";
+import {useCallback, useState} from "react";
 import FlowSideBar from "@/Pages/Flows/FlowSideBar";
 import WebhookNode from "@/Nodes/WebhookNode";
 import ComparisonNode from "@/Nodes/ComparisonNode";
@@ -57,6 +56,7 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
 
     //Generate a unique id for the node including node type and random string
     const getId = (node_type: string) => `${node_type.toLowerCase()}_${Math.random().toString(36).substring(2, 9)}`;
+
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -108,7 +108,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
             const thisFlow = rfInstance.toObject();
             let sequence = JSON.stringify(thisFlow);
             // use FlowController update to save the sequence
-            router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: sequence});
+
+            //if it's a new flow, create it
+            console.log(flow.data.id);
+            if (!flow.data.id) {
+                router.post(route('flows.store'), {name: flowName, sequence: sequence});
+            } else {
+                router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: sequence});
+            }
 
 
         }
@@ -122,10 +129,11 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
 
     const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
 
-    const [flowName, setFlowName] = useState(flow.data.name);
-    const onChangeName = (event: { target: { value: SetStateAction<string>; }; }) => {
-        setFlowName(event.target.value ? event.target.value : "Untitled Flow");
-        flow.data.name = flowName;
+    const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
+    const onChangeName = (event: { target: { value: any; }; }) => {
+        let newFlowName = event.target.value ? event.target.value : "Untitled Flow";
+        setFlowName(newFlowName);
+        flow.data.name = newFlowName;
 
     }
 
@@ -168,14 +176,16 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
                         <Panel position="top-left">
-                            <EditableText value={flow.data.name} onChange={onChangeName} textClassName={"text-2xl font-bold text-white"}/>
-                            <FlowSideBar
-                                className={"relative bg-sidebar p-3 w-64 sm:block shadow-xl dark:bg-gray-800/80"}/>
-                        </Panel>
 
+                            <FlowSideBar
+                                className={"relative bg-sidebar p-3 sm:block shadow-xl dark:bg-gray-600/80"}/>
+                        </Panel>
+                        <Panel position={"top-center"}>
+                            <EditableText value={flowName} onChange={onChangeName} textClassName={"text-2xl font-bold text-white"}/>
+                        </Panel>
                         <Background variant={BackgroundVariant.Lines} color={"rgba(255,255,255,0.1)"} gap={20} size={1}/>
                         <Controls/>
-                        <MiniMap zoomable pannable/>
+                        {/*<MiniMap zoomable pannable/>*/}
                     </ReactFlow>
 
 
