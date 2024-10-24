@@ -41,6 +41,10 @@ class RunFlow
 
     public static function runNodeFunction($node): void
     {
+        if(!$node)
+        {
+            return;
+        }
         // exit if node is in loop array more than 10 times
         self::$loop[] = self::nodeID($node);
 
@@ -49,6 +53,8 @@ class RunFlow
             echo "Loop detected - exiting";
             return;
         }
+
+        //dump($node);
 
         echo "running node function: " . $node->first()['type'] . " - " . self::nodeID($node) . "<br>";
 
@@ -394,7 +400,7 @@ class RunFlow
         }
         else
         {
-            $value = $node->first()['data']['variableValue'];
+            $value = $node['data']['variableValue'] ?? null;
         }
 
         \Session::put($variableName, $value);
@@ -481,7 +487,16 @@ class RunFlow
      */
     public static function nodeID($node): mixed
     {
-        return $node->first()['id'];
+        //dump($node);
+        if($node)
+        {
+            return $node->first()['id'];
+        }
+        else
+        {
+            return null;
+        }
+
     }
 
 

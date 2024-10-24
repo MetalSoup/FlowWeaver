@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\FlowRequest;
 use App\Http\Resources\FlowResource;
+use App\Models\Field;
 use App\Models\Flow;
 use App\RunFlow;
 use Illuminate\Support\Facades\Log;
 
 class FlowController extends Controller
 {
+
+
 
 
     public function index()
@@ -46,22 +49,29 @@ class FlowController extends Controller
 
     public function show(Flow $flow, $startNode = null)
     {
+        //dd($flow->sequence);
 
-        if($sequence = json_decode($flow->sequence,true)){
+        if($sequence = $flow->sequence){
+
+            dump($sequence);
 
 
-        $edges = collect($sequence['edges']);
+        $edges = $sequence['edges'];
+        $edges = collect($edges);
+
         $nodes = collect($sequence['nodes']);
         $start_node = $nodes->where('type','input');
+            dump($start_node);
         if($startNode){
             $start_node = $nodes->where('id',$startNode);
         }
         else
         {
             //find edge that starts on start node
+            dump($start_node->first());
             $start_edge = $edges->where('source',$start_node->first()['id']);
 
-
+            dump($start_edge->first());
             $start_node = $nodes->where('id',$start_edge->first()['target']);
         }
 
@@ -86,6 +96,33 @@ class FlowController extends Controller
         if($flow->instance_id != $selectedInstanceId){
             abort(403);
         }
+
+       /* $attributes = [
+            ['id' => 2, 'name' => 'firstname', 'type' => 'text'],
+            ['id' => 3, 'name' => 'lastname', 'type' => 'text'],
+            ['id' => 4, 'name' => 'email', 'type' => 'email'],
+            ['id' => 5, 'name' => 'phone', 'type' => 'tel'],
+            ['id' => 6, 'name' => 'address', 'type' => 'text'],
+            ['id' => 7, 'name' => 'street', 'type' => 'text'],
+            ['id' => 8, 'name' => 'city', 'type' => 'text'],
+            ['id' => 9, 'name' => 'state', 'type' => 'text'],
+            ['id' => 10, 'name' => 'zip', 'type' => 'text'],
+            ['id' => 11, 'name' => 'country', 'type' => 'text'],
+            ['id' => 12, 'name' => 'dob', 'type' => 'date'],
+            ['id' => 13, 'name' => 'gender', 'type'=> 'radio']
+
+        ];
+
+
+
+        $getFields = Field::where('instance_id', $selectedInstanceId)->get();
+        foreach($getFields as $field){
+            $attributes[] = ['id' => $field->id, 'name' => $field->name, 'type' => $field->type];
+        }*/
+
+
+
+
 
         return inertia('Flows/Edit', [
             'flow' => new FlowResource($flow),

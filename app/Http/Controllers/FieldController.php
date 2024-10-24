@@ -6,6 +6,7 @@ use App\Http\Resources\FieldResource;
 use App\Models\Field;
 use App\Http\Requests\StoreFieldRequest;
 use App\Http\Requests\UpdateFieldRequest;
+use Illuminate\Support\Facades\Log;
 
 class FieldController extends Controller
 {
@@ -30,6 +31,10 @@ class FieldController extends Controller
     public function create()
     {
         //
+        $selectedInstanceId = session('selected_instance');
+        return inertia('Fields/Create', [
+            'field' => new FieldResource(new Field(['instance_id' => $selectedInstanceId])),
+        ]);
     }
 
     /**
@@ -38,6 +43,7 @@ class FieldController extends Controller
     public function store(StoreFieldRequest $request)
     {
         //
+        Log::info('store field');
         $selectedInstanceId = session('selected_instance');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -73,6 +79,20 @@ class FieldController extends Controller
     public function update(UpdateFieldRequest $request, Field $field)
     {
         //
+        //dd('test');
+        $selectedInstanceId = session('selected_instance');
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+        ]);
+        $validated['instance_id'] = $selectedInstanceId;
+        if ($field) $field->update($validated);
+        else $field = Field::create($validated);
+        return inertia('Fields/Edit', [
+            'field' => new FieldResource($field),
+        ]);
+
+
     }
 
     /**

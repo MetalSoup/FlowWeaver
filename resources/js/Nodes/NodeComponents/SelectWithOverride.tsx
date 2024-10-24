@@ -1,19 +1,22 @@
 import {Handle, Position, useStore} from "@xyflow/react";
+import Select, {SingleValue} from "react-select";
 
-export default function SelectWithOverride({isConnectable, onChange, handleID, value, nodeID, children, style, label}: {
+export default function SelectWithOverride({isConnectable,className,isSearchable, options, onChange, handleID, value, nodeID, children, style, label}: {
     isConnectable: any,
     onChange: any,
     handleID: string,
-    value: string,
+    value: SingleValue<any>,
     nodeID: string,
     children?: any
     style?: any
     label?: string
+    className?: string
+    isSearchable?: boolean
+    options?:{ value: string; label: string }[];
 
 }) {
 
     const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === handleID && edge.target === nodeID));
-
 
     return (
         <>
@@ -30,18 +33,15 @@ export default function SelectWithOverride({isConnectable, onChange, handleID, v
                     isConnectable={isConnectable}
                 />
                 <div className={`px-5`}>
-                    <select
-                        className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                        /*id={id}*/
-                        style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px' , ...style}}
-
+                    <Select
+                        className={className + " min-w-[200px]"}
                         onChange={onChange}
                         defaultValue={value}
-                        disabled={isConnected}
+                        id={"method"}
+                        isSearchable={isSearchable}
+                        options={options}
+                    />
 
-                    >
-                    {children}
-                    </select>
                 </div>
             </div>
         </>

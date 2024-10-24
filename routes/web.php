@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
             Route::resource('/pages', PageController::class);
             Route::resource('/flows', FlowController::class);
             Route::resource('/fields', FieldController::class);
+
         });
 
 

@@ -1,7 +1,8 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import {Head, router} from "@inertiajs/react";
 
-export default function Select({instances}: {
+export default function Select({auth, instances}: {
+    auth: any,
     instances: any[]
 }) {
     const onClick = (event:any) => {
@@ -16,6 +17,7 @@ export default function Select({instances}: {
     }
     return (
         <DashboardLayout
+            user={auth.user}
 
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Select Instance</h2>}
         >

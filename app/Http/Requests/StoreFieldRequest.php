@@ -11,7 +11,7 @@ class StoreFieldRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,6 +23,12 @@ class StoreFieldRequest extends FormRequest
     {
         return [
             //
+
+            'name' => ['required'],
+            'instance_id' => ['nullable'],
+            'type' => ['nullable'],
+            'options' => ['nullable'],
+
         ];
     }
 }

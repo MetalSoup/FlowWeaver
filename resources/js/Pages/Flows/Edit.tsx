@@ -1,6 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, router} from '@inertiajs/react';
-import {SingleFlowProps} from "@/types";
 import {
     addEdge,
     Background,
@@ -39,11 +38,10 @@ const nodeTypes = {
 };
 
 
-function FlowEditor({auth, flow}: SingleFlowProps) {
-
+function FlowEditor({auth, flow}:{auth: any, flow: any}) {
 
     const sequence = flow.data.sequence;
-    const initialFlow = JSON.parse(sequence) ? JSON.parse(sequence) : {};
+    const initialFlow: any = sequence ? sequence : {nodes: [], edges: []};
 
 
     // check if the flow nodes is defined otherwise set it to an empty array
@@ -89,11 +87,14 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
                 y: event.clientY,
             });
 
+
             const newNode = {
                 id: nodeID,
                 type,
                 position,
                 data: {label: `${type} node`, id: nodeID},
+
+
             };
 
             setNodes((nds) => nds.concat(newNode));
@@ -106,15 +107,13 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
         if (rfInstance) {
 
             const thisFlow = rfInstance.toObject();
-            let sequence = JSON.stringify(thisFlow);
-            // use FlowController update to save the sequence
 
-            //if it's a new flow, create it
-            console.log(flow.data.id);
+            //if it's a new flow, create it, otherwise update it
+
             if (!flow.data.id) {
-                router.post(route('flows.store'), {name: flowName, sequence: sequence});
+                router.post(route('flows.store'), {name: flowName, sequence: thisFlow});
             } else {
-                router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: sequence});
+                router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: thisFlow});
             }
 
 
@@ -197,8 +196,8 @@ function FlowEditor({auth, flow}: SingleFlowProps) {
 }
 
 
-export default ({auth, flow}: SingleFlowProps) => (
+export default ({auth, flow}: {auth:any, flow:any}) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow}/>
+        <FlowEditor auth={auth} flow={flow} />
     </ReactFlowProvider>
 )
