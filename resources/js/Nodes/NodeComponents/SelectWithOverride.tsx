@@ -1,8 +1,9 @@
-import {Handle, Position, useStore} from "@xyflow/react";
 import Select, {SingleValue} from "react-select";
+import CreatableSelect from "react-select/creatable";
+import NodeInputHandle from "@/Nodes/NodeComponents/NodeInputHandle";
 
-export default function SelectWithOverride({isConnectable,className,isSearchable, options, onChange, handleID, value, nodeID, children, style, label}: {
-    isConnectable: any,
+export default function SelectWithOverride({className,isSearchable, options, onChange, handleID, value, nodeID, children, style, label,creatable = false, id}: {
+
     onChange: any,
     handleID: string,
     value: SingleValue<any>,
@@ -13,36 +14,63 @@ export default function SelectWithOverride({isConnectable,className,isSearchable
     className?: string
     isSearchable?: boolean
     options?:{ value: string; label: string }[];
+    creatable?: boolean
+    id?: string
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === handleID && edge.target === nodeID));
+    if (options && value) {
+        let option = options.find(option => option.value === value.value);
+        if (option) {
+            value = option;
+        }
+    }
 
     return (
         <>
 
             {label && <label className="block text-sm font-bold mb-1 px-5">{label}</label>}
-            <div className={"relative mb-3"}>
+            <div className={"relative"}>
 
 
-                <Handle
+                <NodeInputHandle nodeID={nodeID} handleID={handleID}>
+
+
+                        {!creatable &&
+
+                            <Select
+                                className={"r-select w-[300px] nowheel " + className}
+                                onChange={onChange}
+                                defaultValue={value}
+                                id={id}
+                                isSearchable={isSearchable}
+                                options={options}
+                            />
+                        }
+                        {creatable &&
+                            <CreatableSelect
+                                className={"r-select w-[300px] nowheel " + className}
+                                onChange={onChange}
+                                defaultValue={value}
+                                id={id}
+                                isSearchable={isSearchable}
+                                options={options}
+
+                            />
+                        }
+
+
+
+                </NodeInputHandle>
+
+{/*                <Handle
                     type="target"
                     position={Position.Left}
                     id={handleID}
                     className={`override ${isConnected ? 'connected' : ''}`}
                     isConnectable={isConnectable}
-                />
-                <div className={`px-5`}>
-                    <Select
-                        className={className + " min-w-[200px]"}
-                        onChange={onChange}
-                        defaultValue={value}
-                        id={"method"}
-                        isSearchable={isSearchable}
-                        options={options}
-                    />
+                />*/}
 
-                </div>
             </div>
         </>
     );

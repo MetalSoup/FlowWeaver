@@ -7,7 +7,7 @@ export default function Flows({ auth, flows } :FlowProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Flows</h2>}>
+            header={<h1>Flows</h1>}>
             <Link href={route('flows.create')} className="bg-gray-100 inline-block ">Create New Flow</Link>
             <div className={"p-5"}>
                 <table className={"w-full"}>

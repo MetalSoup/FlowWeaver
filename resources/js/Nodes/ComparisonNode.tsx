@@ -3,9 +3,11 @@ import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
+import NodeSection from "@/Nodes/NodeComponents/NodeSection";
+import {SingleValue} from "react-select";
 
 
-export default function ComparisonNode({data, isConnectable}: { data: any, isConnectable: any }) {
+export default function ComparisonNode({data}: { data: any}) {
     // get current node id to include in handle ids
     const nodeID: string = data.id;
     // Set undefined values to default values
@@ -36,37 +38,49 @@ export default function ComparisonNode({data, isConnectable}: { data: any, isCon
 
     }
 
-    const onChangeOperator = (event: { target: { value: any; }; }) => {
-        data.operator = event.target.value;
-    }
+
+    const onChangeOperator = (newValue: SingleValue<{ value: any; label: any }>) => {
+        if (newValue) {
+            data.operator = newValue.value;
+        }
+    };
+
+
 
 
     return (
         <>
             <NodeBody>
-
-                <NodeHeading>
-                    Comparison
+                <NodeHeading onChange={(newHeading: string) => {
+                    data.heading = newHeading;
+                }}>
+                    {data.heading || "Comparison"}
                 </NodeHeading>
-                <div className={"flex min-w-48 pb-5"}>
+
+
+                <NodeSection className={"flex"}>
                     <div className="flex-1 text-right">
                     </div>
-                    <NodeOutputHandle isConnectable={isConnectable}
+                    <NodeOutputHandle
                                       nodeID={nodeID}
-                                      id={"boolOutput"}>
+                                      id={"boolean-value"}>
                     </NodeOutputHandle>
-                </div>
+                </NodeSection>
+                <NodeSection>
 
 
-                <InputWithOverride value={data.leftComparand} isConnectable={isConnectable}
+                <InputWithOverride value={data.leftComparand}
                                    onChange={leftComparandChange}
                                    handleID={"leftComparand-override"}
                                    nodeID={nodeID}
+                                   className={"mb-7"}
+                                   placeholder={"Value 1"}
                 ></InputWithOverride>
 
 
                 <SelectWithoutOverride
-                    value={data.operator}
+                   // value={data.operator}
+                    value={{value: data.operator || "GET", label: data.operator || "GET"}}
                     onChange={onChangeOperator}
                     options={[
                         { value: "==", label: "Equal to" },
@@ -76,13 +90,19 @@ export default function ComparisonNode({data, isConnectable}: { data: any, isCon
                         { value: "regex", label: "Matches Regular expression" }
 
                     ]}
-                 id={nodeID+`_operator`}>
+
+
+                    className={"mb-7"}
+                 >
                 </SelectWithoutOverride>
-                <InputWithOverride value={data.rightComparand} isConnectable={isConnectable}
+                <InputWithOverride value={data.rightComparand}
                                    onChange={rightComparandChange}
                                    handleID={"rightComparand-override"}
                                    nodeID={nodeID}
+                                   placeholder={"Value 2"}
+
                 ></InputWithOverride>
+                </NodeSection>
 
 
             </NodeBody>

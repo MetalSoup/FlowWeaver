@@ -10,7 +10,7 @@ export default function InstanceEditor({auth, instance}: SingleInstanceProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Instance - {name}</h2>}
+            header={<h1>Edit Instance - {name}</h1>}
         >
             <Head title={"Edit Instance - " + name}/>
             <div className={"flex flex-col md:flex-row h-full"}>

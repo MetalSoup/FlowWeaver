@@ -9,7 +9,7 @@ export default function Dashboard({ auth, pages }: PageProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Pages</h2>}
+            header={<h1>Pages</h1>}
         >
             <Head title="Pages" />
             <div className={"p-5"}>

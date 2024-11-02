@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\DefaultFields;
 use App\Models\Field;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -40,10 +42,22 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-            //lazily load the fields
-            'fields' => fn() => Field::where('instance_id', session('selected_instance'))->get(),
+// prepend default fields to 'fields' prop
+
+            'fields' => fn() => $this->getAdditionalFields(),
+            'flowID' => $request->route()->parameters['flow']['id'] ?? null,
+
 
 
         ];
+    }
+
+    protected function getAdditionalFields(): array
+    {
+
+        $default_fields = DefaultFields::getFields()->toArray();
+        $fields = array_merge($default_fields, Field::where('instance_id', session('selected_instance'))->get()->toArray());
+        Log::warning($fields);
+        return $fields;
     }
 }

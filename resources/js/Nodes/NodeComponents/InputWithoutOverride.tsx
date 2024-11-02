@@ -1,9 +1,9 @@
-import {Handle, Position, useStore} from "@xyflow/react";
 
-export default function InputWithoutOverride({onChange, id, value, placeholder, children, style, label}: {
+export default function InputWithoutOverride({onChange, id, value, placeholder, className, style, label}: {
     onChange: any,
     id: string,
     value: string,
+    className?: string,
 
     placeholder?: string
     children?: any
@@ -19,12 +19,12 @@ export default function InputWithoutOverride({onChange, id, value, placeholder, 
         <>
 
             {label && <label className="block text-sm font-bold mb-1 px-5">{label}</label>}
-            <div className={"relative mb-3"}>
+            <div className={"relative"}>
 
 
-                <div className={`px-5`}>
+                <div className={`px-7`}>
                     <input
-                        className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                        className={"appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 " + className}
                         id={id}
                         style={{minWidth: '200px' , ...style}}
                         type="text"

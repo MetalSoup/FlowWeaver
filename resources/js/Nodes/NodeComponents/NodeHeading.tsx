@@ -1,9 +1,11 @@
-export default function NodeHeading({children,className}:{children:any, className?:string}) {
+import './NodeHeading.css';
+import EditableText from "@/Nodes/NodeComponents/EditableText";
+export default function NodeHeading({children,className,onChange}:{children:any, className?:string, onChange:(value:string) => void}) {
 
     return (
-        <div className={`relative bg-gray-300 dark:bg-gray-500 dark:text-white p-2 mb-1 rounded rounded-l ` + className}>
+        <div className={`nodeHeading ` + className}>
 
-            <h2>{children}</h2>
+            <h2><EditableText value={children} onChange={onChange}/></h2>
 
         </div>
     );

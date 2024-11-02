@@ -4,26 +4,25 @@ import CheckBoxWithOverride from "@/Nodes/NodeComponents/CheckBoxWithOverride";
 import NodeBody from './NodeComponents/NodeBody';
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
+import NodeSection from "@/Nodes/NodeComponents/NodeSection";
 
 
-export default function BranchNode({data, isConnectable}: { data: any, isConnectable: any }) {
+export default function BranchNode({data}: { data: any }) {
 
     if (!data.details) {
         data.details = {fields: []};
     } else if (!Array.isArray(data.details.fields)) {
         data.details.fields = [];
     }
-    if (!data.isTrue) {
-        data.isTrue = false;
-    }
 
 
-    const [isTrue, setIsTrue] = useState(data.isTrue || false);
+
+    const [isTrue, setIsTrue] = useState(data.isTrue ?? true);
 
 
-    const onChangeBool = (event: { target: { checked: boolean; }; }) => {
-        setIsTrue(event.target.checked);
-        data.isTrue = event.target.checked;
+    const onChangeBool = (isChecked: boolean) => {
+        setIsTrue(isChecked);
+        data.isTrue = isChecked;
     }
 
 
@@ -34,32 +33,32 @@ export default function BranchNode({data, isConnectable}: { data: any, isConnect
         <>
             <NodeBody>
 
-
-
-
-
-                <NodeHeading className={"dark:bg-green-800"}>
-                    Branch
+                <NodeHeading onChange={(newHeading: string) => {
+                    data.heading = newHeading;
+                }}>
+                    {data.heading || "Branch"}
                 </NodeHeading>
-                <div className={"flex min-w-48 pb-5"}>
+
+
+                <NodeSection className={"flex"}>
                     <div className="flex-none w-14">
                         <NodeStartHandle
                             id={"previous"} nodeID={nodeID}
                             onConnect={(params: any) => console.log('handle onConnect', params)}
-                            isConnectable={isConnectable}
+
                         />
                     </div>
 
                     <div className="flex-1 text-right">
                         <NodeEndHandle
-                            isConnectable={isConnectable}
+
                             onConnect={(params: any) => console.log('handle onConnect', params)}
                             id={"trueNext"}
                             nodeID={nodeID}>
                             True
                         </NodeEndHandle>
                         <NodeEndHandle
-                            isConnectable={isConnectable}
+
                             onConnect={(params: any) => console.log('handle onConnect', params)}
                             id={"falseNext"}
                             nodeID={nodeID}>
@@ -67,10 +66,21 @@ export default function BranchNode({data, isConnectable}: { data: any, isConnect
                         </NodeEndHandle>
 
                     </div>
-                </div>
+                </NodeSection>
+                <NodeSection>
 
-                <CheckBoxWithOverride isConnectable={isConnectable} onChange={onChangeBool} id={"boolean"}
-                                      isTrue={isTrue} nodeID={nodeID}>Condition</CheckBoxWithOverride>
+                <CheckBoxWithOverride
+                    onChange={onChangeBool}
+                    onConnect={(params: any) => console.log('handle onConnect', params)}
+                    id={"boolean"}
+                    handleID={"boolean-override"}
+                    isTrue={isTrue}
+                    nodeID={nodeID}
+                    label={"Condition"}
+                >
+
+                </CheckBoxWithOverride>
+                </NodeSection>
 
 
             </NodeBody>

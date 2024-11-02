@@ -6,6 +6,7 @@ use App\Models\Instance;
 use App\Http\Requests\StoreInstanceRequest;
 use App\Http\Requests\UpdateInstanceRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class InstanceController extends Controller
@@ -29,7 +30,8 @@ class InstanceController extends Controller
         //dd($request);
         $request->validate(['instance_id' => 'required|exists:instances,id']);
         $request->session()->put('selected_instance', $request->instance_id);
-        return redirect()->route('dashboard');
+        return Redirect::intended('/dashboard');
+        //return redirect()->route('dashboard');
     }
 
     /**

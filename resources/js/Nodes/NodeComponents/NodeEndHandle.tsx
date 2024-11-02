@@ -1,9 +1,10 @@
 import {Handle, Position, useStore} from "@xyflow/react";
-import './NodeEndHandle.css';
+import {PlayIcon as PlayIconSolid} from "@heroicons/react/24/solid";
+import {PlayIcon} from "@heroicons/react/24/outline";
 
 
-export default function NodeEndHandle ({ isConnectable, onConnect, id, children, nodeID }: {
-    isConnectable: any,
+export default function NodeEndHandle ({ onConnect, id, children, nodeID }: {
+
     onConnect: any,
     id: string,
     children?: string,
@@ -11,10 +12,30 @@ export default function NodeEndHandle ({ isConnectable, onConnect, id, children,
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.sourceHandle === `${nodeID}-${id}`));
+    const isConnected = useStore(store => store.edges.some(edge => edge.sourceHandle === id && edge.source === nodeID));
     return (
         <>
             <div className={"relative node_end_handle"}>
+
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    className={`testing ${isConnected ? 'connected' : ''} z-10`}
+                    onConnect={onConnect}
+                    id={id}
+
+
+                />
+                <div className={"handle_icon absolute right-0 z-0"}>
+                    {isConnected ?
+                        <PlayIconSolid className={"h-6 w-6"}/>
+                        :
+                        <PlayIcon className={"h-6 w-6"}/>
+                    }
+                </div>
+
+
+{/*
                 <Handle
                     type="source"
                     position={Position.Right}
@@ -23,8 +44,16 @@ export default function NodeEndHandle ({ isConnectable, onConnect, id, children,
                     onConnect={onConnect}
                     isConnectable={isConnectable}
                     id={nodeID + "-" + id}
-                />
-                <div className={"pr-6"}>
+                    >
+                    {isConnected ?
+                        <PlayIconSolid className={"h-5 w-5"} />
+
+                        :
+                        <PlayIcon className={"h-5 w-5"} />
+
+                    }
+                </Handle>*/}
+                <div className={"pr-7"}>
                     {children ? children : "\u00A0"}
                 </div>
             </div>

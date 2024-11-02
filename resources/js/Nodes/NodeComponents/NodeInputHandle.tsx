@@ -3,30 +3,29 @@ import {PlayCircleIcon as PlayCircleIconSolid} from "@heroicons/react/24/solid";
 import {PlayCircleIcon} from "@heroicons/react/24/outline";
 
 
-export default function NodeOutputHandle ({ onConnect, id, children, nodeID }: {
-
+export default function NodeInputHandle ({ onConnect, children, nodeID, handleID }: {
     onConnect?: any,
-    id: string,
-    children?: string,
+    handleID: string,
+    children?: any,
     nodeID: string
 
 }) {
 
-    const isConnected = useStore(store => store.edges.some(edge => edge.sourceHandle === id && edge.source === nodeID));
+    const isConnected = useStore(store => store.edges.some(edge => edge.targetHandle === handleID && edge.target === nodeID));
     return (
         <>
-            <div className={"relative node_output_handle"}>
+            <div className={"relative node_input_handle "}>
 
                 <Handle
-                    type="source"
-                    position={Position.Right}
+                    type="target"
+                    position={Position.Left}
                     className={`testing ${isConnected ? 'connected' : ''} z-10`}
                     onConnect={onConnect}
-                    id={id}
+                    id={handleID}
 
 
                 />
-                <div className={"handle_icon absolute right-0 z-0"}>
+                <div className={"handle_icon absolute left-0 z-0"}>
                     {isConnected ?
 
                         <PlayCircleIconSolid className={"h-6 w-6"}/>
@@ -35,7 +34,7 @@ export default function NodeOutputHandle ({ onConnect, id, children, nodeID }: {
                     }
                 </div>
 
-                <div className={"pr-7"}>
+                <div className={"px-7"}>
                     {children ? children : "\u00A0"}
                 </div>
             </div>

@@ -1,17 +1,25 @@
 .react-flow__node .nodeBody
 {
 
-    border: 1px solid white;
+    border: 1px solid transparent;
     border-radius: 0.5rem;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
     font-size: 1rem;
-    background:rgba(255,255,255,0.1);
+    background: rgba(18, 103, 219, 0.2);
     backdrop-filter: blur(2px);
     color:white;
+    padding: var(--node-padding) var(--node-padding) 0 var(--node-padding);
 }
 
 .react-flow__node.selected .nodeBody
 {
     border: 1px solid white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+    background: rgba(18, 103, 219, 0.4);
+}
+
+
+.webhookNode
+{
+    min-width:690px;
 }

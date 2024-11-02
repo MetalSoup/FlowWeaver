@@ -1,16 +1,31 @@
 import {Handle, Position, useStore} from "@xyflow/react";
 import EditableText from "@/Nodes/NodeComponents/EditableText";
+import NodeInputHandle from "@/Nodes/NodeComponents/NodeInputHandle";
 
-export default function InputWithOverride({isConnectable,nodeID, onChange, handleID, value, placeholder, children, style, label}: {
-    isConnectable: any,
+export default function InputWithOverride({
+
+                                              nodeID,
+                                              onChange,
+                                              handleID,
+                                              value,
+                                              placeholder,
+                                              onConnect,
+                                              style,
+                                              label,
+                                              className = ""
+
+                                          }: {
+
     nodeID: string,
     onChange: any,
     handleID: string,
     value: string,
     placeholder?: string,
     children?: any,
+    onConnect?: any,
     style?: any,
     label?: string,
+    className?: string
 
 
 }) {
@@ -21,39 +36,26 @@ export default function InputWithOverride({isConnectable,nodeID, onChange, handl
     return (
         <>
 
-            {label && <label className="block text-sm font-bold mb-1 px-5">{label}</label>}
-            <div className={"relative mb-3"}>
+            {label && <label className="px-7">{label}</label>}
+            <div className={"relative " +className}>
+
+                <NodeInputHandle nodeID={nodeID} handleID={handleID} onConnect={onConnect}>
 
 
-                <Handle
-                    type="target"
-                    position={Position.Left}
-                    id={handleID}
-                    className={`override ${isConnected ? 'connected' : ''}`}
-                    isConnectable={isConnectable}
-                />
-                <div className={`px-5`}>
-                    <EditableText
-                        value={value}
-                        onChange={onChange}
-                        style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px'}}
-                        className="nodrag appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                        placeholder={placeholder}
-                        textClassName={"appearance-none block w-full bg-gray-800 text-gray-200 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}
-                    />
-                    {/*<input
 
-                        id={id}
-                        style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px' , ...style}}
-                        type="text"
-                        placeholder={placeholder}
-                        onChange={onChange}
-                        defaultValue={value}
-                        disabled={isConnected}
+                        <input
+                            style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px', ...style}}
+                            type="text"
+                            placeholder={placeholder}
+                            onChange={onChange}
+                            defaultValue={value}
+                            disabled={isConnected}
+                            className={"appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}
 
 
-                    />*/}
-                </div>
+                        />
+
+                </NodeInputHandle>
             </div>
         </>
     );

@@ -1,47 +1,59 @@
-import {Handle, Position, useStore} from "@xyflow/react";
-import EditableText from "@/Nodes/NodeComponents/EditableText";
-
 import Select, {SingleValue} from 'react-select'
+import CreatableSelect from "react-select/creatable";
 
-export default function SelectWithoutOverride({onChange, id,isSearchable = true, value, style, label,options, className}: {
+export default function SelectWithoutOverride({onChange, isSearchable = true, value, style, label,options, className,creatable = false}: {
     onChange: any,
-    id: string,
     value: SingleValue<any>,
     isSearchable?: boolean,
-    children?: any
     style?: any
     label?: string
     options?:{ value: string; label: string }[];
     className?: string
+    creatable?: boolean
 
 }) {
 
+
+
+    // if the value matches any of the options, set the value to the option
+    if (options && value) {
+        let option = options.find(option => option.value === value.value);
+        if (option) {
+            value = option;
+        }
+    }
 
 
 
     return (
         <>
 
-            {label && <label className="block text-sm font-bold mb-1 px-5">{label}</label>}
-            <div className={"relative mb-3"}>
-                <div className={`px-5`}>
+            {label && <label className="px-7">{label}</label>}
+            <div className={"relative nodrag text-gray-700"}>
+                <div className={`px-7`}>
+
+                    {!creatable &&
 
                     <Select
-                        //onChange={(e) => console.log(e)}
-                        className={className}
-                        //onChange doesn't work for this component
-
-
+                        className={"r-select nowheel "+className}
                         onChange={onChange}
                         defaultValue={value}
-                        /*value={}*/
-                        //defaultInputValue={data.method || "GET"}
                         id={"method"}
                         isSearchable={isSearchable}
-
-
                         options={options}
                     />
+                        }
+                    {creatable &&
+                        <CreatableSelect
+                            className={"r-select nowheel "+className}
+                            onChange={onChange}
+                            defaultValue={value}
+                            id={"method"}
+                            isSearchable={isSearchable}
+                            options={options}
+
+                            />
+                    }
 
 
 {/*                    <select

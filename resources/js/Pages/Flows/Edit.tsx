@@ -12,7 +12,9 @@ import {
     useEdgesState,
     useNodesState,
     useReactFlow,
-    OnInit
+    OnInit,
+    Connection,
+    IsValidConnection
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {useCallback, useState} from "react";
@@ -24,6 +26,8 @@ import SetVariableNode from "@/Nodes/SetVariableNode";
 import GetVariableNode from "@/Nodes/GetVariableNode";
 import RawHtmlNode from "@/Nodes/RawHtmlNode";
 import EditableText from "@/Nodes/NodeComponents/EditableText";
+import FormNode from "@/Nodes/FormNode";
+import EntryNode from "@/Nodes/EntryNode";
 
 
 const nodeTypes = {
@@ -32,16 +36,19 @@ const nodeTypes = {
     Branch: BranchNode,
     SetVariable: SetVariableNode,
     GetVariable: GetVariableNode,
-    RawHtml: RawHtmlNode
+    RawHtml: RawHtmlNode,
+    Form: FormNode,
+    Entry: EntryNode
 
 
 };
 
 
-function FlowEditor({auth, flow}:{auth: any, flow: any}) {
+function FlowEditor({auth, flow}: { auth: any, flow: any }) {
 
     const sequence = flow.data.sequence;
-    const initialFlow: any = sequence ? sequence : {nodes: [], edges: []};
+    //load the Entry node if the flow is empty
+    const initialFlow: any = sequence ? sequence : {nodes: [{"id": "entry_1", "type": "Entry", "data": {"id": "entry", "label": "Starting point node"}, "position": {"x": 250, "y": 100}, "selected": false, "deletable": false}], edges: []};
 
 
     // check if the flow nodes is defined otherwise set it to an empty array
@@ -95,6 +102,7 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
                 data: {label: `${type} node`, id: nodeID},
 
 
+
             };
 
             setNodes((nds) => nds.concat(newNode));
@@ -129,10 +137,26 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
     const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
 
     const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
-    const onChangeName = (event: { target: { value: any; }; }) => {
-        let newFlowName = event.target.value ? event.target.value : "Untitled Flow";
-        setFlowName(newFlowName);
-        flow.data.name = newFlowName;
+    const onChangeName = (newName:any) => {
+        //let newFlowName = event.target.value ? event.target.value : "Untitled Flow";
+        setFlowName(newName);
+        flow.data.name = newName;
+
+    }
+
+    // @ts-ignore
+    const isValidConnection: IsValidConnection = (connection: Connection) => {
+        //console.log(connection)
+        if (connection.targetHandle?.includes('previous'))
+        {
+            return connection.sourceHandle?.toLowerCase().includes('next') || false;
+        }
+        else if (connection.targetHandle?.includes('override'))
+        {
+            return connection.sourceHandle?.includes('value') || false;
+        }
+
+        return false;
 
     }
 
@@ -144,11 +168,12 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
             <Head title={"Edit Flow - " + flow.data.name}/>
             <div className={"flex flex-col md:flex-row h-full"}>
 
-                <div className={"w-full h-full bg-gray-100 dark:bg-gray-800"}>
+                <div className={"w-full h-full "} style={{'background':'#141a2f'}}>
 
 
                     <ReactFlow
                         nodes={nodes}
+                        isValidConnection={isValidConnection}
                         edges={edges}
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
@@ -161,10 +186,7 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
                         minZoom={0.1}
                         defaultViewport={defaultViewport}
                         snapToGrid={true}
-                        snapGrid={[20,20]}
-
-
-
+                        snapGrid={[20, 20]}
 
 
                     >
@@ -180,9 +202,11 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
                                 className={"relative bg-sidebar p-3 sm:block shadow-xl dark:bg-gray-600/80"}/>
                         </Panel>
                         <Panel position={"top-center"}>
-                            <EditableText value={flowName} onChange={onChangeName} textClassName={"text-2xl font-bold text-white"}/>
+                            <EditableText value={flowName} onChange={onChangeName}
+                                          textClassName={"text-2xl font-bold text-white"}/>
                         </Panel>
-                        <Background variant={BackgroundVariant.Lines} color={"rgba(255,255,255,0.1)"} gap={20} size={1}/>
+                        <Background variant={BackgroundVariant.Lines} color={"rgba(0,0,0,0.3)"} gap={20}
+                                    size={1}/>
                         <Controls/>
                         {/*<MiniMap zoomable pannable/>*/}
                     </ReactFlow>
@@ -196,8 +220,8 @@ function FlowEditor({auth, flow}:{auth: any, flow: any}) {
 }
 
 
-export default ({auth, flow}: {auth:any, flow:any}) => (
+export default ({auth, flow}: { auth: any, flow: any }) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow} />
+        <FlowEditor auth={auth} flow={flow}/>
     </ReactFlowProvider>
 )

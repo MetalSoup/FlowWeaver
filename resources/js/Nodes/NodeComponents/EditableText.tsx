@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import {PencilIcon} from "@heroicons/react/24/outline";
 
 interface EditableTextProps {
     id?: string;
     value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+    onChange: (value: string) => void;
     style?: React.CSSProperties;
     disabled?: boolean;
     className?: string;
@@ -31,7 +32,7 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setCurrentText(e.target.value);
-        onChange(e);
+        onChange(e.target.value);
     };
 
     const getLabelForValue = (value: string) => {
@@ -48,10 +49,15 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                         defaultValue={currentText}
                         onChange={handleChange}
                         onBlur={handleBlur}
+                        onKeyUp={(e) => {
+                            if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                            }
+                        }}
                         autoFocus
                         style={{ ...style }}
                         disabled={disabled}
-                        className={className}
+                        className={"nodrag text-gray-900 " +className}
                         placeholder={placeholder}
                         id={id}
                     />
@@ -63,7 +69,7 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                         autoFocus
                         style={{ ...style }}
                         disabled={disabled}
-                        className={className}
+                        className={"nodrag nowheel text-gray-900 " +className}
                         id={id}
                     >
                         {options.map(option => (
@@ -78,6 +84,7 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                     {type === 'select' ? getLabelForValue(currentText) : currentText || placeholder || "Enter Value"}
                 </span>
             )}
+
         </div>
     );
 };

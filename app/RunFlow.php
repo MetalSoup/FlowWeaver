@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Models\Field;
 use App\Models\Page;
 use Illuminate\Support\Collection;
 
@@ -43,6 +44,7 @@ class RunFlow
     {
         if(!$node)
         {
+            dump("no node specified");
             return;
         }
         // exit if node is in loop array more than 10 times
@@ -101,6 +103,42 @@ class RunFlow
         }
     }
 
+
+    static function doForm($node): void
+    {
+        //dd($node);
+        $fields = $node->first()['data']['formFields'];
+        $form = [];
+        $show_fields = [];
+        foreach ($fields as $field)
+        {
+            $field_id = $field['value'];
+            if(!$thisField = DefaultFields::getFields()->where('id', $field_id)->first())
+            {
+                $thisField = Field::where('id', $field_id)->first()->toArray();
+                //dd('what');
+            }
+/*            else
+            {
+                //$thisField = $thisField;
+            }*/
+            $show_fields[] = $thisField;
+
+
+
+        }
+
+
+        dd(json_encode($show_fields));
+
+        self::$nodeOutputs[$node->first()['id']] = $form;
+
+        $next_edge = self::getNextEdge($node);
+        if ($next_node = self::getNextNode($next_edge))
+        {
+            self::runNodeFunction($next_node);
+        }
+    }
 
 
     /**
@@ -323,11 +361,11 @@ class RunFlow
 
         if ($branch_condition)
         {
-            $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-trueNext');
+            $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', 'trueNext');
         }
         else
         {
-            $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-falseNext');
+            $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', 'falseNext');
         }
 
         $next_node = self::getNextNode($next_edge);
@@ -454,8 +492,8 @@ class RunFlow
         }
 
 
-        dump($leftComparand);
-        dump($rightComparand);
+        /*dump($leftComparand);
+        dump($rightComparand);*/
 
 
 

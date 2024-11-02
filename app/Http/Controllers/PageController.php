@@ -31,6 +31,12 @@ class PageController extends Controller
 
     public function show(Page $page)
     {
+        //dd($page);
+        $page_content = $page->content;
+        // replace all instances of the string '[ki-path:1]' with 'ki-path-1'
+        $page_content = str_replace('[ki-path:1]', 'ki-path-1', $page_content);
+        dd($page_content);
+
         return inertia('Pages/Show', [
             'page' => new PageResource($page)
         ]);
@@ -47,13 +53,25 @@ class PageController extends Controller
         ]);
     }
 
-    public function update(PageRequest $request, Page $page)
+/*    public function update(PageRequest $request, Page $page)
     {
         $selectedInstanceId = session('selected_instance');
         if($page->instance_id != $selectedInstanceId){
             abort(403);
         }
         $page->update($request->validated());
+
+        return new PageResource($page);
+    }*/
+    public function update(PageRequest $request, Page $page)
+    {
+        $selectedInstanceId = session('selected_instance');
+        if ($page->instance_id != $selectedInstanceId) {
+            abort(403);
+        }
+        $data = $request->validated();
+        $data['content'] = $request->input('content'); // Save the content
+        $page->update($data);
 
         return new PageResource($page);
     }

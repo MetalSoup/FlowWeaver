@@ -13,7 +13,7 @@ export default function Fields({ auth, fields }:{auth:any,fields:any}) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Fields</h2>}>
+            header={<h1>Fields</h1>}>
             <Link href={route('fields.create')} className="bg-gray-100 inline-block ">Create New Field</Link>
             <div className={"p-5"}>
 

@@ -47,6 +47,7 @@ class FieldController extends Controller
         $selectedInstanceId = session('selected_instance');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'label' => 'required|string|max:255',
             'type' => 'required|string|max:255',
         ]);
         $validated['instance_id'] = $selectedInstanceId;
@@ -83,6 +84,7 @@ class FieldController extends Controller
         $selectedInstanceId = session('selected_instance');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'label' => 'required|string|max:255',
             'type' => 'required|string|max:255',
         ]);
         $validated['instance_id'] = $selectedInstanceId;

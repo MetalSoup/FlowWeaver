@@ -1,24 +1,60 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head } from '@inertiajs/react';
+import {Head, Link} from '@inertiajs/react';
 import { PageProps } from '@/types';
 import CustomEditor from "@/Pages/Pages/Editor";
+import { ReactElement, JSXElementConstructor, ReactNode, Key, ReactPortal } from 'react';
+import { RouteParams } from '../../../../vendor/tightenco/ziggy/src/js';
 
-export default function Dashboard({ auth }: PageProps) {
+export default function Dashboard({auth, instances}: {
+    auth: any,
+    instances: any
+}) {
+    console.log(instances);
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Instances</h2>}
+            header={<h1>Instances</h1>}
         >
-            <Head title="Instances" />
+            <Head title="Instances"/>
 
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">Instances</div>
-                    </div>
-                </div>
+            <div className={"p-5"}>
+                <table className={"w-full"}>
+                    <thead>
+                    <tr>
+                        <th className={"text-left"}>
+                            ID
+                        </th>
+                        <th className={"text-left"}>
+                            Name
+                        </th>
+                        <th className={"text-left"}>
+                            Slug
+                        </th>
+                        <th className={"text-left"}>
+                            Created At
+                        </th>
+                        <th className={"text-left"}>
+                            Updated At
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {instances.map((instance: any) => (
+                        <tr key={instance.id}>
+                            <td>{instance.id}</td>
+                            <td><Link href={route("instances.edit", instance.id)}>{instance.name}</Link></td>
+                            <td>{instance.description}</td>
+                            <td>{instance.created_at}</td>
+                            <td>{instance.updated_at}</td>
+                        </tr>
+                    ))}
+
+                    </tbody>
+
+                </table>
             </div>
+
         </DashboardLayout>
     );
 }

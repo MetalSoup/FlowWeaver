@@ -17,8 +17,8 @@ export default function DashboardLayout({ user, header, children }: PropsWithChi
                                    showingNavigationDropdown={showingNavigationDropdown}/>
                 <div className="w-full flex flex-col h-screen overflow-y-hidden">
                     {header && (
-                        <header className="bg-white shadow">
-                            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">{header}</div>
+                        <header className="bg-white shadow dark:bg-gray-800 dark:text-white">
+                            <div className="py-4 px-4 sm:px-6 lg:px-8">{header}</div>
                         </header>
                     )}
 

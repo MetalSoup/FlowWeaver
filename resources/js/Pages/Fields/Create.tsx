@@ -4,12 +4,43 @@ import TextInput from "@/Components/TextInput";
 import {Head, Link, useForm} from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import SelectInput from "@/Components/SelectInput";
+import React from "react";
 
 export default function Create({auth}: { auth: any; }) {
     const {data, setData, post, errors, reset} = useForm({
         name: "",
-        type: "text"
+        type: "text",
+        label: ""
+
     });
+
+
+    const generateSlug = (text: string) => {
+        return text
+            .toString()
+            .toLowerCase()
+            .replace(/\s+/g, '_') // Replace spaces with -
+            .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+            .replace(/\-\-+/g, '-') // Replace multiple - with single -
+            ; // Trim - from end of text
+    };
+
+    const onChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+
+        setData("name", generateSlug(value));
+    };
+
+    const onChangeLabel = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setData("label", value);
+
+        // Generate name from label This doesn't work. It's either field name or label
+        //setData("name", generateSlug(value));
+
+
+
+    };
 
     const onSubmit = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
@@ -22,9 +53,9 @@ export default function Create({auth}: { auth: any; }) {
             user={auth.user}
             header={
                 <div className="flex justify-between items-center">
-                    <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    <h1>
                         Create new Field
-                    </h2>
+                    </h1>
                 </div>
             }
         >
@@ -35,6 +66,21 @@ export default function Create({auth}: { auth: any; }) {
                 onSubmit={onSubmit}
                 className={"p-5"}
             >
+                <div className="mt-4">
+                    <InputLabel htmlFor="field_name" value="Label"/>
+
+                    <TextInput
+                        id="label"
+                        type="text"
+                        name="label"
+                        value={data.label}
+                        className="mt-1 block w-full"
+                        isFocused={true}
+                        onChange={onChangeLabel}
+                    />
+
+                    <InputError message={errors.name} className="mt-2"/>
+                </div>
 
                 <div className="mt-4">
                     <InputLabel htmlFor="field_name" value="Field Name"/>
@@ -46,7 +92,7 @@ export default function Create({auth}: { auth: any; }) {
                         value={data.name}
                         className="mt-1 block w-full"
                         isFocused={true}
-                        onChange={(e) => setData("name", e.target.value)}
+                        onChange={onChangeName}
                     />
 
                     <InputError message={errors.name} className="mt-2"/>
@@ -64,7 +110,6 @@ export default function Create({auth}: { auth: any; }) {
                         <option value="radio">Radio</option>
                         <option value="select">Select</option>
                         <option value="textarea">Textarea</option>
-
                         <option value="hidden">Hidden</option>
                         <option value="number">Number</option>
                         <option value="color">Color</option>

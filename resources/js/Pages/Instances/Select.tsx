@@ -19,7 +19,7 @@ export default function Select({auth, instances}: {
         <DashboardLayout
             user={auth.user}
 
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Select Instance</h2>}
+            header={<h1>Select Instance</h1>}
         >
             <Head title="Select Instance" />
 

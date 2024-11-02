@@ -7,9 +7,10 @@ import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
 import InputWithoutOverride from "@/Nodes/NodeComponents/InputWithoutOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
+import NodeSection from "@/Nodes/NodeComponents/NodeSection";
 
 
-export default function GetVariableNode({data, isConnectable}: { data: any, isConnectable: any }) {
+export default function GetVariableNode({data}: { data: any}) {
     // get current node id to include in handle ids
     const nodeID: string = data.id;
 
@@ -22,22 +23,28 @@ export default function GetVariableNode({data, isConnectable}: { data: any, isCo
     return (
         <>
             <NodeBody>
-
-                <NodeHeading>
-                    Get Variable
+                <NodeHeading onChange={(newHeading: string) => {
+                    data.heading = newHeading;
+                }}>
+                    {data.heading || "Get Variable"}
                 </NodeHeading>
-                <div className={"flex min-w-48 pb-5"}>
+
+                <NodeSection>
+
                     <div className="flex-1 text-right">
                     </div>
-                    <NodeOutputHandle isConnectable={isConnectable}
+                    <NodeOutputHandle
                                       nodeID={nodeID}
-                                      id={"variableValue"}>
+                                      id={"value"}>
                     </NodeOutputHandle>
-                </div>
+
+                </NodeSection>
+                <NodeSection>
 
                 <InputWithoutOverride value={data.variableName}
                                       onChange={onVariableNameChange}
-                                      id={nodeID+"_variableName"}></InputWithoutOverride>
+                                      id={nodeID+"_variableName"}/>
+                </NodeSection>
 
 
             </NodeBody>

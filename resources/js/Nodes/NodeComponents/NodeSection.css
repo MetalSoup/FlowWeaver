@@ -1,0 +1,9 @@
+.nodeSection
+{
+    padding-bottom:2rem;
+    margin:0 calc(var(--node-padding) * -1) 0 calc(var(--node-padding) * -1);
+
+
+}
+
+

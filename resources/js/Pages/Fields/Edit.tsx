@@ -24,7 +24,7 @@ export default function EditField({auth, field}: {auth:any,field:any})
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Field</h2>}>
+            header={<h1>Edit Field</h1>}>
             <div className={"p-5"}>
                 <form onSubmit={onSubmit} className={"w-full"}>
                     <input type="hidden" name="_method" value="PUT" />

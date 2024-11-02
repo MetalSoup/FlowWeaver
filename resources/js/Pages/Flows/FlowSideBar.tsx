@@ -14,6 +14,12 @@ export default ({className = ''}) => {
 
     return (
         <aside className={className}>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'Entry'}>
+                Start Node
+            </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'Form'}>
+                Form
+            </SideBarNodeButton>
             <SideBarNodeButton onDragStart={onDragStart} nodeType={'input'} >
                 Input Node
             </SideBarNodeButton>
