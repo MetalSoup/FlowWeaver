@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/instances/select', [InstanceController::class, 'select'])->name('instances.select');
         Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection');
         Route::resource('/instances', InstanceController::class);
+
         Route::middleware(CheckInstanceSelectedMiddleware::class)->group(function () {
 
             Route::resource('/pages', PageController::class);

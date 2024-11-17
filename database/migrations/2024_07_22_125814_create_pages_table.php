@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('slug')->nullable();
-            $table->string('content')->nullable();
+            $table->json('content')->nullable();
             $table->foreignId('instance_id');
             $table->foreignId('user_id');
             $table->softDeletes();

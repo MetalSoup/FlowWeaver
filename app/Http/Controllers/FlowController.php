@@ -50,8 +50,11 @@ class FlowController extends Controller
     public function show(Flow $flow, $startNode = null)
     {
         //dd($flow->sequence);
+        return inertia('Flows/Show', [
+            'flow' => new FlowResource($flow),
+        ]);
 
-        if($sequence = $flow->sequence){
+       /* if($sequence = $flow->sequence){
 
             //dump($sequence);
 
@@ -82,7 +85,7 @@ class FlowController extends Controller
         }
         else {
             Log::info('No sequence found for flow: '.$flow->id);
-        }
+        }*/
 
 
 

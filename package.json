@@ -36,6 +36,7 @@
         "@xyflow/react": "^12.0.3",
         "grapesjs": "^0.21.12",
         "interweave": "^13.1.0",
+        "react-contenteditable": "^3.3.7",
         "react-select": "^5.8.1",
         "uuid": "^10.0.0"
     }

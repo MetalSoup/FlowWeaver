@@ -9,10 +9,8 @@ class PageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required'],
+            'name' => ['nullable'],
             'content' => ['nullable'],
-            'instance_id' => ['required', 'exists:instances'],
-            'user_id' => ['required', 'exists:users'],
         ];
     }
 

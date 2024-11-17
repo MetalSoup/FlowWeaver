@@ -33,6 +33,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -46,6 +47,7 @@ class HandleInertiaRequests extends Middleware
 
             'fields' => fn() => $this->getAdditionalFields(),
             'flowID' => $request->route()->parameters['flow']['id'] ?? null,
+            //'flows' => $request->user()->flows,
 
 
 
@@ -57,7 +59,6 @@ class HandleInertiaRequests extends Middleware
 
         $default_fields = DefaultFields::getFields()->toArray();
         $fields = array_merge($default_fields, Field::where('instance_id', session('selected_instance'))->get()->toArray());
-        Log::warning($fields);
         return $fields;
     }
 }

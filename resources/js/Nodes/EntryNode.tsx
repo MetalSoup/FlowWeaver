@@ -43,9 +43,10 @@ export default function EntryNode({data}: { data: any}) {
 
                 </NodeSection>
                 <NodeSection>
-                    <NodeSectionContent>
-                    <label className={"block"}>Entry URL: </label>{flowID &&  <input className={"text-gray-900 nodrag"} value={route('flows.show', {flow: flowID})}></input>}
+                    {flowID && <NodeSectionContent>
+                    <label className={"block"}>Entry URL: </label><input className={"text-gray-900 nodrag"} value={route('flows.show', {flow: flowID})}></input>
                     </NodeSectionContent>
+                    }
                 </NodeSection>
 
 
