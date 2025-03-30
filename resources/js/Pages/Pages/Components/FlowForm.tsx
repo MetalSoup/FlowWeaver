@@ -42,10 +42,12 @@ export const FlowForm = ({
         >
             <h1>Flow Form</h1>
             {
-                Object.keys(forms[flow_id]).map((form: any, i) => {
+                Object.keys(forms[flow_id]).map((form: any, form_key: number) => {
 
                     return (
-                        <div className={"bg-amber-200 mb-5"} key={i}>
+                        <div className={"bg-amber-200 mb-5"} key={form_key}>
+                        <form style={{background: "green", minHeight: "100px", minWidth: "200px"}}>
+
                             {
                                 forms[flow_id][form].data.formFields.map((form_field: any, field_key:number) => {
                                     {
@@ -62,17 +64,16 @@ export const FlowForm = ({
                                 })
                             }
 
-
+                        </form>
                         </div>
+
                     )
 
 
                 })
             }
 
-            <form style={{background: "green", minHeight: "100px", minWidth: "200px"}}>
 
-            </form>
 
 
         </div>
@@ -87,6 +88,9 @@ const FlowFormSettings = () => {
 
     return (
         <>
+
+
+            {}
 
             <input
                 type={"range"}

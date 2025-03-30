@@ -4,14 +4,14 @@ namespace App\Models;
 
 
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasRoles;
     use HasFactory, Notifiable;
@@ -37,6 +37,11 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_user', 'user_id', 'organization_id');
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -50,8 +55,5 @@ class User extends Authenticatable
         ];
     }
 
-    protected function instances(): BelongsToMany
-    {
-        return $this->belongsToMany(Instance::class);
-    }
+
 }

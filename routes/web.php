@@ -3,12 +3,21 @@
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\FlowController;
 use App\Http\Controllers\InstanceController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\CheckInstanceSelectedMiddleware;
+use App\Http\Middleware\SelectOrganizationMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index']);
+
+
+
+
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -47,11 +56,17 @@ Route::middleware('auth')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+        Route::get('/organizations/select', [OrganizationController::class, 'select'])->name('organizations.select');
+        Route::get('/organizations/edit', [OrganizationController::class, 'edit'])->name('organizations.edit');
+        Route::post('/organizations/select', [OrganizationController::class, 'storeSelection'])->name('organizations.storeSelection');
+        Route::resource('/organizations', OrganizationController::class);
+
+
         Route::get('/instances/select', [InstanceController::class, 'select'])->name('instances.select');
         Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection');
         Route::resource('/instances', InstanceController::class);
 
-        Route::middleware(CheckInstanceSelectedMiddleware::class)->group(function () {
+        Route::middleware([SelectOrganizationMiddleware::class,CheckInstanceSelectedMiddleware::class])->group(function () {
 
             Route::resource('/pages', PageController::class);
             Route::resource('/flows', FlowController::class);
