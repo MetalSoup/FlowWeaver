@@ -9,23 +9,20 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\CheckInstanceSelectedMiddleware;
 use App\Http\Middleware\SelectOrganizationMiddleware;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
-Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index']);
-
-
-
+Route::get('logs', [LogViewerController::class, 'index']);
 
 
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+
+
+
+Route::get('/',function () {
+    return redirect()->route('login');
 });
 
 
@@ -37,7 +34,7 @@ Route::any('/test_post', function(){
         return response()->json(request()->all());
 
 
-})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->name('test_post');
+})->withoutMiddleware([VerifyCsrfToken::class])->name('test_post');
 
 
 
