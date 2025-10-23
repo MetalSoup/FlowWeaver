@@ -1,19 +1,26 @@
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
-import {Head, Link, useForm} from "@inertiajs/react";
+import {Head, Link, router, useForm} from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import SelectInput from "@/Components/SelectInput";
-import React from "react";
+import React, {useEffect} from "react";
 
-export default function Create({auth}: { auth: any; }) {
-    const {data, setData, post, errors, reset} = useForm({
+export default function Create({auth, selected_instance}: { auth: any; selected_instance?: number | null }) {
+    const {data, setData, post, errors} = useForm({
         name: "",
         type: "text",
-        label: ""
+        label: "",
+        instance_id: selected_instance ?? null,
 
     });
 
+    // require instance selection
+    useEffect(() => {
+        if (!selected_instance) {
+            router.get(route('instances.select'));
+        }
+    }, [selected_instance]);
 
     const generateSlug = (text: string) => {
         return text
@@ -21,7 +28,7 @@ export default function Create({auth}: { auth: any; }) {
             .toLowerCase()
             .replace(/\s+/g, '_') // Replace spaces with -
             .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-            .replace(/\-\-+/g, '-') // Replace multiple - with single -
+            .replace(/--+/g, '-') // Replace multiple - with single -
             ; // Trim - from end of text
     };
 
@@ -45,6 +52,8 @@ export default function Create({auth}: { auth: any; }) {
     const onSubmit = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
 
+        // ensure instance_id is present
+        setData('instance_id', selected_instance ?? null);
         post(route("fields.store"));
     };
 

@@ -63,7 +63,13 @@ class InstanceController extends Controller
     public function store(StoreInstanceRequest $request)
     {
         //
-        $instance = Instance::create($request->validated());
+        $data = $request->validated();
+        // Ensure status has a value (DB migration requires it). Default to 'active'.
+        $data['status'] = $request->input('status', $data['status'] ?? 'active');
+
+        $instance = Instance::create($data);
+        // Automatically select the newly created instance for the current session
+        $request->session()->put('selected_instance', $instance->id);
         return redirect()->route('instances.edit', $instance->id);
     }
 
@@ -91,7 +97,10 @@ class InstanceController extends Controller
      */
     public function update(UpdateInstanceRequest $request, Instance $instance)
     {
-        //
+        // Apply validated changes and redirect back to the edit screen.
+        $instance->update($request->validated());
+
+        return redirect()->route('instances.edit', $instance->id)->with('success', 'Instance updated.');
     }
 
     /**

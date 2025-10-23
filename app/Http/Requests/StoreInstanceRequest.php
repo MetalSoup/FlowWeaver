@@ -11,7 +11,8 @@ class StoreInstanceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // Allow authenticated users to create instances; adjust as needed for permissions.
+        return true;
     }
 
     /**
@@ -22,7 +23,9 @@ class StoreInstanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'organization_id' => ['nullable', 'exists:organizations,id'],
         ];
     }
 }

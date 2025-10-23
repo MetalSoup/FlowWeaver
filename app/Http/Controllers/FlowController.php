@@ -9,6 +9,7 @@ use App\Models\Field;
 use App\Models\Flow;
 use App\RunFlow;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 
 class FlowController extends Controller
 {
@@ -37,8 +38,14 @@ class FlowController extends Controller
     public function store(FlowRequest $request)
     {
 
+        // Prefer the session selected instance; fall back to an instance_id supplied in the request.
+        $selectedInstanceId = session('selected_instance') ?? $request->input('instance_id');
 
-        $selectedInstanceId = session('selected_instance');
+        // If we still don't have an instance id, redirect the user to select one before creating flows.
+        if (!$selectedInstanceId) {
+            return Redirect::route('instances.select')->with('error', 'Please select an instance before creating a flow.');
+        }
+
         $data = $request->validated();
         $data['instance_id'] = $selectedInstanceId;
 

@@ -63,16 +63,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection');
         Route::resource('/instances', InstanceController::class);
 
-        Route::middleware([SelectOrganizationMiddleware::class,CheckInstanceSelectedMiddleware::class])->group(function () {
+        /*Route::middleware([SelectOrganizationMiddleware::class,CheckInstanceSelectedMiddleware::class])->group(function () {*/
 
             Route::resource('/pages', PageController::class);
+            // New route for the Craft.js based editor (Editor V2)
+            Route::get('/pages/{page}/edit-v2', [PageController::class, 'editV2'])->name('pages.edit-v2');
             Route::resource('/flows', FlowController::class);
             Route::resource('/fields', FieldController::class);
 
-        });
+       /* });*/
 
 
     });
 });
+
+// Page editor routes
+Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
+Route::post('/pages', [PageController::class, 'store'])->name('pages.store');
+Route::put('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
 
 require __DIR__.'/auth.php';

@@ -1,9 +1,6 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, Link} from '@inertiajs/react';
 import { PageProps } from '@/types';
-import CustomEditor from "@/Pages/Pages/Editor";
-import { ReactElement, JSXElementConstructor, ReactNode, Key, ReactPortal } from 'react';
-import { RouteParams } from '../../../../vendor/tightenco/ziggy/src/js';
 
 export default function Dashboard({auth, instances}: {
     auth: any,

@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
 // prepend default fields to 'fields' prop
 
             'fields' => fn() => $this->getAdditionalFields(),
+            'selected_instance' => fn () => session('selected_instance'),
             'flowID' => $request->route()->parameters['flow']['id'] ?? null,
             //'flows' => $request->user()->flows,
 

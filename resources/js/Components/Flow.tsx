@@ -1,4 +1,4 @@
-import Inertia from '@inertiajs/inertia-react';
+import { Inertia } from '@inertiajs/inertia';
 
 export default function Flow({data,flowID}: {data: any, flowID: number}) {
 
@@ -7,14 +7,14 @@ export default function Flow({data,flowID}: {data: any, flowID: number}) {
 
 
     Inertia.get(route('flows.show', {
-        id: flowID    }),{
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: (page) => {
-            console.log(page.props);
-        }
+        id: flowID    }), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page: { props: any; }) => {
+                console.log(page.props);
+            }
 
-    });
+        });
 
 
 

@@ -21,21 +21,25 @@
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "tailwindcss": "^3.2.1",
-        "typescript": "^5.0.2",
-        "vite": "^5.0"
+        "typescript": "^5.0.2"
     },
     "dependencies": {
         "@craftjs/core": "^0.2.11",
         "@craftjs/utils": "^0.2.4",
         "@dnd-kit/core": "^6.1.0",
         "@dnd-kit/sortable": "^8.0.0",
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
         "@grapesjs/react": "^1.0.0",
         "@hello-pangea/dnd": "^17.0.0",
         "@heroicons/react": "^2.1.5",
+        "@inertiajs/inertia": "^0.11.1",
+        "@mui/material": "^7.2.0",
         "@plasmicapp/loader-react": "^1.0.361",
         "@xyflow/react": "^12.0.3",
         "grapesjs": "^0.21.12",
         "interweave": "^13.1.0",
+        "react-colorful": "^5.6.1",
         "react-contenteditable": "^3.3.7",
         "react-select": "^5.8.1",
         "uuid": "^10.0.0"

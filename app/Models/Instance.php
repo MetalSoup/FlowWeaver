@@ -12,6 +12,14 @@ class Instance extends Model
 {
     use HasFactory;
 
+    // Allow mass assignment for these fields when creating/updating via controller
+    protected $fillable = [
+        'name',
+        'description',
+        'organization_id',
+        'status',
+    ];
+
     public function pages(): HasMany
     {
         return $this->hasMany(Page::class, 'instance_id');

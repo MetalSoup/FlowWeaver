@@ -1,7 +1,5 @@
-/*
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, router} from '@inertiajs/react';
-import {SingleFlowProps} from "@/types";
 import {
     addEdge,
     Background, BackgroundVariant,
@@ -13,16 +11,18 @@ import {
     useNodesState, useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {useCallback, useState} from "react";
+import {useCallback, useState, useEffect} from "react";
 import FlowSideBar from "@/Pages/Flows/FlowSideBar";
 
 
+function FlowEditor({ auth, selected_instance } : { auth: any, selected_instance?: number | null }) {
 
-function FlowEditor({ auth, flow } : SingleFlowProps) {
-
-
-
-
+    // If there's no selected instance, send the user to select one.
+    useEffect(() => {
+        if (!selected_instance) {
+            router.get(route('instances.select'));
+        }
+    }, [selected_instance]);
 
    // console.log(initialFlow);
 
@@ -40,9 +40,9 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
     let id = initialNodeCount;
     const getId = () => `dnd_node_${id++}`;
 
-/!*    const initialViewport= [
-        ...initialFlow.viewport
-    ]*!/
+    /*    const initialViewport= [
+    ...initialFlow.viewport
+    ]*/
 
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -87,8 +87,7 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
         },
         [screenToFlowPosition],
     );
-    const [rfInstance, setRfInstance] = useState(null);
-    const flowKey = 'example-flow';
+    const [rfInstance, setRfInstance] = useState<any | null>(null);
     const onSave = useCallback(() => {
 
         if (rfInstance) {
@@ -96,17 +95,24 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
             const thisFlow = rfInstance.toObject();
             let sequence = JSON.stringify(thisFlow);
 
+            // use FlowController update to save the sequence; attach selected instance
+            // If no instance is selected, redirect to selection instead of posting a null instance
+            if (!selected_instance) {
+                router.get(route('instances.select'));
+                return;
+            }
 
-            // use FlowController update to save the sequence
-            router.post(route('flows.store'), {name: "new_flow", sequence: sequence, instance_id:1});
-
-
+            router.post(route('flows.store'), {name: "new_flow", sequence: sequence, instance_id: selected_instance});
 
 
 
         }
     }, [rfInstance]);
 
+    // initialize react-flow instance into state (typed any to avoid TS mismatch with setState signature)
+    const handleInit = (instance: any) => {
+        setRfInstance(instance);
+    };
 
 
     // @ts-ignore
@@ -130,15 +136,17 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
                         onConnect={onConnect}
                         onDrop={onDrop}
                         onDragOver={onDragOver}
-                        onInit={setRfInstance}
+                        onInit={handleInit}
                         fitView
 
                     >
                         <Panel position="top-right">
-                            <button onClick={onSave}>save</button>
-                            {/!*<button onClick={onRestore}>restore</button>
-                            <button onClick={onAdd}>add node</button>*!/}
-                        </Panel>
+                                <button onClick={onSave}>save</button>
+                                {/*
+                                    <button onClick={onRestore}>restore</button>
+                                    <button onClick={onAdd}>add node</button>
+                                */}
+                            </Panel>
 
                         <Background variant={BackgroundVariant.Lines} gap={12} size={1} />
                         <Controls />
@@ -159,9 +167,8 @@ function FlowEditor({ auth, flow } : SingleFlowProps) {
 }
 
 
-export default ({ auth, flow } : SingleFlowProps) => (
+export default ({ auth, selected_instance } : { auth: any, selected_instance?: number | null }) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow} />
+        <FlowEditor auth={auth} selected_instance={selected_instance} />
     </ReactFlowProvider>
 )
-*/

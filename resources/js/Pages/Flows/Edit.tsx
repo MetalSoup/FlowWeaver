@@ -1,5 +1,6 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, router} from '@inertiajs/react';
+import {useEffect, useCallback, useState, useRef} from 'react';
 import {
     addEdge,
     Background,
@@ -17,7 +18,6 @@ import {
     IsValidConnection
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {useCallback, useState} from "react";
 import FlowSideBar from "@/Pages/Flows/FlowSideBar";
 import WebhookNode from "@/Nodes/WebhookNode";
 import ComparisonNode from "@/Nodes/ComparisonNode";
@@ -44,7 +44,15 @@ const nodeTypes = {
 };
 
 
-function FlowEditor({auth, flow}: { auth: any, flow: any }) {
+function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, selected_instance?: number | null }) {
+
+    // If there's no selected instance in the session/shared props, send the user to select one.
+    useEffect(() => {
+        if (!selected_instance) {
+            // navigate to instance selection page
+            router.get(route('instances.select'));
+        }
+    }, [selected_instance]);
 
     const sequence = flow.data.sequence;
     //load the Entry node if the flow is empty
@@ -110,24 +118,237 @@ function FlowEditor({auth, flow}: { auth: any, flow: any }) {
         [screenToFlowPosition],
     );
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance<any, any> | null>(null);
-    const onSave = useCallback(() => {
+    // toast state + timer ref (shows Saved/Copied/Pasted/etc.)
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
+    const toastTimerRef = useRef<number | null>(null);
+    const showToast = useCallback((msg: string, duration = 1500) => {
+        setToastMsg(msg);
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = window.setTimeout(() => setToastMsg(null), duration);
+    }, []);
+    // cleanup toast timer
+    useEffect(() => () => { if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current); }, []);
+     const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
+     const onChangeName = (newName:any) => {
+         setFlowName(newName);
+         flow.data.name = newName;
 
-        if (rfInstance) {
+     }
+    // Copy/paste clipboard (stores nodes+edges of last copy). Persist to localStorage and OS clipboard when possible.
+    const clipboardRef = useRef<{nodes: any[]; edges: any[], createdAt?: number} | null>(null);
+    const pasteCountRef = useRef(0);
+    // last screen mouse position for paste-at-mouse
+    const lastMouseScreenRef = useRef<{x: number; y: number} | null>(null);
 
-            const thisFlow = rfInstance.toObject();
+    // history for undo/redo (simple stack of snapshots)
+    const historyRef = useRef<{nodes: any[]; edges: any[]}[]>([]);
+    const historyIndexRef = useRef(-1);
+    const pushHistory = useCallback((snap?: {nodes:any[]; edges:any[]}) => {
+        const snapshot = snap ? snap : {nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges))};
+        // truncate any redo history
+        historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+        historyRef.current.push(snapshot);
+        historyIndexRef.current = historyRef.current.length - 1;
+    }, [nodes, edges]);
 
-            //if it's a new flow, create it, otherwise update it
+    const undo = useCallback(() => {
+        if (historyIndexRef.current <= 0) return;
+        historyIndexRef.current -= 1;
+        const snap = historyRef.current[historyIndexRef.current];
+        setNodes(JSON.parse(JSON.stringify(snap.nodes)));
+        setEdges(JSON.parse(JSON.stringify(snap.edges)));
+        showToast('Undo', 900);
+    }, [setNodes, setEdges, showToast]);
 
-            if (!flow.data.id) {
-                router.post(route('flows.store'), {name: flowName, sequence: thisFlow});
-            } else {
-                router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: thisFlow});
+    const redo = useCallback(() => {
+        if (historyIndexRef.current >= historyRef.current.length - 1) return;
+        historyIndexRef.current += 1;
+        const snap = historyRef.current[historyIndexRef.current];
+        setNodes(JSON.parse(JSON.stringify(snap.nodes)));
+        setEdges(JSON.parse(JSON.stringify(snap.edges)));
+        showToast('Redo', 900);
+    }, [setNodes, setEdges, showToast]);
+
+    // listen for mouse movements to capture last screen position
+    useEffect(() => {
+        const m = (ev: MouseEvent) => { lastMouseScreenRef.current = {x: ev.clientX, y: ev.clientY}; };
+        window.addEventListener('mousemove', m);
+        return () => window.removeEventListener('mousemove', m);
+    }, []);
+
+    // load clipboard from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('flow_clipboard');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.nodes) clipboardRef.current = parsed;
+            }
+        } catch (err) {
+            // ignore
+        }
+        // push initial history snapshot
+        pushHistory({nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges))});
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const copySelection = useCallback(async () => {
+        const selectedNodes = nodes.filter(n => n.selected);
+        if (!selectedNodes.length) return;
+        const selectedIds = new Set(selectedNodes.map(n => n.id));
+        const relatedEdges = edges.filter(e => selectedIds.has(e.source) && selectedIds.has(e.target));
+        const payload = {nodes: selectedNodes.map(n => JSON.parse(JSON.stringify(n))), edges: relatedEdges.map(e => JSON.parse(JSON.stringify(e))), createdAt: Date.now()};
+        clipboardRef.current = payload;
+        pasteCountRef.current = 0;
+        // persist to localStorage
+        try { localStorage.setItem('flow_clipboard', JSON.stringify(payload)); } catch (err) {}
+        // try to write to OS clipboard (best-effort)
+        try { await navigator.clipboard.writeText(JSON.stringify(payload)); } catch (err) {}
+        showToast('Copied', 800);
+    }, [nodes, edges, showToast]);
+
+    const pasteClipboard = useCallback((opts?: {pasteAtMouse?: boolean, autoSelect?: boolean}) => {
+        if (!clipboardRef.current) return;
+        const {nodes: copiedNodes, edges: copiedEdges} = clipboardRef.current;
+        pasteCountRef.current += 1;
+        const offset = 20 * pasteCountRef.current;
+        const idMap = new Map<string, string>();
+
+        // compute base offset if pasting at mouse
+        let basePos: {x:number,y:number} | null = null;
+        if (opts?.pasteAtMouse && lastMouseScreenRef.current) {
+            try {
+                basePos = screenToFlowPosition({x: lastMouseScreenRef.current.x, y: lastMouseScreenRef.current.y});
+            } catch (e) {
+                basePos = null;
+            }
+        }
+
+        // if we have basePos, compute centroid of copied nodes to center them at mouse
+        let centroid = {x:0,y:0};
+        if (basePos) {
+            const count = copiedNodes.length || 1;
+            centroid = copiedNodes.reduce((acc, n) => ({x: acc.x + (n.position?.x || 0), y: acc.y + (n.position?.y || 0)}), {x:0,y:0});
+            centroid.x /= count; centroid.y /= count;
+        }
+
+        const newNodes = copiedNodes.map((n) => {
+            const newId = getId(n.type || 'node');
+            idMap.set(n.id, newId);
+            const dataClone = JSON.parse(JSON.stringify(n.data || {}));
+            if (dataClone && typeof dataClone === 'object') dataClone.id = newId;
+            let newPos = {x: (n.position?.x || 0) + offset + 10, y: (n.position?.y || 0) + offset + 10};
+            if (basePos) {
+                newPos = {x: basePos.x + ((n.position?.x || 0) - centroid.x) + 10, y: basePos.y + ((n.position?.y || 0) - centroid.y) + 10};
+            }
+            return {
+                ...n,
+                id: newId,
+                position: newPos,
+                selected: !!opts?.autoSelect,
+                data: dataClone,
+            };
+        });
+
+        const newEdges = copiedEdges.map((e) => {
+            const newSource = idMap.get(e.source) || e.source;
+            const newTarget = idMap.get(e.target) || e.target;
+            return {
+                ...e,
+                id: getId('edge'),
+                source: newSource,
+                target: newTarget,
+            };
+        });
+
+        // push history before change so undo can restore
+        pushHistory();
+
+        setNodes((nds) => nds.concat(newNodes));
+        setEdges((eds) => eds.concat(newEdges));
+
+        // flash/select behavior
+        if (opts?.autoSelect) {
+            // unselect after a short timeout so user sees the pasted selection
+            window.setTimeout(() => {
+                setNodes((nds) => nds.map(n => ({...n, selected: false})));
+            }, 700);
+        }
+
+        showToast('Pasted', 1000);
+    }, [setNodes, setEdges, pushHistory, screenToFlowPosition, showToast]);
+
+    // keyboard listeners: copy/paste, undo/redo, delete snapshot capture. Avoid when focused in input/textarea/contenteditable
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            const activeEl = document.activeElement as HTMLElement | null;
+            const activeTag = activeEl ? (activeEl.tagName || '').toLowerCase() : '';
+            const isEditable = !!activeEl && (activeEl.isContentEditable || activeTag === 'input' || activeTag === 'textarea' || activeEl.getAttribute('role') === 'textbox');
+            const isMod = e.ctrlKey || e.metaKey;
+            if (isEditable && !((e.key || '').toLowerCase() === 'z' && isMod)) {
+                // allow normal copy/paste/typing in inputs except allow global undo
+                return;
             }
 
+            // Ctrl/Cmd + C
+            if (isMod && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                copySelection();
+                return;
+            }
 
+            // Ctrl/Cmd + V
+            if (isMod && e.key.toLowerCase() === 'v') {
+                e.preventDefault();
+                pasteClipboard({pasteAtMouse: true, autoSelect: true});
+                return;
+            }
+
+            // Ctrl/Cmd + Z -> undo
+            if (isMod && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                undo();
+                return;
+            }
+
+            // Ctrl/Cmd + Y -> redo
+            if (isMod && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                redo();
+                return;
+            }
+
+            // Delete / Backspace -> capture snapshot before deletion if there are selected nodes
+            if ((e.key === 'Delete' || e.key === 'Backspace')) {
+                const selectedNodes = nodes.filter(n => n.selected);
+                if (selectedNodes.length) {
+                    pushHistory();
+                }
+                return; // allow deletion to proceed
+            }
+        };
+
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [copySelection, pasteClipboard, undo, redo, nodes, pushHistory]);
+
+    const onSave = useCallback(() => {
+        if (!rfInstance) return;
+        const thisFlow = rfInstance.toObject();
+        // if it's a new flow, create it, otherwise update it
+        if (!flow.data.id) {
+            router.post(route('flows.store'), {name: flowName, sequence: thisFlow, instance_id: selected_instance}, {
+                onSuccess: () => {
+                    showToast('Saved', 3000);
+                }
+            });
+        } else {
+            router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: thisFlow, instance_id: selected_instance}, {
+                onSuccess: () => {
+                    showToast('Saved', 3000);
+                }
+            });
         }
-    }, [rfInstance]);
-
+    }, [rfInstance, flow, flowName, selected_instance, showToast]);
 
     const handleInit: OnInit<any, any> = (instance: ReactFlowInstance<any, any>) => {
         setRfInstance(instance);
@@ -136,13 +357,6 @@ function FlowEditor({auth, flow}: { auth: any, flow: any }) {
 
     const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
 
-    const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
-    const onChangeName = (newName:any) => {
-        //let newFlowName = event.target.value ? event.target.value : "Untitled Flow";
-        setFlowName(newName);
-        flow.data.name = newName;
-
-    }
 
     // @ts-ignore
     const isValidConnection: IsValidConnection = (connection: Connection) => {
@@ -191,6 +405,13 @@ function FlowEditor({auth, flow}: { auth: any, flow: any }) {
 
                     >
 
+                        {/* Saved toast */}
+                        {toastMsg && (
+                            <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+                                {toastMsg}
+                            </div>
+                        )}
+
                         <Panel position="top-right">
                             <button className={"dark:text-white"} onClick={onSave}>save</button>
                             {/*<button onClick={onRestore}>restore</button>
@@ -220,8 +441,8 @@ function FlowEditor({auth, flow}: { auth: any, flow: any }) {
 }
 
 
-export default ({auth, flow}: { auth: any, flow: any }) => (
+export default ({auth, flow, selected_instance}: { auth: any, flow: any, selected_instance?: number | null }) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow}/>
+        <FlowEditor auth={auth} flow={flow} selected_instance={selected_instance} />
     </ReactFlowProvider>
 )

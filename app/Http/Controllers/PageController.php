@@ -29,7 +29,9 @@ class PageController extends Controller
         $data['instance_id'] = $selectedInstanceId;
         Log::info($data);
 
-        return new PageResource(Page::create($request->validated()));
+        // create using the merged data (including instance_id)
+        $page = Page::create($data);
+        return new PageResource($page);
     }
 
     public function show(Page $page)
@@ -68,17 +70,74 @@ class PageController extends Controller
             $nodes = collect(Flow::find($flow['id'])->sequence['nodes']);
 
             //dump($nodes->where('type','Form'));
-            $forms[$flow_id] = ($nodes->where('type','Form'));
+            // Normalize forms to a simple array of id/name objects so the frontend
+            // always receives predictable array shapes (avoids JS runtime errors).
+            $forms[$flow_id] = $nodes->where('type', 'Form')->map(function ($n) {
+                // $n may be an array or object; use data_get to safely access properties
+                return [
+                    'id' => data_get($n, 'id'),
+                    'name' => data_get($n, 'name'),
+                ];
+            })->values()->toArray();
         }
 
 
-
-
-        return inertia('Pages/Edit', [
+        // Default to the new craft.js based editor
+        return inertia('Pages/EditorV2', [
             'page' => new PageResource($page),
             'forms' => $forms,
             'flows' => $flows
+        ]);
+    }
 
+    // Show the editor for creating a new page
+    public function create()
+    {
+        $selectedInstanceId = session('selected_instance');
+        if (!$selectedInstanceId) {
+            return redirect()->route('instances.select');
+        }
+
+        $flows = Flow::where('instance_id', $selectedInstanceId)->select("id", "name")->get();
+
+        // Simple empty forms structure for create view
+        $forms = [];
+
+        return inertia('Pages/EditorV2', [
+            'page' => null,
+            'forms' => $forms,
+            'flows' => $flows,
+        ]);
+    }
+
+    // New editor route for the Craft.js editor (explicit)
+    public function editV2(Page $page)
+    {
+        $selectedInstanceId = session('selected_instance');
+        if ($page->instance_id != $selectedInstanceId) {
+            abort(403);
+        }
+
+        $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name')->get();
+
+        // prepare forms array similarly to edit()
+        $page_flows = [["id"=>3, "start"=>'']];
+        $forms = [];
+        foreach ($page_flows as $flow) {
+            $flow_id = $flow['id'];
+            $nodes = collect(Flow::find($flow['id'])->sequence['nodes']);
+            $forms[$flow_id] = $nodes->where('type', 'Form')->map(function ($n) {
+                return [
+                    'id' => data_get($n, 'id'),
+                    'name' => data_get($n, 'name'),
+                ];
+            })->values()->toArray();
+        }
+
+        return inertia('Pages/EditorV2', [
+            'page' => new PageResource($page),
+            'forms' => $forms,
+            'flows' => $flows,
         ]);
     }
 
