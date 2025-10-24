@@ -6,32 +6,72 @@ use App\Http\Requests\PageRequest;
 use App\Http\Resources\PageResource;
 use App\Models\Flow;
 use App\Models\Page;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PageController extends Controller
 {
+    /**
+     * Helper to determine if the request is from Inertia.
+     */
+    protected function isInertiaRequest(Request $request): bool
+    {
+        return (bool) $request->header('X-Inertia');
+    }
+
     public function index()
     {
         $selectedInstanceId = session('selected_instance');
-        $pages = Page::where('instance_id',$selectedInstanceId)->get();
-        //dd(PageResource::collection($pages));
-        return inertia('Pages/Index',[
-            'pages' => PageResource::collection($pages)
-            ]);
-        //return PageResource::collection(Page::all());
+        // Paginate pages belonging to the selected instance
+        $pages = Page::where('instance_id', $selectedInstanceId)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        // Return Inertia page with a paginated resource collection. The frontend
+        // should expect `pages.data` for rows and `pages.meta`/`pages.links` for
+        // pagination controls.
+        return inertia('Pages/Index', [
+            'pages' => PageResource::collection($pages),
+        ]);
     }
 
     public function store(PageRequest $request)
     {
         $selectedInstanceId = session('selected_instance');
+
+        // If no instance is selected, send the user to instance selection (always Inertia)
+        if (!$selectedInstanceId) {
+            return Inertia::location(route('instances.select'));
+        }
+
         $data = $request->validated();
         $data['instance_id'] = $selectedInstanceId;
+
+        // Ensure we have an authenticated user because pages.user_id is required
+        if (!auth()->check()) {
+            abort(403, 'Authentication required to create pages');
+        }
+        $data['user_id'] = auth()->id();
+
+        // If no name provided, generate a unique default name within the instance.
+        if (empty(trim((string) ($data['name'] ?? '')))) {
+            $base = 'Untitled Page';
+            $n = 0;
+            do {
+                $n++;
+                $name = $n === 1 ? $base : $base . ' #' . $n;
+            } while (Page::where('instance_id', $selectedInstanceId)->where('name', $name)->exists());
+            $data['name'] = $name;
+        }
+
         Log::info($data);
 
-        // create using the merged data (including instance_id)
+        // create using the merged data (including instance_id and name)
         $page = Page::create($data);
-        return new PageResource($page);
+
+        // Always use Inertia to navigate to the edit page
+        return Inertia::location(route('pages.edit', $page->id));
     }
 
     public function show(Page $page)
@@ -47,7 +87,7 @@ class PageController extends Controller
         ]);
     }
 
-    public function edit(Page $page)
+/*    public function edit(Page $page)
     {
 
         $selectedInstanceId = session('selected_instance');
@@ -83,19 +123,19 @@ class PageController extends Controller
 
 
         // Default to the new craft.js based editor
-        return inertia('Pages/EditorV2', [
+        return inertia('Pages/Editor', [
             'page' => new PageResource($page),
             'forms' => $forms,
             'flows' => $flows
         ]);
     }
-
+ }*/
     // Show the editor for creating a new page
     public function create()
     {
         $selectedInstanceId = session('selected_instance');
         if (!$selectedInstanceId) {
-            return redirect()->route('instances.select');
+            return Inertia::location(route('instances.select'));
         }
 
         $flows = Flow::where('instance_id', $selectedInstanceId)->select("id", "name")->get();
@@ -103,7 +143,8 @@ class PageController extends Controller
         // Simple empty forms structure for create view
         $forms = [];
 
-        return inertia('Pages/EditorV2', [
+
+        return inertia('Pages/Editor', [
             'page' => null,
             'forms' => $forms,
             'flows' => $flows,
@@ -111,21 +152,31 @@ class PageController extends Controller
     }
 
     // New editor route for the Craft.js editor (explicit)
-    public function editV2(Page $page)
+    public function edit(Page $page)
     {
         $selectedInstanceId = session('selected_instance');
         if ($page->instance_id != $selectedInstanceId) {
             abort(403);
         }
 
-        $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name')->get();
+        // load id, name and sequence so we can safely access sequence without extra queries
+        $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
 
-        // prepare forms array similarly to edit()
-        $page_flows = [["id"=>3, "start"=>'']];
+        // prepare forms array by iterating actual Flow models
         $forms = [];
-        foreach ($page_flows as $flow) {
-            $flow_id = $flow['id'];
-            $nodes = collect(Flow::find($flow['id'])->sequence['nodes']);
+        foreach ($flows as $flowModel) {
+            $flow_id = $flowModel->id;
+
+            // Ensure sequence is an array (it might be stored as JSON or array). Use empty array fallback.
+            $sequence = $flowModel->sequence ?? [];
+            if (is_string($sequence)) {
+                $decoded = json_decode($sequence, true);
+                $sequence = $decoded === null ? [] : $decoded;
+            }
+
+            // Collect nodes safely (default to empty array when missing)
+            $nodes = collect(data_get($sequence, 'nodes', []));
+
             $forms[$flow_id] = $nodes->where('type', 'Form')->map(function ($n) {
                 return [
                     'id' => data_get($n, 'id'),
@@ -134,7 +185,7 @@ class PageController extends Controller
             })->values()->toArray();
         }
 
-        return inertia('Pages/EditorV2', [
+        return inertia('Pages/Editor', [
             'page' => new PageResource($page),
             'forms' => $forms,
             'flows' => $flows,
@@ -158,16 +209,16 @@ class PageController extends Controller
             abort(403);
         }
         Log::info($request);
-        //dd($request);
         $data = $request->validated();
 
         $data['content'] = $request->input('content'); // Save the content
         $page->update($data);
 
-        return new PageResource($page);
+        // Always use Inertia to navigate to the edit page after update
+        return Inertia::location(route('pages.edit', $page->id));
     }
 
-    public function destroy(Page $page)
+    public function destroy(Request $request, Page $page)
     {
         $selectedInstanceId = session('selected_instance');
         if($page->instance_id != $selectedInstanceId){
@@ -175,6 +226,7 @@ class PageController extends Controller
         }
         $page->delete();
 
-        return response()->json();
+        // Always return an Inertia location to navigate back to the pages list
+        return Inertia::location(route('pages.index'));
     }
 }

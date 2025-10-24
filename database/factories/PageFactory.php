@@ -17,8 +17,9 @@ class PageFactory extends Factory
         return [
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
-            'name' => $this->faker->name(),
-            'content' => $this->faker->word(),
+            'name' => $this->faker->sentence(3),
+            // content must be valid JSON for the JSON column
+            'content' => json_encode(['ROOT' => ['type' => 'CraftContainer', 'props' => []]]),
 
             'instance_id' => Instance::factory(),
             'user_id' => User::factory(),

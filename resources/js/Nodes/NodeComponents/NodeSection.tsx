@@ -1,10 +1,10 @@
 import "./NodeSection.css";
-export default function NodeSection({children, className}: {
+export default function NodeSection({children, className = ''}: {
     children?: any
     className?: string
 }) {
     return (
-        <div className={"nodeSection min-w-48 " + className}>
+        <div className={"nodeSection min-w-48 " + (className ?? '')}>
             {children}
         </div>
     )

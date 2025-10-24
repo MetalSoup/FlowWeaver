@@ -2,7 +2,7 @@ import Select, {SingleValue} from "react-select";
 import CreatableSelect from "react-select/creatable";
 import NodeInputHandle from "@/Nodes/NodeComponents/NodeInputHandle";
 
-export default function SelectWithOverride({className,isSearchable, options, onChange, handleID, value, nodeID, children, style, label,creatable = false, id}: {
+export default function SelectWithOverride({className = '',isSearchable, options, onChange, handleID, value, nodeID, label,creatable = false, id}: {
 
     onChange: any,
     handleID: string,
@@ -39,7 +39,7 @@ export default function SelectWithOverride({className,isSearchable, options, onC
                         {!creatable &&
 
                             <Select
-                                className={"r-select w-[300px] nowheel " + className}
+                                className={"r-select w-[300px] nowheel " + (className ?? '')}
                                 onChange={onChange}
                                 defaultValue={value}
                                 id={id}
@@ -49,7 +49,7 @@ export default function SelectWithOverride({className,isSearchable, options, onC
                         }
                         {creatable &&
                             <CreatableSelect
-                                className={"r-select w-[300px] nowheel " + className}
+                                className={"r-select w-[300px] nowheel " + (className ?? '')}
                                 onChange={onChange}
                                 defaultValue={value}
                                 id={id}

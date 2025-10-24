@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {PencilIcon} from "@heroicons/react/24/outline";
 
 interface EditableTextProps {
     id?: string;
@@ -14,7 +13,7 @@ interface EditableTextProps {
     textClassName?: string;
 }
 
-const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style, disabled, className, textClassName, placeholder, type = 'text', options = [] }) => {
+const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style, disabled, className = '', textClassName = '', placeholder, type = 'text', options = [] }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentText, setCurrentText] = useState(value);
 
@@ -57,7 +56,7 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                         autoFocus
                         style={{ ...style }}
                         disabled={disabled}
-                        className={"nodrag text-gray-900 " +className}
+                        className={"nodrag text-gray-900 " + (className ?? '')}
                         placeholder={placeholder}
                         id={id}
                     />
@@ -69,7 +68,7 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                         autoFocus
                         style={{ ...style }}
                         disabled={disabled}
-                        className={"nodrag nowheel text-gray-900 " +className}
+                        className={"nodrag nowheel text-gray-900 " + (className ?? '')}
                         id={id}
                     >
                         {options.map(option => (
@@ -80,9 +79,9 @@ const EditableText: React.FC<EditableTextProps> = ({ id, value, onChange, style,
                     </select>
                 )
             ) : (
-                <span className={textClassName} style={{ ...style }}>
-                    {type === 'select' ? getLabelForValue(currentText) : currentText || placeholder || "Enter Value"}
-                </span>
+                <span className={textClassName ?? ''} style={{ ...style }}>
+                     {type === 'select' ? getLabelForValue(currentText) : currentText || placeholder || "Enter Value"}
+                 </span>
             )}
 
         </div>

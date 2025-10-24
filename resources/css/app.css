@@ -49,7 +49,42 @@
 
 }
 
+.nodeOptions
+{
+    /* Minimal transparent wrapper positioned at the top-left of the node root.
+       The visible control is the inner .bg-white box so keep this container tiny
+       and non-interactive so clicks pass through to children. */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    z-index: 99999;
+    pointer-events: none; /* allow clicks to pass through to child nodes */
+    padding: 0;
+    margin: 0;
+    overflow: visible; /* let inner box overflow if needed */
 
+}
+
+/* The visible white control that wraps the delete button. Keep it tiny and interactive. */
+.nodeOptions .bg-white {
+    background: #ffffff;
+    border: 1px solid var(--kd-blue);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    margin: 0;
+    pointer-events: auto; /* this inner box receives clicks */
+}
+
+.nodeOptions button {
+    pointer-events: auto; /* ensure the button itself is clickable */
+}
 
 body
 {
@@ -130,4 +165,3 @@ h2
 
 
 }
-

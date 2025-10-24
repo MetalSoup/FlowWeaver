@@ -3,7 +3,7 @@ import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {TrashIcon} from "@heroicons/react/20/solid";
 
-export function SortableItem({id, children, onDeleteField, field, className}: {
+export function SortableItem({id, children, onDeleteField, field, className = ''}: {
     id: string,
     children: any,
     onDeleteField?: any,
@@ -24,7 +24,7 @@ export function SortableItem({id, children, onDeleteField, field, className}: {
     };
 
     return (
-        <div className={"sortableItem relative flex py-2 mb-3 " + className} ref={setNodeRef} style={style}>
+        <div className={"sortableItem relative flex py-2 mb-3 " + (className ?? '')} ref={setNodeRef} style={style}>
 
 
             <div className={"flex"}>

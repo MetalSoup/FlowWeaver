@@ -18,6 +18,11 @@ class Flow extends Model
         'sequence',
     ];
 
+    // Ensure sequence is automatically cast to an array by Eloquent
+    protected $casts = [
+        'sequence' => 'array',
+    ];
+
 
 
 
@@ -125,8 +130,6 @@ class Flow extends Model
     }
 
 
-
-
     function branch($sequence, $position = 0): void
     {
         if ($sequence[$position]['branchCondition']) {
@@ -144,11 +147,4 @@ class Flow extends Model
         return $this->belongsTo(Instance::class);
     }
 
-    protected function casts(): array
-    {
-        return [
-            'sequence' => 'array',
-
-        ];
-    }
 }
