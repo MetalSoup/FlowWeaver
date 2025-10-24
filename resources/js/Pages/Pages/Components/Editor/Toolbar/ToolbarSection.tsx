@@ -3,7 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Grid2 as Grid,
+  Grid as Grid,
 } from '@mui/material';
 import React from 'react';
 

@@ -4,9 +4,9 @@ import * as React from 'react';
 import ReactDOM from 'react-dom';
 import { styled } from 'styled-components';
 
-import ArrowUp from '../../public/icons/arrow-up.svg';
-import Delete from '../../public/icons/delete.svg';
-import Move from '../../public/icons/move.svg';
+import {ArrowUpIcon} from "@/Pages/Pages/Components/Icons";
+import {DeleteIcon} from "@/Pages/Pages/Components/Icons";
+import {MoveIcon} from "@/Pages/Pages/Components/Icons";
 
 const IndicatorDiv = styled.div`
   height: 30px;
@@ -121,7 +121,7 @@ export const RenderNode = ({ render }) => {
                     drag(dom);
                   }}
                 >
-                  <Move viewBox="-4 -3 24 24" />
+                  <MoveIcon viewBox="-4 -3 24 24" />
                 </Btn>
               ) : null}
               {id !== ROOT_NODE && (
@@ -131,7 +131,7 @@ export const RenderNode = ({ render }) => {
                     actions.selectNode(parent);
                   }}
                 >
-                  <ArrowUp viewBox="-4 -1 24 24" />
+                  <ArrowUpIcon viewBox="-4 -1 24 24" />
                 </Btn>
               )}
               {deletable ? (
@@ -142,7 +142,7 @@ export const RenderNode = ({ render }) => {
                     actions.delete(id);
                   }}
                 >
-                  <Delete viewBox="-4 -3 24 24" />
+                  <DeleteIcon viewBox="-4 -3 24 24" />
                 </Btn>
               ) : null}
             </IndicatorDiv>,

@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import React from 'react';
 import { styled } from 'styled-components';
 
-import Arrow from '../../../../public/icons/arrow.svg';
+import {ArrowIcon} from "@/Pages/Pages/Components/Icons";
 
 const SidebarItemDiv = styled.div<{ $visible?: boolean; $height?: string }>`
   height: ${(props) =>
@@ -72,7 +72,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
           <h2 className="text-xs uppercase">{title}</h2>
         </div>
         <Chevron $visible={visible}>
-          <Arrow viewBox="-2 -1 12 12" />
+          <ArrowIcon viewBox="-2 -1 12 12" />
         </Chevron>
       </HeaderDiv>
       {visible ? (

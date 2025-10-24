@@ -3,14 +3,14 @@ import { Tooltip } from '@mui/material';
 import React from 'react';
 import { styled } from 'styled-components';
 
-import ButtonSvg from '../../../public/icons/toolbox/button.svg';
-import SquareSvg from '../../../public/icons/toolbox/rectangle.svg';
-import TypeSvg from '../../../public/icons/toolbox/text.svg';
-import YoutubeSvg from '../../../public/icons/toolbox/video-line.svg';
-import { Button } from '../../selectors/Button';
-import { Container } from '../../selectors/Container';
-import { Text } from '../../selectors/Text';
-import { Video } from '../../selectors/Video';
+import {ButtonIcon} from "@/Pages/Pages/Components/Icons";
+import {SquareIcon} from "@/Pages/Pages/Components/Icons";
+import {TypeIcon} from "@/Pages/Pages/Components/Icons";
+import {YoutubeIcon} from "@/Pages/Pages/Components/Icons";
+import { Button } from '../../Selectors/Button';
+import { Container } from '../../Selectors/Container';
+import { Text } from '../../Selectors/Text';
+import { Video } from '../../Selectors/Video';
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
   transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -67,7 +67,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Container" placement="right">
             <Item $move>
-              <SquareSvg viewBox="-3 -3 24 24" />
+              <SquareIcon viewBox="-3 -3 24 24" />
             </Item>
           </Tooltip>
         </div>
@@ -81,7 +81,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Text" placement="right">
             <Item $move>
-              <TypeSvg viewBox="-3 -3 28 28" />
+              <TypeIcon viewBox="-3 -3 28 28" />
             </Item>
           </Tooltip>
         </div>
@@ -92,7 +92,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Button" placement="right">
             <Item $move>
-              <ButtonSvg viewBox="-4 -3 24 24" />
+              <ButtonIcon viewBox="-4 -3 24 24" />
             </Item>
           </Tooltip>
         </div>
@@ -103,7 +103,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Video" placement="right">
             <Item $move>
-              <YoutubeSvg viewBox="-3 -3 28 28" />
+              <YoutubeIcon viewBox="-3 -3 28 28" />
             </Item>
           </Tooltip>
         </div>

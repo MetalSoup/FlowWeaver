@@ -1,5 +1,13 @@
 import React from 'react';
 
+
+
+
+export const Arrow: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" {...props}>
+        <path fill="#707070" d="M9 1.5l7.5 7.5-1.06 1.06L10.5 5.56V16.5h-3V5.56L2.56 10.06 1.5 9z" />
+    </svg>
+);
 export const ArrowIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" {...props}>
     <path fill="#707070" d="M9 1.5l7.5 7.5-1.06 1.06L10.5 5.56V16.5h-3V5.56L2.56 10.06 1.5 9z" />

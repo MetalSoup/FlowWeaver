@@ -4,10 +4,11 @@ import cx from 'classnames';
 import React from 'react';
 import { styled } from 'styled-components';
 
-import Checkmark from '../../../public/icons/check.svg';
-import Customize from '../../../public/icons/customize.svg';
-import RedoSvg from '../../../public/icons/toolbox/redo.svg';
-import UndoSvg from '../../../public/icons/toolbox/undo.svg';
+import {CheckIcon} from '../../Icons';
+import {CustomizeIcon} from '../../Icons';
+import {RedoIcon} from '../../ToolboxIcons';
+import {UndoIcon} from '../../ToolboxIcons';
+
 
 const HeaderDiv = styled.div`
   width: 100%;
@@ -65,12 +66,12 @@ export const Header = () => {
           <div className="flex-1 flex">
             <Tooltip title="Undo" placement="bottom">
               <Item disabled={!canUndo} onClick={() => actions.history.undo()}>
-                <UndoSvg />
+                <UndoIcon />
               </Item>
             </Tooltip>
             <Tooltip title="Redo" placement="bottom">
               <Item disabled={!canRedo} onClick={() => actions.history.redo()}>
-                <RedoSvg />
+                <RedoIcon />
               </Item>
             </Tooltip>
           </div>
@@ -89,9 +90,9 @@ export const Header = () => {
             }}
           >
             {enabled ? (
-              <Checkmark viewBox="-3 -3 20 20" />
+              <CheckIcon viewBox="-3 -3 20 20" />
             ) : (
-              <Customize viewBox="2 0 16 16" />
+              <CustomizeIcon viewBox="2 0 16 16" />
             )}
             {enabled ? 'Finish Editing' : 'Edit'}
           </Btn>
