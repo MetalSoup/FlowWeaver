@@ -14,13 +14,14 @@ createServer((page) =>
         title: (title) => `${title} - ${appName}`,
         resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
         setup: ({ App, props }) => {
-            global.route<RouteName> = (name, params, absolute) =>
-                route(name, params as any, absolute, {
-                    // @ts-expect-error
-                    ...page.props.ziggy,
-                    // @ts-expect-error
-                    location: new URL(page.props.ziggy.location),
+            // Assign a safe any-typed wrapper to global.route for SSR so Ziggy typings
+            // don't cause TypeScript errors here.
+            (global as any).route = (name: any, params?: any, absolute?: any) => {
+                return (route as any)(name, params, absolute, {
+                    ...(page.props.ziggy as any),
+                    location: new URL((page.props.ziggy as any).location),
                 });
+            };
 
             return <App {...props} />;
         },

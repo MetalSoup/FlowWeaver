@@ -22,7 +22,7 @@ const IndicatorDiv = styled.div`
 `;
 
 const Btn = styled.a`
-  padding: 0 0px;
+  padding: 0;
   opacity: 0.9;
   display: flex;
   align-items: center;
@@ -33,7 +33,7 @@ const Btn = styled.a`
   }
 `;
 
-export const RenderNode = ({ render }) => {
+export const RenderNode: React.FC<{ render: React.ReactNode }> = ({ render }) => {
   const { id } = useNode();
   const { actions, query, isActive } = useEditor((_, query) => ({
     isActive: query.getEvent('selected').contains(id),
@@ -66,7 +66,7 @@ export const RenderNode = ({ render }) => {
     }
   }, [dom, isActive, isHover]);
 
-  const getPos = React.useCallback((dom: HTMLElement) => {
+  const getPos = React.useCallback((dom: HTMLElement | null) => {
     const { top, left, bottom } = dom
       ? dom.getBoundingClientRect()
       : { top: 0, left: 0, bottom: 0 };
@@ -89,14 +89,13 @@ export const RenderNode = ({ render }) => {
   }, [dom, getPos]);
 
   React.useEffect(() => {
-    document
-      .querySelector('.craftjs-renderer')
-      .addEventListener('scroll', scroll);
+    const container = document.querySelector('.craftjs-renderer');
+    if (container) {
+      container.addEventListener('scroll', scroll);
+    }
 
     return () => {
-      document
-        .querySelector('.craftjs-renderer')
-        .removeEventListener('scroll', scroll);
+      if (container) container.removeEventListener('scroll', scroll);
     };
   }, [scroll]);
 
@@ -105,35 +104,35 @@ export const RenderNode = ({ render }) => {
       {isHover || isActive
         ? ReactDOM.createPortal(
             <IndicatorDiv
-              ref={currentRef}
-              className="px-2 py-2 text-white bg-primary fixed flex items-center"
-              style={{
-                left: getPos(dom).left,
-                top: getPos(dom).top,
-                zIndex: 9999,
-              }}
-            >
+               ref={currentRef}
+               className="px-2 py-2 text-white bg-primary fixed flex items-center"
+               style={{
+                 left: getPos(dom).left,
+                 top: getPos(dom).top,
+                 zIndex: 9999,
+               }}
+             >
               <h2 className="flex-1 mr-4">{name}</h2>
               {moveable ? (
                 <Btn
                   className="mr-2 cursor-move"
-                  ref={(dom) => {
-                    drag(dom);
+                  ref={(el: HTMLAnchorElement | null) => {
+                    if (el) drag(el as HTMLElement);
                   }}
                 >
-                  <MoveIcon viewBox="-4 -3 24 24" />
-                </Btn>
-              ) : null}
+                   <MoveIcon viewBox="-4 -3 24 24" />
+                 </Btn>
+               ) : null}
               {id !== ROOT_NODE && (
                 <Btn
                   className="mr-2 cursor-pointer"
                   onClick={() => {
-                    actions.selectNode(parent);
+                    if (parent) actions.selectNode(parent as string);
                   }}
                 >
-                  <ArrowUpIcon viewBox="-4 -1 24 24" />
-                </Btn>
-              )}
+                   <ArrowUpIcon viewBox="-4 -1 24 24" />
+                 </Btn>
+               )}
               {deletable ? (
                 <Btn
                   className="cursor-pointer"
@@ -146,10 +145,10 @@ export const RenderNode = ({ render }) => {
                 </Btn>
               ) : null}
             </IndicatorDiv>,
-            document.querySelector('.page-container')
+            (document.querySelector('.page-container') as Element) || document.body
           )
-        : null}
-      {render}
-    </>
-  );
-};
+         : null}
+       {render}
+     </>
+   );
+ };

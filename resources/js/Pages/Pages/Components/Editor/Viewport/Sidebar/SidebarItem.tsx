@@ -29,7 +29,8 @@ const Chevron = styled.a<{ $visible: boolean }>`
 export type SidebarItemProps = {
   title: string;
   height?: string;
-  icon: string;
+  // accept a React component (SVG or similar)
+  icon: React.ElementType;
   visible?: boolean;
   onChange?: (bool: boolean) => void;
   children?: React.ReactNode;
