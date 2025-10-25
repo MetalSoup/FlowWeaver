@@ -14,17 +14,14 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
+
+
+
 Route::get('logs', [LogViewerController::class, 'index']);
-
-
-
-
-
 
 Route::get('/',function () {
     return redirect()->route('login');
 });
-
 
 //disable csfr token
 Route::any('/test_post', function(){
@@ -67,7 +64,7 @@ Route::middleware('auth')->group(function () {
 
             Route::resource('/pages', PageController::class);
             // New route for the Craft.js based editor (Editor V2)
-            Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
+
             Route::resource('/flows', FlowController::class);
             Route::resource('/fields', FieldController::class);
 
@@ -77,9 +74,14 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+route::get('testcompiler/{flow}', [FlowController::class, 'compile']);
+
 // Page editor routes
 //Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
-Route::post('/pages', [PageController::class, 'store'])->name('pages.store');
-Route::put('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
+
+// Note: removed duplicate non-prefixed POST/PUT routes for /pages that previously conflicted
+// with the dashboard-prefixed resource routes. Using the dashboard resource (above) keeps
+// middleware/session consistent and prevents route name resolution from pointing at the
+// wrong endpoint (which could cause CSRF/session mismatch 419 errors).
 
 require __DIR__.'/auth.php';

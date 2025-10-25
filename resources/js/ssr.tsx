@@ -7,8 +7,18 @@ import { RouteName } from 'ziggy-js';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Kiudai';
 
-createServer((page) =>
-    createInertiaApp({
+createServer(async (page) => {
+    // Diagnostic: log the incoming page (trim long output)
+    try {
+        const preview = typeof page === 'string' ? page : JSON.stringify(page);
+        console.log('SSR: incoming page payload:', preview && preview.length > 2000 ? preview.slice(0, 2000) + '... (truncated)' : preview);
+    } catch (err) {
+        console.log('SSR: incoming page payload (non-serializable)');
+    }
+
+    // Important: await and return the value from createInertiaApp so the
+    // server handler receives a serializable value (head/body).
+    const result = await createInertiaApp({
         page,
         render: ReactDOMServer.renderToString,
         title: (title) => `${title} - ${appName}`,
@@ -18,12 +28,21 @@ createServer((page) =>
             // don't cause TypeScript errors here.
             (global as any).route = (name: any, params?: any, absolute?: any) => {
                 return (route as any)(name, params, absolute, {
-                    ...(page.props.ziggy as any),
-                    location: new URL((page.props.ziggy as any).location),
+                    ...(page.props?.ziggy as any),
+                    location: new URL((page.props?.ziggy as any)?.location),
                 });
             };
 
             return <App {...props} />;
         },
-    })
-);
+    });
+
+    try {
+        const preview = typeof result === 'string' ? result : JSON.stringify(result);
+        console.log('SSR: createInertiaApp result:', preview && preview.length > 2000 ? preview.slice(0, 2000) + '... (truncated)' : preview);
+    } catch (err) {
+        console.log('SSR: createInertiaApp result (non-serializable)');
+    }
+
+    return result;
+});

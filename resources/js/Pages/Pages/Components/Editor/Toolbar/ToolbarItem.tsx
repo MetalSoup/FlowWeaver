@@ -27,9 +27,10 @@ export const ToolbarItem = ({
     actions: { setProp },
     propValue,
   } = useNode((node) => ({
-    propValue: node.data.props[propKey],
+    // guard against undefined propKey when selecting from node.data.props
+    propValue: propKey ? node.data.props[propKey] : undefined,
   }));
-  const value = Array.isArray(propValue) ? propValue[index] : propValue;
+  const value = Array.isArray(propValue) && index != null ? propValue[index] : propValue;
 
   return (
     <Grid size={{ xs: full ? 12 : 6 }}>
@@ -40,6 +41,7 @@ export const ToolbarItem = ({
             type={type}
             value={value}
             onChange={(value) => {
+              if (!propKey) return;
               setProp((props: any) => {
                 if (Array.isArray(propValue)) {
                   props[propKey][index] = onChange ? onChange(value) : value;
@@ -70,14 +72,18 @@ export const ToolbarItem = ({
               }}
               value={parseInt(value) || 0}
               onChange={
-                ((_, value: number) => {
+                ((_: any, sliderValue: number | number[]) => {
+                  if (!propKey) return;
+                  const actualValue = Array.isArray(sliderValue)
+                    ? (sliderValue as any)[index]
+                    : sliderValue;
                   setProp((props: any) => {
                     if (Array.isArray(propValue)) {
                       props[propKey][index] = onChange
-                        ? onChange(value)
-                        : value;
+                        ? onChange(actualValue)
+                        : actualValue;
                     } else {
-                      props[propKey] = onChange ? onChange(value) : value;
+                      props[propKey] = onChange ? onChange(actualValue) : actualValue;
                     }
                   }, 1000);
                 }) as any
@@ -92,9 +98,10 @@ export const ToolbarItem = ({
             <RadioGroup
               value={value || 0}
               onChange={(e) => {
-                const value = e.target.value;
+                if (!propKey) return;
+                const v = e.target.value;
                 setProp((props: any) => {
-                  props[propKey] = onChange ? onChange(value) : value;
+                  props[propKey] = onChange ? onChange(v) : v;
                 });
               }}
             >
@@ -105,10 +112,10 @@ export const ToolbarItem = ({
           <ToolbarDropdown
             value={value || ''}
             onChange={(value) =>
-              setProp(
-                (props: any) =>
-                  (props[propKey] = onChange ? onChange(value) : value)
-              )
+              {
+                if (!propKey) return;
+                setProp((props: any) => (props[propKey] = onChange ? onChange(value) : value));
+              }
             }
             {...props}
           />

@@ -42,11 +42,46 @@ class PageController extends Controller
 
         // If no instance is selected, send the user to instance selection (always Inertia)
         if (!$selectedInstanceId) {
-            return Inertia::location(route('instances.select'));
+            return redirect()->route('instances.select');
+        }
+
+        // Debug: log entire parsed request and raw body/headers for diagnosis
+        Log::debug('PageController::store - $request->all() -> ' . json_encode($request->all()));
+        try {
+            $raw = file_get_contents('php://input');
+            Log::debug('PageController::store - php://input length: ' . strlen($raw));
+            Log::debug('PageController::store - php://input preview: ' . substr($raw, 0, 1000));
+        } catch (\Throwable $e) {
+            Log::debug('PageController::store - php://input read error: ' . $e->getMessage());
+        }
+        Log::debug('PageController::store - request headers: ' . json_encode($request->headers->all()));
+
+        // Log raw incoming request for debugging content issues
+        $rawContent = $request->input('content', '');
+        Log::debug('PageController::store - raw request content length: ' . strlen($rawContent));
+        Log::debug('PageController::store - raw request content preview: ' . substr($rawContent, 0, 200));
+
+        // Fallback: if $rawContent is empty, try to parse php://input as JSON and extract content
+        if (empty($rawContent)) {
+            try {
+                $rawBody = file_get_contents('php://input');
+                if (!empty($rawBody)) {
+                    $decoded = json_decode($rawBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['content'])) {
+                        $rawContent = is_string($decoded['content']) ? $decoded['content'] : json_encode($decoded['content']);
+                        Log::debug('PageController::store - extracted content from raw JSON body');
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::debug('PageController::store - fallback parse php://input error: ' . $e->getMessage());
+            }
         }
 
         $data = $request->validated();
         $data['instance_id'] = $selectedInstanceId;
+
+        // Ensure content is preserved even when validation omits it (nullable)
+        $data['content'] = $rawContent;
 
         // Ensure we have an authenticated user because pages.user_id is required
         if (!auth()->check()) {
@@ -54,24 +89,58 @@ class PageController extends Controller
         }
         $data['user_id'] = auth()->id();
 
-        // If no name provided, generate a unique default name within the instance.
-        if (empty(trim((string) ($data['name'] ?? '')))) {
-            $base = 'Untitled Page';
-            $n = 0;
-            do {
-                $n++;
-                $name = $n === 1 ? $base : $base . ' #' . $n;
-            } while (Page::where('instance_id', $selectedInstanceId)->where('name', $name)->exists());
-            $data['name'] = $name;
-        }
+        // Ensure a valid non-empty name is present — generate a unique default if not
+        $this->ensurePageName($data, $selectedInstanceId);
 
         Log::info($data);
 
         // create using the merged data (including instance_id and name)
         $page = Page::create($data);
 
-        // Always use Inertia to navigate to the edit page
-        return Inertia::location(route('pages.edit', $page->id));
+        // Defensive persistence: ensure content was saved (some request parsing edge cases
+        // could cause content to be empty even though we provided it). If the created
+        // model doesn't reflect the expected content, overwrite and save.
+        if (($page->content ?? '') !== ($data['content'] ?? '')) {
+            $page->content = $data['content'] ?? null;
+            $page->save();
+            Log::debug('PageController::store - forced save of content after create');
+        }
+
+        // If the request came from an Inertia client, return the edit page payload (200) so the client
+        // can replace the response without a forced 409/location full reload. For non-Inertia requests
+        // keep the normal redirect.
+        if ($this->isInertiaRequest($request)) {
+            // prepare flows and forms similar to edit()
+            $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
+            $forms = [];
+            foreach ($flows as $flowModel) {
+                $flow_id = $flowModel->id;
+
+                $sequence = $flowModel->sequence ?? [];
+                if (is_string($sequence)) {
+                    $decoded = json_decode($sequence, true);
+                    $sequence = $decoded === null ? [] : $decoded;
+                }
+
+                $nodes = collect(data_get($sequence, 'nodes', []));
+
+                $forms[$flow_id] = $nodes->where('type', 'Form')->map(function ($n) {
+                    return [
+                        'id' => data_get($n, 'id'),
+                        'name' => data_get($n, 'name'),
+                    ];
+                })->values()->toArray();
+            }
+
+            return inertia('Pages/Editor', [
+                'page' => new PageResource($page),
+                'forms' => $forms,
+                'flows' => $flows,
+            ]);
+        }
+
+        // Non-Inertia fallback: regular redirect
+        return redirect()->route('pages.edit', $page->id);
     }
 
     public function show(Page $page)
@@ -83,7 +152,7 @@ class PageController extends Controller
         //dd($page_content);
 
         return inertia('Pages/Show', [
-            'page' => new PageResource($page)
+            'page' => $page
         ]);
     }
 
@@ -129,13 +198,13 @@ class PageController extends Controller
             'flows' => $flows
         ]);
     }
- }*/
+ */
     // Show the editor for creating a new page
     public function create()
     {
         $selectedInstanceId = session('selected_instance');
         if (!$selectedInstanceId) {
-            return Inertia::location(route('instances.select'));
+            return redirect()->route('instances.select');
         }
 
         $flows = Flow::where('instance_id', $selectedInstanceId)->select("id", "name")->get();
@@ -204,18 +273,67 @@ class PageController extends Controller
     }*/
     public function update(PageRequest $request, Page $page)
     {
+
         $selectedInstanceId = session('selected_instance');
         if ($page->instance_id != $selectedInstanceId) {
             abort(403);
         }
-        Log::info($request);
+
+
         $data = $request->validated();
 
-        $data['content'] = $request->input('content'); // Save the content
+        // Save the content explicitly (validated may not include content if empty/null)
+        //$data['content'] = $request->input('content', '');
+
+        // Ensure a valid non-empty name is present — generate a unique default if not
+        $this->ensurePageName($data, $selectedInstanceId);
+
         $page->update($data);
 
-        // Always use Inertia to navigate to the edit page after update
-        return Inertia::location(route('pages.edit', $page->id));
+        // If the request came from an Inertia client, return the edit page payload (200) so the client
+        // can replace the response without a forced 409/location full reload. For non-Inertia requests
+        // keep the normal redirect.
+        if ($this->isInertiaRequest($request)) {
+            // prepare flows and forms similar to edit()
+            $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
+            $forms = [];
+            foreach ($flows as $flowModel) {
+                $flow_id = $flowModel->id;
+
+                $sequence = $flowModel->sequence ?? [];
+                if (is_string($sequence)) {
+                    $decoded = json_decode($sequence, true);
+                    $sequence = $decoded === null ? [] : $decoded;
+                }
+
+                $nodes = collect(data_get($sequence, 'nodes', []));
+
+                $forms[$flow_id] = $nodes->where('type', 'Form')->map(function ($n) {
+                    return [
+                        'id' => data_get($n, 'id'),
+                        'name' => data_get($n, 'name'),
+                    ];
+                })->values()->toArray();
+            }
+            //dd("inertia update");
+
+            //should return redirect back with the updated page
+            return redirect()->back()->with([
+                'page' => new PageResource($page),
+                'forms' => $forms,
+                'flows' => $flows,
+                'status' => 'Page updated successfully!'
+            ]);
+
+           /* return inertia('Pages/Editor', [
+                'page' => new PageResource($page),
+                'forms' => $forms,
+                'flows' => $flows,
+            ]);*/
+        }
+
+        // Non-Inertia fallback: regular redirect
+        return redirect()->route('pages.edit', $page->id);
     }
 
     public function destroy(Request $request, Page $page)
@@ -227,6 +345,27 @@ class PageController extends Controller
         $page->delete();
 
         // Always return an Inertia location to navigate back to the pages list
-        return Inertia::location(route('pages.index'));
+        return redirect()->route('pages.index');
+    }
+
+    /**
+     * Ensure $data contains a non-empty 'name' — generate a unique one within the instance when missing.
+     * Modifies $data by reference.
+     */
+    protected function ensurePageName(array &$data, $selectedInstanceId)
+    {
+        if (!empty(trim((string) ($data['name'] ?? '')))) {
+            // name is present and non-empty
+            return;
+        }
+
+        $base = 'Untitled Page';
+        $n = 0;
+        do {
+            $n++;
+            $name = $n === 1 ? $base : $base . ' #' . $n;
+        } while (Page::where('instance_id', $selectedInstanceId)->where('name', $name)->exists());
+
+        $data['name'] = $name;
     }
 }

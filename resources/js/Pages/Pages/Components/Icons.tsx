@@ -4,14 +4,16 @@ import React from 'react';
 
 
 export const Arrow: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" {...props}>
-        <path fill="#707070" d="M9 1.5l7.5 7.5-1.06 1.06L10.5 5.56V16.5h-3V5.56L2.56 10.06 1.5 9z" />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <title>ChevronDownMedium</title>
+        <rect id="ToDelete" fill="#ff13dc" opacity="0" /><path d="M9.99,1.01A.9999.9999,0,0,0,8.28266.30327L5,3.58594,1.71734.30327A.9999.9999,0,1,0,.30327,1.71734L4.29266,5.69673a.99965.99965,0,0,0,1.41468,0L9.69673,1.71734A.99669.99669,0,0,0,9.99,1.01Z" />
     </svg>
 );
 export const ArrowIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" {...props}>
-    <path fill="#707070" d="M9 1.5l7.5 7.5-1.06 1.06L10.5 5.56V16.5h-3V5.56L2.56 10.06 1.5 9z" />
-  </svg>
+    <svg viewBox="0 0 24 24" {...props}>
+        <title>Arrow Up</title>
+        <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"></path>
+    </svg>
 );
 
 export const ArrowUpIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (

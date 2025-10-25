@@ -9,7 +9,7 @@ export default function DashboardSideMenu(props: {
     onClick: () => void,
     showingNavigationDropdown: boolean
 }) {
-    return <aside className="relative bg-sidebar h-screen  hidden sm:block shadow-xl dark:bg-gray-500">
+    return <aside className="relative bg-sidebar h-screen  hidden sm:block shadow-xl dark:bg-gray-500 ">
 
         <nav className="text-white text-base font-semibold pt-3">
 

@@ -8,20 +8,20 @@ class DefaultFields
 {
 
     static array $Fields = [
-        ['id' => 2, 'name' => 'first_name', 'label' => 'First Name'],
-        ['id' => 3, 'name' => 'last_name', 'label' => 'Last Name'],
-        ['id' => 4, 'name' => 'email', 'label' => 'Email'],
-        ['id' => 5, 'name' => 'phone', 'label' => 'Phone'],
-        ['id' => 6, 'name' => 'address', 'label' => 'Address'],
-        ['id' => 7, 'name' => 'street', 'label' => 'Street'],
-        ['id' => 8, 'name' => 'city', 'label' => 'City'],
-        ['id' => 9, 'name' => 'state', 'label' => 'State'],
-        ['id' => 10, 'name' => 'zip', 'label' => 'Zip'],
-        ['id' => 11, 'name' => 'country', 'label' => 'Country'],
-        ['id' => 12, 'name' => 'company', 'label' => 'Company'],
-        ['id' => 13, 'name' => 'title', 'label' => 'Title'],
-        ['id' => 14, 'name' => 'website', 'label' => 'Website'],
-        ['id' => 15, 'name' => 'dob', 'label' => 'Date of Birth'],
+        ['id' => 2, 'name' => 'first_name', 'label' => 'First Name', 'type' => 'text'],
+        ['id' => 3, 'name' => 'last_name', 'label' => 'Last Name', 'type' => 'text'],
+        ['id' => 4, 'name' => 'email', 'label' => 'Email', 'type' => 'email'],
+        ['id' => 5, 'name' => 'phone', 'label' => 'Phone', 'type' => 'tel'],
+        ['id' => 6, 'name' => 'address', 'label' => 'Address', 'type' => 'text'],
+        ['id' => 7, 'name' => 'street', 'label' => 'Street', 'type' => 'text'],
+        ['id' => 8, 'name' => 'city', 'label' => 'City', 'type' => 'text'],
+        ['id' => 9, 'name' => 'state', 'label' => 'State', 'type' => 'text'],
+        ['id' => 10, 'name' => 'zip', 'label' => 'Zip', 'type' => 'text'],
+        ['id' => 11, 'name' => 'country', 'label' => 'Country', 'type' => 'text'],
+        ['id' => 12, 'name' => 'company', 'label' => 'Company', 'type' => 'text'],
+        ['id' => 13, 'name' => 'title', 'label' => 'Title', 'type' => 'text'],
+        ['id' => 14, 'name' => 'website', 'label' => 'Website', 'type' => 'url'],
+        ['id' => 15, 'name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date'],
         ];
 
     public static function getFields(): Collection

@@ -10,6 +10,7 @@ use App\Models\Flow;
 use App\RunFlow;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
+use Inertia\Inertia;
 
 class FlowController extends Controller
 {
@@ -57,11 +58,11 @@ class FlowController extends Controller
     public function show(Flow $flow, $startNode = null)
     {
         //dd($flow->sequence);
-        return inertia('Flows/Show', [
+/*        return inertia('Flows/Show', [
             'flow' => new FlowResource($flow),
-        ]);
+        ]);*/
 
-       /* if($sequence = $flow->sequence){
+        if($sequence = $flow->sequence){
 
             //dump($sequence);
 
@@ -92,7 +93,7 @@ class FlowController extends Controller
         }
         else {
             Log::info('No sequence found for flow: '.$flow->id);
-        }*/
+        }
 
 
 
@@ -136,4 +137,26 @@ class FlowController extends Controller
 
         return response()->json();
     }
+
+    public function compile(Flow $flow)
+    {
+
+        $selectedInstanceId = session('selected_instance');
+/*        if($flow->instance_id != $selectedInstanceId){
+            abort(403);
+        }*/
+
+        $flowCompiler = new \App\FlowCompiler(json_encode($flow->sequence));
+        $compiledSteps = $flowCompiler->compile();
+
+
+        return Inertia::render('Flows/Show', [
+            'flow' => $compiledSteps,
+        ]);
+    }
+
+
 }
+
+
+

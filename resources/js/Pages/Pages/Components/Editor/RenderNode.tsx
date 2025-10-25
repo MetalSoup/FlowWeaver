@@ -33,7 +33,7 @@ const Btn = styled.a`
   }
 `;
 
-export const RenderNode: React.FC<{ render: React.ReactNode }> = ({ render }) => {
+export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render }) => {
   const { id } = useNode();
   const { actions, query, isActive } = useEditor((_, query) => ({
     isActive: query.getEvent('selected').contains(id),

@@ -94,7 +94,7 @@ export const Header = () => {
             ) : (
               <CustomizeIcon viewBox="2 0 16 16" />
             )}
-            {enabled ? 'Finish Editing' : 'Edit'}
+            {enabled ? 'Preview' : 'Edit'}
           </Btn>
         </div>
       </div>

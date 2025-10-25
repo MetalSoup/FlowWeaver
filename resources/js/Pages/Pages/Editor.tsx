@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import { Head, useForm } from '@inertiajs/react';
+import {Head, router, useForm} from '@inertiajs/react';
 
 // Craft.js
 import { Editor as CraftEditor, Frame, Element, useEditor } from '@craftjs/core';
@@ -17,10 +17,27 @@ import { Video } from './Components/Selectors/Video';
 export default function Editor({ auth, page = null, forms = {}, flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
     const isEditing = !!page;
 
-    const { data, setData, post, put, processing, errors } = useForm({
-        name: page?.name ?? '',
-        content: page?.content ?? '',
+    // Derive an initial page id from common API shapes so we populate the form state correctly
+    const initialPageId = page.data.id ?? null;
+    const initialPageContent = page.data.content ?? '';
+    const initialPageName = page.data.name ?? '';
+
+
+
+    const { data, setData, processing, errors } = useForm({
+        name: initialPageName ?? '',
+        content: initialPageContent ?? '',
+        id: initialPageId,
     });
+
+    // Warn on mount if we're editing but couldn't find an id — helps debugging server prop shapes
+    useEffect(() => {
+        if (isEditing && !initialPageId) {
+            console.warn('Editor: editing mode but no page id found on `page` prop. This usually means the server did not include `id` at top-level.');
+            console.debug('Editor: `page` prop shape ->', page);
+            console.debug('Editor: current form data.id ->', (data as any)?.id);
+        }
+    }, [isEditing, initialPageId]);
 
     const [message, setMessage] = useState<string | null>(null);
 
@@ -29,39 +46,163 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
 
     // Helper to detect if stored content is serialized craft JSON
     const isSerialized = (() => {
-        if (!page?.content) return false;
+        const content = initialPageContent;
+        if (!content) return false;
         try {
-            const parsed = JSON.parse(page.content);
-            // basic shape check: craft serialized object often has "nodes" or "state"
-            return typeof parsed === 'object' && (parsed.nodes || parsed.state || parsed.root || parsed.rootNode || true);
+            const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+
+            // Common craft serialized shapes:
+            // - { nodes: { ... }, rootNode: 'ROOT' }
+            // - { state: { nodes: { ... } } }
+            // - node-map style: { ROOT: {...}, <id>: {...} }
+            const looksLikeNodeMap = Boolean(
+                typeof parsed === 'object' &&
+                Object.keys(parsed).length > 0 &&
+                // if any top-level value looks like a node (has `type` / `isCanvas` / `props` / `nodes`)
+                Object.values(parsed).some(v => v && typeof v === 'object' && ('type' in v || 'isCanvas' in v || 'props' in v || 'nodes' in v))
+            );
+
+            return typeof parsed === 'object' && (
+                !!(parsed as any).nodes ||
+                !!(parsed as any).state ||
+                !!(parsed as any).root ||
+                !!(parsed as any).rootNode ||
+                looksLikeNodeMap
+            );
         } catch (e) {
             return false;
         }
     })();
 
+    // Helper to robustly extract a page id from a variety of shapes commonly returned by APIs
+    const getPageId = () => {
+        // Prefer explicit server-provided page prop id
+        if ((page as any)?.id) return (page as any).id;
+        // Inertia/Laravel resources sometimes nest the model under a `data` or `model` key
+        if ((page as any)?.data?.id) return (page as any).data.id;
+        if ((page as any)?.model?.id) return (page as any).model.id;
+        // The local form state may contain the id if it was populated previously
+        if ((data as any)?.id) return (data as any).id;
+        // Nothing found
+        return null;
+    };
+
     // Save: serialize craft state (if available) into content and submit to server
     const save = async () => {
-        // If we have a craft editor, serialize it; otherwise keep existing content
-        if (editorApiRef.current && editorApiRef.current.query) {
-            const serialized = editorApiRef.current.query.serialize();
-            const payload = JSON.stringify(serialized);
-            setData('content', payload);
+        let page_id = getPageId() ?? '';
+        let newContent: any = null;
+        let page_name = data.name ?? '';
+
+        // Try to serialize current editor state if the editor API is available.
+        try {
+            const q = editorApiRef.current?.query;
+            if (q && typeof q.serialize === 'function') {
+                newContent = q.serialize();
+            } else {
+                // Fallback to current form content (may be legacy HTML or previously stored JSON)
+                newContent = data.content;
+            }
+        } catch (e) {
+            console.error('save: serialize failed', e);
+            newContent = data.content;
         }
 
-        if (isEditing) {
-            put(route('pages.update', page.id), {
+
+        if (!page_id) {
+            router.post(route('pages.store'), {name: page_name, content: newContent}, {
                 onSuccess: () => {
-                    setMessage('Saved');
-                    window.setTimeout(() => setMessage(null), 2000);
-                },
+                    console.log('Successfully stored page id');
+                }
             });
         } else {
-            post(route('pages.store'), {
+            router.put(route('pages.update', page_id), {name: page_name, content: newContent}, {
                 onSuccess: () => {
-                    setMessage('Created');
-                    window.setTimeout(() => setMessage(null), 2000);
-                },
+                    console.log('Successfully stored page id');
+                }
             });
+        }
+
+
+
+
+
+        console.log(page_id);
+        console.log(newContent);
+    }
+
+    // Debug helper: send the payload to /test_post (no CSRF) so server echoes how it parsed it
+    const debugEcho = async (payload: any) => {
+        try {
+            const resp = await fetch('/test_post', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const json = await resp.json();
+            console.debug('debugEcho response ->', json);
+        } catch (e) {
+            console.error('debugEcho failed', e);
+        }
+    };
+
+    // Robust sender using form-encoded POST (with _method override) so Laravel receives data like a standard form
+    const sendFormViaFetch = async (url: string, payload: any, method: 'post' | 'put' = 'post') => {
+        try {
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+            const headers: Record<string,string> = {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            };
+            if (tokenMeta?.content) headers['X-CSRF-TOKEN'] = tokenMeta.content;
+
+            const form = new URLSearchParams();
+            const payloadWithMethod = method === 'put' ? { ...payload, _method: 'put' } : payload;
+            Object.keys(payloadWithMethod).forEach(k => {
+                const v = (payloadWithMethod as any)[k];
+                form.append(k, typeof v === 'string' ? v : JSON.stringify(v));
+            });
+
+            // Normalize URL to dashboard prefix when Ziggy may resolve to non-prefixed routes
+            const normalizeUrl = (u: string) => {
+                try {
+                    // handle full absolute URLs
+                    const parsed = new URL(u, window.location.origin);
+                    let path = parsed.pathname;
+                    if (path.startsWith('/pages') && !path.startsWith('/dashboard/pages')) {
+                        path = '/dashboard' + path;
+                        parsed.pathname = path;
+                        return parsed.toString();
+                    }
+                    return parsed.toString();
+                } catch (e) {
+                    // If URL() fails, try simple prefix
+                    if (u.startsWith('/pages') && !u.startsWith('/dashboard/pages')) {
+                        return '/dashboard' + u;
+                    }
+                    return u;
+                }
+            };
+
+            const finalUrl = normalizeUrl(url);
+            console.debug('sendFormViaFetch: finalUrl ->', finalUrl);
+
+            const resp = await fetch(finalUrl, {
+                 method: 'POST',
+                 credentials: 'same-origin',
+                 headers,
+                 body: form.toString(),
+             });
+
+            if (!resp.ok) {
+                const text = await resp.text().catch(() => '');
+                throw new Error(`Fetch failed: ${resp.status} ${resp.statusText} - ${text.slice(0,500)}`);
+            }
+
+            return await resp.text();
+        } catch (e) {
+            console.error('sendFormViaFetch error', e);
+            throw e;
         }
     };
 
@@ -78,7 +219,7 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
     }, [data]);
 
     // EditorInitializer runs inside Craft Editor context so it can access useEditor
-    const EditorInitializer: React.FC<{ pageContent?: string }> = ({ pageContent }) => {
+    const EditorInitializer: React.FC<{ pageContent?: any }> = ({ pageContent }) => {
         // useEditor must be called inside the Craft editor context (this component is rendered inside <CraftEditor>)
         const { actions, query } = useEditor(() => ({}));
 
@@ -90,19 +231,115 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
             };
         }, [actions, query]);
 
+        // Helper to normalize various serialized shapes into the { nodes, rootNode } shape craft expects
+        const normalizeSerialized = (obj: any) => {
+            if (!obj || typeof obj !== 'object') return obj;
+
+            // If already in the expected shape
+            if ((obj as any).nodes && ((obj as any).rootNode || (obj as any).root)) return { nodes: (obj as any).nodes, rootNode: (obj as any).rootNode ?? (obj as any).root };
+
+            // If it's wrapped under `state`
+            if ((obj as any).state && typeof (obj as any).state === 'object') {
+                return normalizeSerialized((obj as any).state);
+            }
+
+            // Node-map style: top-level keys are node ids (e.g. 'ROOT', 'abc123')
+            const keys = Object.keys(obj);
+            const looksLikeNodeMap = keys.length > 0 && keys.some(k => {
+                const v = (obj as any)[k];
+                return v && typeof v === 'object' && ('type' in v || 'props' in v || 'isCanvas' in v || 'nodes' in v);
+            });
+            if (looksLikeNodeMap) {
+                // guess the root node (prefer explicit 'ROOT' then first isCanvas)
+                let rootKey = 'ROOT';
+                if (!keys.includes(rootKey)) {
+                    const isCanvasKey = keys.find(k => (obj as any)[k] && (obj as any)[k].isCanvas);
+                    rootKey = (isCanvasKey as string) ?? keys[0];
+                }
+
+                // Normalize node type objects that hold { resolvedName: 'X' } into string 'X'
+                const normalizedNodes: Record<string, any> = {};
+                keys.forEach(k => {
+                    const node = (obj as any)[k];
+                    if (node && typeof node === 'object') {
+                        const copy = { ...node };
+                        if (copy.type && typeof copy.type === 'object' && 'resolvedName' in copy.type) {
+                            copy.type = (copy.type as any).resolvedName;
+                        }
+                        normalizedNodes[k] = copy;
+                    } else {
+                        normalizedNodes[k] = node;
+                    }
+                });
+
+                return { nodes: normalizedNodes, rootNode: rootKey };
+            }
+
+            // Unknown shape — return as-is
+            return obj;
+        };
+
         // If editing and we have serialized craft JSON, deserialize it
         useEffect(() => {
             if (!pageContent) return;
 
+            let parsed: any = pageContent;
             try {
-                const parsed = JSON.parse(pageContent);
-                // `actions.deserialize` expects the serialized object used by craft
-                if (actions && typeof actions.deserialize === 'function') {
-                    actions.deserialize(parsed);
-                }
+                parsed = typeof pageContent === 'string' ? JSON.parse(pageContent) : pageContent;
             } catch (e) {
                 // not JSON — nothing to do; the initial Frame will render legacy HTML as a Text node
+                return;
             }
+
+            // Debug info about the parsed payload to help trace load problems
+            try {
+                // eslint-disable-next-line no-console
+                console.debug('EditorInitializer: parsed content shape', {
+                    isString: typeof pageContent === 'string',
+                    hasNodes: !!(parsed && (parsed as any).nodes),
+                    hasState: !!(parsed && (parsed as any).state),
+                    hasRoot: !!(parsed && ((parsed as any).root || (parsed as any).rootNode)),
+                });
+            } catch (e) {
+                // ignore logging failures
+            }
+
+            // actions.deserialize may not be mounted immediately; retry until available (up to ~5s)
+            let attempts = 0;
+            const maxAttempts = 100; // 100 * 50ms = 5s
+            const intervalMs = 50;
+            const timer = setInterval(() => {
+                attempts++;
+                const deserializer = (actions as any)?.deserialize;
+                if (deserializer && typeof deserializer === 'function') {
+                    try {
+                        // Normalize various shapes (state wrapper, nodes map, node-map) into the shape craft expects
+                        const toDeserialize = normalizeSerialized(parsed);
+                        // eslint-disable-next-line no-console
+                        console.debug('EditorInitializer: calling actions.deserialize with normalized shape', { toDeserialize });
+                        deserializer(toDeserialize);
+
+                        // eslint-disable-next-line no-console
+                        console.debug('EditorInitializer: deserialize completed');
+
+                        // Keep the Inertia form in sync with loaded content (stringify if object)
+                        try {
+                            setData('content', typeof pageContent === 'string' ? pageContent : JSON.stringify(parsed));
+                        } catch (e) {
+                            // ignore setData failures — better to still let the editor load
+                        }
+                    } catch (e) {
+                        // swallow deserialize errors but log for debugging
+                        // eslint-disable-next-line no-console
+                        console.error('EditorInitializer.deserialize failed', e);
+                    }
+                    clearInterval(timer);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(timer);
+                }
+            }, intervalMs);
+
+            return () => clearInterval(timer);
         }, [pageContent, actions]);
 
         return null;
@@ -145,34 +382,31 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
     } as any;
 
     // Initial children: if we don't have serialized content, render a basic canvas containing the existing HTML (legacy)
-    const initialChildren = (() => {
-        if (isSerialized) {
-            // When serialized we'll rely on actions.deserialize in initializer — so render an empty Frame
-            return (
-                <Frame>
-                    <Element canvas is={Container} custom={{ displayName: 'Root' }}>
-                        {/* empty root - content will be injected by deserialize */}
-                    </Element>
-                </Frame>
-            );
-        }
+     const initialChildren = (() => {
+         if (isSerialized) {
+             // When serialized we'll rely on actions.deserialize in initializer — so render an empty Frame
+             return (
+                 <Frame data ={initialPageContent}>
 
-        // Not serialized: show a simple initial canvas containing the legacy HTML (or a placeholder)
-        const initialText = page?.content ?? '<h2>New page</h2>';
+                 </Frame>
+             );
+         }
 
-        return (
-            <Frame>
-                <Element canvas is={Container} custom={{ displayName: 'Root' }}>
-                    <Text text={initialText} />
-                </Element>
-            </Frame>
-        );
-    })();
+         // Not serialized: show a simple initial canvas containing the legacy HTML (or a placeholder)
+         const initialText = typeof page?.content === 'string' ? page.content : '<h2>New page</h2>';
+
+         return (
+             <Frame json={initialPageContent}>
+                 <Element canvas is={Container} custom={{ displayName: 'Root' }}>
+                     <Text text={initialText} />
+                 </Element>
+             </Frame>
+         );
+     })();
 
     return (
         <DashboardLayout user={auth.user} header={header}>
             <Head title={isEditing ? `Edit: ${page?.name || 'Page'}` : 'Create Page'} />
-
             <div className="h-full">
                 <CraftEditor resolver={resolver} onRender={RenderNode}>
                     {/* initializer must be rendered inside the editor so useEditor works */}
@@ -184,7 +418,8 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
                 </CraftEditor>
 
                 {/* Hidden form field so Inertia has the latest content if user navigates away using other flows */}
-                <input type="hidden" value={data.content} />
+                {/* Add a name so html-form based tools (and some integrations) will pick this up if needed */}
+                <input type="hidden" name="content" value={data.content} />
 
                 {/* Non-intrusive lists to use the passed forms/flows so they're available to editors */}
                 <div className="p-4 text-sm text-gray-700">
@@ -203,3 +438,4 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
         </DashboardLayout>
     );
 }
+

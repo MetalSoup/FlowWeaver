@@ -17,4 +17,17 @@ export default defineConfig({
         // React plugin should come after svgr so JSX transforms still work
         react(),
     ],
+    // Externalize Next.js server-only modules so Vite doesn't attempt to
+    // resolve them during the client or SSR build. This keeps Rollup from
+    // failing on imports like `next/document` that are only available in
+    // a Next.js runtime.
+    build: {
+        rollupOptions: {
+            external: ['next/document'],
+        },
+    },
+    ssr: {
+        // Prevent Vite from bundling the next/document import during SSR build
+        external: ['next/document'],
+    },
 });

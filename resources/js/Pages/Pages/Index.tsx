@@ -54,21 +54,45 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
     const renderPagination = () => {
         if (!pages) return null;
 
-        // Normalize links: sometimes serializer returns an object-like structure
+        // Normalize links: sometimes serializer returns an object-like structure or a JSON string
         const rawLinks = pages.links;
-        let linksArr: any[] | null = null;
+        let linksArr: any[] | null;
 
-        if (Array.isArray(rawLinks)) {
-            linksArr = rawLinks;
-        } else if (rawLinks && typeof rawLinks === 'object') {
-            // Object-like; convert to array of values
+        const tryParseJson = (val: any) => {
+            if (typeof val !== 'string') return val;
             try {
-                linksArr = Object.values(rawLinks);
-            } catch (err) {
-                // ignore
+                return JSON.parse(val);
+            } catch (e) {
+                return val;
             }
+        };
+
+        const normalizeObjectLike = (obj: any) => {
+            if (!obj || typeof obj !== 'object') return null;
+            const keys = Object.keys(obj);
+            // If keys are all numeric ("0","1",...) keep numeric order
+            const allNumeric = keys.length > 0 && keys.every(k => /^\d+$/.test(k));
+            if (allNumeric) {
+                return keys
+                    .map(k => ({ k: Number(k), v: obj[k] }))
+                    .sort((a, b) => a.k - b.k)
+                    .map(x => x.v);
+            }
+            // Fallback: return values in insertion order
+            try {
+                return Object.values(obj);
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const parsed = tryParseJson(rawLinks);
+
+        if (Array.isArray(parsed)) {
+            linksArr = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+            linksArr = normalizeObjectLike(parsed);
         } else {
-            // unexpected shape — in dev log it so we can inspect server output
             if (process.env.NODE_ENV !== 'production') {
                 // eslint-disable-next-line no-console
                 console.warn('Pages index: unexpected pages.links shape:', rawLinks);
@@ -83,9 +107,20 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
                 <nav className="mt-4">
                     <ul className="inline-flex items-center -space-x-px">
                         {safeLinks.map((link: any, idx: number) => {
+                            // Normalize individual link entries: sometimes the server returns raw anchor HTML as a string
+                            // e.g. '<a href="/pages?page=2">2</a>' — detect that and convert to an object so we render a Link
+                            let linkObj = link;
+                            if (typeof link === 'string') {
+                                const anchorMatch = link.match(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+                                if (anchorMatch) {
+                                    linkObj = { url: anchorMatch[1], label: anchorMatch[2] };
+                                } else {
+                                    linkObj = { label: link };
+                                }
+                            }
                             // If link is not an object, render a simple label
-                            if (!link || typeof link !== 'object') {
-                                const plainLabel = String(link ?? '');
+                            if (!linkObj || typeof linkObj !== 'object') {
+                                const plainLabel = String(linkObj ?? '');
                                 return (
                                     <li key={idx} className="mx-1">
                                         <span className="px-3 py-1 border rounded-md text-sm text-gray-700">{plainLabel}</span>
@@ -93,13 +128,13 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
                                 );
                             }
 
-                            const label = (link.label || '').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»');
-                            const isActive = !!link.active;
+                            const label = (linkObj.label || '').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»');
+                            const isActive = !!linkObj.active;
                             return (
                                 <li key={idx} className="mx-1">
-                                    {link.url ? (
+                                    {linkObj.url ? (
                                         <Link
-                                            href={link.url}
+                                            href={linkObj.url}
                                             className={
                                                 'px-3 py-1 border rounded-md text-sm ' + (isActive ? 'bg-gray-900 text-white' : 'bg-white text-gray-700')
                                             }
