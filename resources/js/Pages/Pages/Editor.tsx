@@ -14,6 +14,9 @@ import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
 import { Custom3 } from './Components/Selectors/Custom3';
 import { Video } from './Components/Selectors/Video';
 import { Flow } from './Components/Selectors/Flow';
+// Icons for viewport toggles
+import { DevicePhoneMobileIcon, DeviceTabletIcon, ComputerDesktopIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, CustomizeIcon } from './Components/Icons';
 
 // Module-scoped debug helpers so they can be exported and won't trigger unused warnings
 export const debugEcho = async (payload: any) => {
@@ -89,7 +92,7 @@ export const sendFormViaFetch = async (url: string, payload: any, method: 'post'
 try { (window as any).__debugEcho = debugEcho; } catch (e) { /* ignore */ }
 try { (window as any).__sendFormViaFetch = sendFormViaFetch; } catch (e) { /* ignore */ }
 
-export default function Editor({ auth, page = null, forms = {}, flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
+export default function Editor({ auth, page = null, forms: _forms = {}, flows: _flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
     const isEditing = !!page;
 
     // Derive an initial page id from common API shapes so we populate the form state correctly
@@ -104,6 +107,74 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
         content: initialPageContent ?? '',
         id: initialPageId,
     });
+
+    // Viewport preview size state (mobile/tablet/desktop)
+    const [viewportSize, setViewportSize] = useState<'mobile'|'tablet'|'desktop'>(() => {
+        try {
+            const stored = typeof window !== 'undefined' ? window.localStorage.getItem('editor:viewportSize') : null;
+            if (stored === 'mobile' || stored === 'tablet' || stored === 'desktop') return stored;
+        } catch (e) {
+            // ignore
+        }
+        return 'desktop';
+    });
+
+    // Editor control state (undo/redo/preview) kept in local state and synced with craft query via polling
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
+    const [editorEnabledState, setEditorEnabledState] = useState<boolean>(true);
+
+    useEffect(() => {
+        let mounted = true;
+        const tick = () => {
+            try {
+                const q = editorApiRef.current?.query;
+                if (!q) return;
+                const mayBeUndo = typeof q.history?.canUndo === 'function' ? q.history.canUndo() : false;
+                const mayBeRedo = typeof q.history?.canRedo === 'function' ? q.history.canRedo() : false;
+
+                let enabledVal = editorEnabledState;
+                try {
+                    if (typeof q.getOptions === 'function') {
+                        const opts = q.getOptions();
+                        if (opts && typeof opts.enabled === 'boolean') enabledVal = opts.enabled;
+                    } else if (typeof q.getState === 'function') {
+                        const state = q.getState();
+                        if (state && state.options && typeof state.options.enabled === 'boolean') enabledVal = state.options.enabled;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                if (!mounted) return;
+                setCanUndo(mayBeUndo);
+                setCanRedo(mayBeRedo);
+                setEditorEnabledState(enabledVal);
+            } catch (e) {
+                // ignore polling errors
+            }
+        };
+
+        // Start polling every 250ms to keep UI in sync with craft's internal state
+        const handle = setInterval(tick, 250);
+        // run once immediately
+        tick();
+        return () => {
+            mounted = false;
+            clearInterval(handle);
+        };
+    }, []);
+
+    // Persist viewport size to localStorage when it changes
+    useEffect(() => {
+        try {
+            if (typeof window !== 'undefined' && viewportSize) {
+                window.localStorage.setItem('editor:viewportSize', viewportSize);
+            }
+        } catch (e) {
+            // ignore storage errors
+        }
+    }, [viewportSize]);
 
     // Warn on mount if we're editing but couldn't find an id — helps debugging server prop shapes
     useEffect(() => {
@@ -349,14 +420,98 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
                 ) : null}
             </div>
             <div className="flex items-center space-x-3">
-                <button onClick={save} disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
-                    {processing ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Page'}
-                </button>
-                <a href={route('pages.index')} className="text-sm text-gray-600">Cancel</a>
-                {message && <span className="text-sm text-green-600">{message}</span>}
-            </div>
-        </div>
-    );
+                {/* Undo / Redo controls moved to top bar */}
+                <div className="inline-flex items-center rounded bg-transparent p-1">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            try { editorApiRef.current?.actions?.history?.undo(); } catch (e) { /* ignore */ }
+                        }}
+                        disabled={!canUndo}
+                        className={"p-2 rounded " + (!canUndo ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100')}
+                        title="Undo"
+                        aria-label="Undo"
+                    >
+                        <ArrowUturnLeftIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            try { editorApiRef.current?.actions?.history?.redo(); } catch (e) { /* ignore */ }
+                        }}
+                        disabled={!canRedo}
+                        className={"p-2 rounded " + (!canRedo ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100')}
+                        title="Redo"
+                        aria-label="Redo"
+                    >
+                        <ArrowUturnRightIcon className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Preview toggle moved to top bar */}
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            try {
+                                // optimistic toggle
+                                const newVal = !editorEnabledState;
+                                setEditorEnabledState(newVal);
+                                editorApiRef.current?.actions?.setOptions((options: any) => (options.enabled = newVal));
+                            } catch (e) {
+                                // ignore
+                            }
+                        }}
+                        className={"inline-flex items-center px-3 py-2 rounded " + (editorEnabledState ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700')}
+                        title={editorEnabledState ? 'Switch to Edit' : 'Switch to Preview'}
+                        aria-pressed={editorEnabledState}
+                        aria-label="Toggle preview"
+                    >
+                        {editorEnabledState ? <CheckIcon viewBox="-3 -3 20 20" /> : <CustomizeIcon viewBox="2 0 16 16" />}
+                        <span className="ml-2 text-sm">{editorEnabledState ? 'Preview' : 'Edit'}</span>
+                    </button>
+                </div>
+                 {/* Viewport size toggles (icons + tooltips) */}
+                 <div className="inline-flex items-center rounded bg-gray-100 p-1" role="tablist" aria-label="Viewport size">
+                    <button
+                        type="button"
+                        onClick={() => setViewportSize('mobile')}
+                        className={"p-2 rounded " + (viewportSize === 'mobile' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-white/50')}
+                        aria-pressed={viewportSize === 'mobile'}
+                        title="Mobile (375px)"
+                        aria-label="Mobile preview"
+                    >
+                        <DevicePhoneMobileIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewportSize('tablet')}
+                        className={"p-2 rounded " + (viewportSize === 'tablet' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-white/50')}
+                        aria-pressed={viewportSize === 'tablet'}
+                        title="Tablet (768px)"
+                        aria-label="Tablet preview"
+                    >
+                        <DeviceTabletIcon className="w-5 h-5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setViewportSize('desktop')}
+                        className={"p-2 rounded " + (viewportSize === 'desktop' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-white/50')}
+                        aria-pressed={viewportSize === 'desktop'}
+                        title="Desktop (full width)"
+                        aria-label="Desktop preview"
+                    >
+                        <ComputerDesktopIcon className="w-5 h-5" />
+                    </button>
+                </div>
+                 <button onClick={save} disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
+                     {processing ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Page'}
+                 </button>
+                 <a href={route('pages.index')} className="text-sm text-gray-600">Cancel</a>
+                 {message && <span className="text-sm text-green-600">{message}</span>}
+             </div>
+         </div>
+     );
 
     // Resolver for craft components
     const resolver = {
@@ -404,10 +559,10 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
                     {/* initializer must be rendered inside the editor so useEditor works */}
                     <EditorInitializer pageContent={page?.content} />
 
-                    <Viewport>
-                        {initialChildren}
-                    </Viewport>
-                </CraftEditor>
+                    <Viewport viewportSize={viewportSize}>
+                         {initialChildren}
+                     </Viewport>
+                 </CraftEditor>
 
                 {/* Hidden form field so Inertia has the latest content if user navigates away using other flows */}
                 {/* Add a name so html-form based tools (and some integrations) will pick this up if needed */}
