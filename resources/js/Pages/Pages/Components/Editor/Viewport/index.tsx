@@ -60,7 +60,7 @@ export const Viewport: React.FC<{
       >
         <Toolbox />
         <div className="page-container flex flex-1 h-full flex-col">
-          <Header />
+
           <div
             className={cx([
               'craftjs-renderer flex-1 h-full w-full transition pb-8 overflow-auto',

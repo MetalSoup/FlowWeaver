@@ -12,6 +12,9 @@ import { Container } from '../../Selectors/Container';
 import { Text } from '../../Selectors/Text';
 import { Video } from '../../Selectors/Video';
 import { Flow } from '../../Selectors/Flow';
+import { FlexRow } from '../../Selectors';
+import { ContainerIcon } from '@/Pages/Pages/Components/ToolboxIcons';
+import { FlexColumn } from '../../Selectors';
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
   transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -117,6 +120,32 @@ export const Toolbox = () => {
               <Item $move>
                   <YoutubeIcon viewBox="-3 -3 28 28" />
               </Item>
+          </Tooltip>
+        </div>
+        <div
+          ref={(ref) => {
+            create(
+              ref,
+              <Element
+                canvas
+                is={FlexRow}
+                columns={2}
+                gap={16}
+                background={{ r: 255, g: 255, b: 255, a: 0 }}
+                color={{ r: 0, g: 0, b: 0, a: 1 }}
+                height="auto"
+                width="100%"
+              >
+                <Element canvas is={FlexColumn} />
+                <Element canvas is={FlexColumn} />
+              </Element>
+            );
+          }}
+        >
+          <Tooltip title="Flex Row" placement="right">
+            <Item $move>
+              <ContainerIcon viewBox="-3 -3 24 24" />
+            </Item>
           </Tooltip>
         </div>
       </div>

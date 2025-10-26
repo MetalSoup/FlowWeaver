@@ -8,6 +8,7 @@ import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
 import { Custom3 } from './Components/Selectors/Custom3';
 import { Video } from './Components/Selectors/Video';
 import { RenderNode } from './Components/Editor/RenderNode';
+import { Flow}  from "@/Pages/Pages/Components/Selectors/Flow";
 
 type PageLike = {
     content?: any;
@@ -65,6 +66,7 @@ export default function Show(props: any) {
         OnlyButtons,
         Button,
         Video,
+        Flow
     };
 
     // Build Frame children depending on whether the content is serialized craft JSON or legacy HTML

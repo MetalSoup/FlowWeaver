@@ -7,7 +7,8 @@ import { Editor as CraftEditor, Frame, Element, useEditor } from '@craftjs/core'
 
 // Local editor building blocks (already present in the repo)
 import { Viewport, RenderNode } from './Components/Editor';
-import { Container, Text } from './Components/Selectors';
+import { Container, Text, FlexRow } from './Components/Selectors';
+import { FlexColumn } from './Components/Selectors';
 import { Button } from './Components/Selectors/Button';
 import { Custom1, OnlyButtons } from './Components/Selectors/Custom1';
 import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
@@ -108,7 +109,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
         id: initialPageId,
     });
 
-    // Viewport preview size state (mobile/tablet/desktop)
+    // Viewport preview size (mobile/tablet/desktop)
     const [viewportSize, setViewportSize] = useState<'mobile'|'tablet'|'desktop'>(() => {
         try {
             const stored = typeof window !== 'undefined' ? window.localStorage.getItem('editor:viewportSize') : null;
@@ -122,6 +123,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
     // Editor control state (undo/redo/preview) kept in local state and synced with craft query via polling
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
+    // start in Preview (original behavior) and keep in sync with craft's internal state
     const [editorEnabledState, setEditorEnabledState] = useState<boolean>(true);
 
     useEffect(() => {
@@ -517,6 +519,8 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
     const resolver = {
         Container,
         Text,
+        FlexRow,
+        FlexColumn,
         Custom1,
         Custom2,
         Custom2VideoDrop,
@@ -553,13 +557,13 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
 
     return (
         <DashboardLayout user={auth.user} header={header}>
-            <Head title={isEditing ? `Edit: ${page?.name || 'Page'}` : 'Create Page'} />
-            <div className="h-full">
-                <CraftEditor resolver={resolver} onRender={RenderNode}>
-                    {/* initializer must be rendered inside the editor so useEditor works */}
-                    <EditorInitializer pageContent={page?.content} />
+             <Head title={isEditing ? `Edit: ${page?.name || 'Page'}` : 'Create Page'} />
+             <div className="h-full">
+                 <CraftEditor resolver={resolver} onRender={RenderNode}>
+                     {/* initializer must be rendered inside the editor so useEditor works */}
+                     <EditorInitializer pageContent={page?.content} />
 
-                    <Viewport viewportSize={viewportSize}>
+                     <Viewport viewportSize={viewportSize}>
                          {initialChildren}
                      </Viewport>
                  </CraftEditor>
@@ -569,7 +573,9 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                 <input type="hidden" name="content" value={data.content} />
 
 
-            </div>
+             </div>
         </DashboardLayout>
-    );
-}
+     );
+ }
+
+ // ...existing code...
