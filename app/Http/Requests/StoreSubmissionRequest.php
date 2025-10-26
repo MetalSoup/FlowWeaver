@@ -11,7 +11,8 @@ class StoreSubmissionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // Allow public submissions for now; adjust authorization if needed.
+        return true;
     }
 
     /**
@@ -22,7 +23,13 @@ class StoreSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'flow_id' => ['nullable', 'integer'],
+            'step' => ['nullable', 'string'],
+            'data' => ['nullable', 'array'],
+            'data.*' => ['nullable'],
+            // Optional contact fields
+            'email' => ['nullable', 'string', 'email'],
+            'phone' => ['nullable', 'string'],
         ];
     }
 }

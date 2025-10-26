@@ -14,14 +14,13 @@ export const ButtonSettings = () => {
             <div className="flex flex-row-reverse">
               <div
                 style={{
-                  background:
-                    background && `rgba(${Object.values(background)})`,
+                  background: background && `rgba(${(background?.r ?? 0)}, ${(background?.g ?? 0)}, ${(background?.b ?? 0)}, ${(background?.a ?? 1)})`,
                 }}
                 className="shadow-md flex-end w-6 h-6 text-center flex items-center rounded-full bg-black"
               >
                 <p
                   style={{
-                    color: color && `rgba(${Object.values(color)})`,
+                    color: color && `rgba(${(color?.r ?? 0)}, ${(color?.g ?? 0)}, ${(color?.b ?? 0)}, ${(color?.a ?? 1)})`,
                   }}
                   className="text-white w-full text-center"
                 >

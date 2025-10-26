@@ -3,6 +3,21 @@ import React from 'react';
 import { ToolbarSection, ToolbarItem } from '../../editor';
 import { ToolbarRadio } from '../../editor/Toolbar/ToolbarRadio';
 
+// Helper to normalize color shapes to CSS strings
+const normalizeColor = (c: any) => {
+  if (!c) return undefined;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    const [r = 0, g = 0, b = 0, a = 1] = c;
+    return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+  }
+  const r = c.r ?? c[0] ?? 0;
+  const g = c.g ?? c[1] ?? 0;
+  const b = c.b ?? c[2] ?? 0;
+  const a = c.a ?? c[3] ?? 1;
+  return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+};
+
 export const ContainerSettings = () => {
   return (
     <React.Fragment>
@@ -24,14 +39,13 @@ export const ContainerSettings = () => {
             <div className="flex flex-row-reverse">
               <div
                 style={{
-                  background:
-                    background && `rgba(${Object.values(background)})`,
+                  background: background && normalizeColor(background),
                 }}
                 className="shadow-md flex-end w-6 h-6 text-center flex items-center rounded-full bg-black"
               >
                 <p
                   style={{
-                    color: color && `rgba(${Object.values(color)})`,
+                    color: color && normalizeColor(color),
                   }}
                   className="text-white w-full text-center"
                 >

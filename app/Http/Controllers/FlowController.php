@@ -146,17 +146,49 @@ class FlowController extends Controller
             abort(403);
         }*/
 
-        $flowCompiler = new \App\FlowCompiler(json_encode($flow->sequence));
-        $compiledSteps = $flowCompiler->compile();
+        $compiledSteps = $this->compileFlow($flow);
 
 
         return Inertia::render('Flows/Show', [
+            'flow_id' => $flow->id,
             'flow' => $compiledSteps,
         ]);
     }
 
+    /**
+     * Return compiled flow array (pure data) so callers can reuse it.
+     */
+    protected function compileFlow(Flow $flow)
+    {
+        $flowCompiler = new \App\FlowCompiler(json_encode($flow->sequence));
+        return $flowCompiler->compile();
+    }
+
+    public function getFlow(Flow $flow)
+    {
+        // Compile the flow data and return it as an Inertia response so the
+        // frontend's Inertia.get(route('get_flow', id)) call receives it in
+        // `page.props.flow`.
+        $compiled = $this->compileFlow($flow);
+
+        // If the client expects JSON (XHR/fetch) and this is NOT an Inertia
+        // request, return a JSON payload. Inertia requests include the
+        // `X-Inertia` header — they must receive an Inertia response.
+        $isInertia = (bool) request()->header('X-Inertia');
+        if ((request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') && !$isInertia) {
+             return response()->json([
+                 'flow_id' => $flow->id,
+                 'flow' => $compiled,
+             ]);
+         }
+
+         // Otherwise return a full Inertia page so Inertia.get/onSuccess can
+         // also extract the flow from page props if needed.
+         return Inertia::render('Flows/Show', [
+             'flow_id' => $flow->id,
+             'flow' => $compiled,
+         ]);
+     }
+
 
 }
-
-
-

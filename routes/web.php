@@ -6,6 +6,7 @@ use App\Http\Controllers\InstanceController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SubmissionController;
 use App\Http\Middleware\CheckInstanceSelectedMiddleware;
 use App\Http\Middleware\SelectOrganizationMiddleware;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,10 @@ Route::any('/test_post', function(){
 })->withoutMiddleware([VerifyCsrfToken::class])->name('test_post');
 
 
+
+
+Route::post('/submissions', [SubmissionController::class, 'store'])->name('submissions.store');
+Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -75,6 +80,7 @@ Route::middleware('auth')->group(function () {
 });
 
 route::get('testcompiler/{flow}', [FlowController::class, 'compile']);
+route::get('get_flow/{flow}', [FlowController::class, 'getFlow'])->name('get_flow');
 
 // Page editor routes
 //Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');

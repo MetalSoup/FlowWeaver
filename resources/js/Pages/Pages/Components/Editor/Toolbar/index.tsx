@@ -28,11 +28,8 @@ export const Toolbar = () => {
             fontSize: '11px',
           }}
         >
-          <h2 className="pb-1">Click on a component to start editing.</h2>
-          <h2>
-            You could also double click on the layers below to edit their names,
-            like in Photoshop
-          </h2>
+            <strong className="pb-1">Click on a component to start editing.</strong>
+
         </div>
       )}
     </div>

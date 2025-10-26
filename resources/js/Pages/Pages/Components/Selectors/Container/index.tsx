@@ -39,6 +39,21 @@ const defaultProps = {
   height: 'auto',
 };
 
+// Helper to produce a stable rgba(...) string from various shapes
+const normalizeColor = (c: any) => {
+  if (!c) return undefined;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    const [r = 0, g = 0, b = 0, a = 1] = c;
+    return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+  }
+  const r = c.r ?? c[0] ?? 0;
+  const g = c.g ?? c[1] ?? 0;
+  const b = c.b ?? c[2] ?? 0;
+  const a = c.a ?? c[3] ?? 1;
+  return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+};
+
 export const Container = (props: Partial<ContainerProps>) => {
   props = {
     ...defaultProps,
@@ -64,8 +79,8 @@ export const Container = (props: Partial<ContainerProps>) => {
         justifyContent,
         flexDirection,
         alignItems,
-        background: `rgba(${Object.values(background)})`,
-        color: `rgba(${Object.values(color)})`,
+        background: normalizeColor(background),
+        color: normalizeColor(color),
         padding: `${padding[0]}px ${padding[1]}px ${padding[2]}px ${padding[3]}px`,
         margin: `${margin[0]}px ${margin[1]}px ${margin[2]}px ${margin[3]}px`,
         boxShadow:

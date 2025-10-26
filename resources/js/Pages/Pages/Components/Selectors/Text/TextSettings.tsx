@@ -4,6 +4,21 @@ import { capitalize, weightDescription } from '../../../utils/text';
 import { ToolbarSection, ToolbarItem } from '../../editor';
 import { ToolbarRadio } from '../../editor/Toolbar/ToolbarRadio';
 
+// Helper to produce stable CSS color strings from common stored shapes
+const normalizeColor = (c: any) => {
+  if (!c) return undefined;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    const [r = 0, g = 0, b = 0, a = 1] = c;
+    return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+  }
+  const r = c.r ?? c[0] ?? 0;
+  const g = c.g ?? c[1] ?? 0;
+  const b = c.b ?? c[2] ?? 0;
+  const a = c.a ?? c[3] ?? 1;
+  return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+};
+
 export const TextSettings = () => {
   return (
     <React.Fragment>
@@ -55,7 +70,7 @@ export const TextSettings = () => {
             <div className="fletext-right">
               <p
                 style={{
-                  color: color && `rgba(${Object.values(color)})`,
+                  color: color && normalizeColor(color),
                   textShadow: `0px 0px 2px rgba(0, 0, 0, ${shadow / 100})`,
                 }}
                 className="text-white text-right"

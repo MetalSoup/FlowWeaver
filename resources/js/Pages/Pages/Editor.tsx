@@ -13,14 +13,89 @@ import { Custom1, OnlyButtons } from './Components/Selectors/Custom1';
 import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
 import { Custom3 } from './Components/Selectors/Custom3';
 import { Video } from './Components/Selectors/Video';
+import { Flow } from './Components/Selectors/Flow';
+
+// Module-scoped debug helpers so they can be exported and won't trigger unused warnings
+export const debugEcho = async (payload: any) => {
+    try {
+        const resp = await fetch('/test_post', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const json = await resp.json();
+        console.debug('debugEcho response ->', json);
+        return json;
+    } catch (e) {
+        console.error('debugEcho failed', e);
+        throw e;
+    }
+};
+
+export const sendFormViaFetch = async (url: string, payload: any, method: 'post' | 'put' = 'post') => {
+    const tokenMeta = typeof document !== 'undefined' ? document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null : null;
+    const headers: Record<string,string> = {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    if (tokenMeta?.content) headers['X-CSRF-TOKEN'] = tokenMeta.content;
+
+    const form = new URLSearchParams();
+    const payloadWithMethod = method === 'put' ? { ...payload, _method: 'put' } : payload;
+    Object.keys(payloadWithMethod).forEach(k => {
+        const v = (payloadWithMethod as any)[k];
+        form.append(k, typeof v === 'string' ? v : JSON.stringify(v));
+    });
+
+    // Normalize URL to dashboard prefix when Ziggy may resolve to non-prefixed routes
+    const normalizeUrl = (u: string) => {
+        try {
+            const parsed = new URL(u, typeof window !== 'undefined' ? window.location.origin : '');
+            let path = parsed.pathname;
+            if (path.startsWith('/pages') && !path.startsWith('/dashboard/pages')) {
+                path = '/dashboard' + path;
+                parsed.pathname = path;
+                return parsed.toString();
+            }
+            return parsed.toString();
+        } catch (e) {
+            if (u.startsWith('/pages') && !u.startsWith('/dashboard/pages')) {
+                return '/dashboard' + u;
+            }
+            return u;
+        }
+    };
+
+    const finalUrl = normalizeUrl(url);
+    console.debug('sendFormViaFetch: finalUrl ->', finalUrl);
+
+    const resp = await fetch(finalUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers,
+        body: form.toString(),
+    });
+
+    if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        return Promise.reject(new Error(`Fetch failed: ${resp.status} ${resp.statusText} - ${text.slice(0,500)}`));
+    }
+
+    return await resp.text();
+};
+
+// Make helpers available on window for console debugging (ignore in non-browser envs)
+try { (window as any).__debugEcho = debugEcho; } catch (e) { /* ignore */ }
+try { (window as any).__sendFormViaFetch = sendFormViaFetch; } catch (e) { /* ignore */ }
 
 export default function Editor({ auth, page = null, forms = {}, flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
     const isEditing = !!page;
 
     // Derive an initial page id from common API shapes so we populate the form state correctly
-    const initialPageId = page.data.id ?? null;
-    const initialPageContent = page.data.content ?? '';
-    const initialPageName = page.data.name ?? '';
+    const initialPageId = page?.data?.id ?? page?.id ?? null;
+    const initialPageContent = page?.data?.content ?? page?.content ?? '';
+    const initialPageName = page?.data?.name ?? page?.name ?? '';
 
 
 
@@ -39,7 +114,7 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
         }
     }, [isEditing, initialPageId]);
 
-    const [message, setMessage] = useState<string | null>(null);
+    const [message] = useState<string | null>(null);
 
     // A ref that will be populated by EditorInitializer with the craftjs API (actions + query)
     const editorApiRef = useRef<any>(null);
@@ -90,7 +165,7 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
     // Save: serialize craft state (if available) into content and submit to server
     const save = async () => {
         let page_id = getPageId() ?? '';
-        let newContent: any = null;
+        let newContent: any;
         let page_name = data.name ?? '';
 
         // Try to serialize current editor state if the editor API is available.
@@ -130,93 +205,9 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
         console.log(newContent);
     }
 
-    // Debug helper: send the payload to /test_post (no CSRF) so server echoes how it parsed it
-    const debugEcho = async (payload: any) => {
-        try {
-            const resp = await fetch('/test_post', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            const json = await resp.json();
-            console.debug('debugEcho response ->', json);
-        } catch (e) {
-            console.error('debugEcho failed', e);
-        }
-    };
+    // Expose debug helpers on window so they are available from the console and not flagged as unused
+    try { (window as any).__debugEcho = debugEcho; } catch (e) { /* ignore in non-browser environments */ }
 
-    // Robust sender using form-encoded POST (with _method override) so Laravel receives data like a standard form
-    const sendFormViaFetch = async (url: string, payload: any, method: 'post' | 'put' = 'post') => {
-        try {
-            const tokenMeta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
-            const headers: Record<string,string> = {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded',
-            };
-            if (tokenMeta?.content) headers['X-CSRF-TOKEN'] = tokenMeta.content;
-
-            const form = new URLSearchParams();
-            const payloadWithMethod = method === 'put' ? { ...payload, _method: 'put' } : payload;
-            Object.keys(payloadWithMethod).forEach(k => {
-                const v = (payloadWithMethod as any)[k];
-                form.append(k, typeof v === 'string' ? v : JSON.stringify(v));
-            });
-
-            // Normalize URL to dashboard prefix when Ziggy may resolve to non-prefixed routes
-            const normalizeUrl = (u: string) => {
-                try {
-                    // handle full absolute URLs
-                    const parsed = new URL(u, window.location.origin);
-                    let path = parsed.pathname;
-                    if (path.startsWith('/pages') && !path.startsWith('/dashboard/pages')) {
-                        path = '/dashboard' + path;
-                        parsed.pathname = path;
-                        return parsed.toString();
-                    }
-                    return parsed.toString();
-                } catch (e) {
-                    // If URL() fails, try simple prefix
-                    if (u.startsWith('/pages') && !u.startsWith('/dashboard/pages')) {
-                        return '/dashboard' + u;
-                    }
-                    return u;
-                }
-            };
-
-            const finalUrl = normalizeUrl(url);
-            console.debug('sendFormViaFetch: finalUrl ->', finalUrl);
-
-            const resp = await fetch(finalUrl, {
-                 method: 'POST',
-                 credentials: 'same-origin',
-                 headers,
-                 body: form.toString(),
-             });
-
-            if (!resp.ok) {
-                const text = await resp.text().catch(() => '');
-                throw new Error(`Fetch failed: ${resp.status} ${resp.statusText} - ${text.slice(0,500)}`);
-            }
-
-            return await resp.text();
-        } catch (e) {
-            console.error('sendFormViaFetch error', e);
-            throw e;
-        }
-    };
-
-    // Expose save to keyboard shortcut (Ctrl/Cmd+S)
-    useEffect(() => {
-        const handler = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-                e.preventDefault();
-                save();
-            }
-        };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, [data]);
 
     // EditorInitializer runs inside Craft Editor context so it can access useEditor
     const EditorInitializer: React.FC<{ pageContent?: any }> = ({ pageContent }) => {
@@ -379,6 +370,7 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
         OnlyButtons,
         Button,
         Video,
+        Flow,
     } as any;
 
     // Initial children: if we don't have serialized content, render a basic canvas containing the existing HTML (legacy)
@@ -421,21 +413,8 @@ export default function Editor({ auth, page = null, forms = {}, flows = [] }: { 
                 {/* Add a name so html-form based tools (and some integrations) will pick this up if needed */}
                 <input type="hidden" name="content" value={data.content} />
 
-                {/* Non-intrusive lists to use the passed forms/flows so they're available to editors */}
-                <div className="p-4 text-sm text-gray-700">
-                    {flows && flows.length > 0 && (
-                        <div>
-                            <strong>Flows:</strong> {flows.map((f: any) => f.name).join(', ')}
-                        </div>
-                    )}
-                    {forms && Object.keys(forms).length > 0 && (
-                        <div className="mt-2">
-                            <strong>Forms:</strong> {Object.keys(forms).length}
-                        </div>
-                    )}
-                </div>
+
             </div>
         </DashboardLayout>
     );
 }
-

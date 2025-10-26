@@ -11,6 +11,7 @@ import { Button } from '../../Selectors/Button';
 import { Container } from '../../Selectors/Container';
 import { Text } from '../../Selectors/Text';
 import { Video } from '../../Selectors/Video';
+import { Flow } from '../../Selectors/Flow';
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
   transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -107,7 +108,22 @@ export const Toolbox = () => {
             </Item>
           </Tooltip>
         </div>
+        <div
+          ref={(ref) => {
+              create(ref, <Flow />);
+          }}
+        >
+          <Tooltip title="Form" placement="right">
+              <Item $move>
+                  <YoutubeIcon viewBox="-3 -3 28 28" />
+              </Item>
+          </Tooltip>
+        </div>
       </div>
+
+
+
+
     </ToolboxDiv>
   );
 };

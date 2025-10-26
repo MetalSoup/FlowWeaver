@@ -43,6 +43,11 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            // Expose session flash data to Inertia front-end (e.g. submission_id)
+            'flash' => fn () => [
+                'success' => $request->session()->get('success'),
+                'submission_id' => $request->session()->get('submission_id'),
+            ],
 // prepend default fields to 'fields' prop
 
             'fields' => fn() => $this->getAdditionalFields(),

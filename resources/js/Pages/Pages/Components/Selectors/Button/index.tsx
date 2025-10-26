@@ -7,6 +7,21 @@ import { ButtonSettings } from './ButtonSettings';
 
 import { Text } from '../Text';
 
+// Helper: stable rgba string builder
+const normalizeColor = (c: any) => {
+  if (!c) return 'rgba(0,0,0,0)';
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    const [r = 0, g = 0, b = 0, a = 1] = c;
+    return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+  }
+  const r = c.r ?? c[0] ?? 0;
+  const g = c.g ?? c[1] ?? 0;
+  const b = c.b ?? c[2] ?? 0;
+  const a = c.a ?? c[3] ?? 1;
+  return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+};
+
 type ButtonProps = {
   background?: Record<'r' | 'g' | 'b' | 'a', number>;
   color?: Record<'r' | 'g' | 'b' | 'a', number>;
@@ -24,17 +39,17 @@ type StyledButtonProps = {
 };
 
 const StyledButton = styled.button<StyledButtonProps>`
-  background: ${(props) =>
+  background: ${props =>
     props.$buttonStyle === 'full'
-      ? `rgba(${Object.values(props.$background)})`
+      ? normalizeColor(props.$background)
       : 'transparent'};
   border: 2px solid transparent;
-  border-color: ${(props) =>
+  border-color: ${props =>
     props.$buttonStyle === 'outline'
-      ? `rgba(${Object.values(props.$background)})`
+      ? normalizeColor(props.$background)
       : 'transparent'};
   margin: ${({ $margin }) =>
-    `${$margin[0]}px ${$margin[1]}px ${$margin[2]}px ${$margin[3]}px`};
+    `${$margin[0]}px ${$margin[1]}px ${$margin[2]}px ${$margin[3]}px`};;
 `;
 
 export const Button: UserComponent<ButtonProps> = ({
