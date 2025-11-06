@@ -15,23 +15,12 @@ class FlowController extends Controller
 {
     protected function resolveSelectedInstanceId()
     {
-        $sel = session('selected_instance') ?? null;
-
-        // If session holds an object/array with id, extract it
-        if (is_array($sel) && isset($sel['id'])) {
-            return (int) $sel['id'];
+        $selectedId = null;
+        $user = auth()->user();
+        if ($user && method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
+            $selectedId = $user->selectedInstance()->id;
         }
-
-        if (is_object($sel) && isset($sel->id)) {
-            return (int) $sel->id;
-        }
-
-        // If it's a scalar (already an id)
-        if (is_numeric($sel)) {
-            return (int) $sel;
-        }
-
-        return null;
+        return $selectedId;
     }
 
     public function index()

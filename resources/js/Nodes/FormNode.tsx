@@ -10,7 +10,7 @@ import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import {v4 as uuidv4} from 'uuid';
-import { PlusCircle } from 'phosphor-react';
+import { PlusCircleIcon } from '@phosphor-icons/react';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import {usePage} from "@inertiajs/react";
@@ -220,7 +220,7 @@ export default function FormNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addField}
                         >
-                            <PlusCircle size={24} />
+                            <PlusCircleIcon size={24} />
                         </div>
                     </NodeSection>
 

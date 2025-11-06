@@ -8,22 +8,16 @@ class CheckInstanceSelectedMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        // Resolve selected instance id in order: user's saved value, session, cookie
+        // Use only the user's persisted preferences to resolve the selected instance.
+        // Legacy session/cookie/column behavior has been removed.
         $selectedId = null;
-        if ($request->user() && isset($request->user()->selected_instance_id) && $request->user()->selected_instance_id) {
-            $selectedId = $request->user()->selected_instance_id;
-        } elseif ($request->session()->has('selected_instance')) {
-            $selectedId = $request->session()->get('selected_instance');
-        } elseif ($request->cookie('selected_instance')) {
-            $selectedId = $request->cookie('selected_instance');
+        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
+            $selectedId = $request->user()->selectedInstance()->id;
         }
 
         if (!$selectedId) {
             return redirect()->route('instances.select');
         }
-
-        // Ensure session is populated for downstream code that relies on it
-        $request->session()->put('selected_instance', $selectedId);
 
         return $next($request);
     }

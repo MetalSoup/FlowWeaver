@@ -4,7 +4,7 @@ import * as React from 'react';
 import ReactDOM from 'react-dom';
 import { styled } from 'styled-components';
 
-import {ArrowUp, Trash, DotsNine} from 'phosphor-react';
+import {ArrowUpIcon, TrashIcon, DotsNineIcon} from '@phosphor-icons/react';
 
 const IndicatorDiv = styled.div`
   height: 30px;
@@ -118,7 +118,7 @@ export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render })
                      if (el) drag(el as HTMLElement);
                    }}
                  >
-                  <DotsNine  size={16}/>
+                  <DotsNineIcon  size={16}/>
                  </Btn>
                 ) : null}
                {id !== ROOT_NODE && (
@@ -128,7 +128,7 @@ export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render })
                      if (parent) actions.selectNode(parent as string);
                    }}
                  >
-                  <ArrowUp size={16} />
+                  <ArrowUpIcon size={16} />
                  </Btn>
                )}
               {deletable ? (
@@ -139,7 +139,7 @@ export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render })
                     actions.delete(id);
                   }}
                 >
-                  <Trash size={16} />
+                  <TrashIcon size={16} />
                  </Btn>
                ) : null}
             </IndicatorDiv>,

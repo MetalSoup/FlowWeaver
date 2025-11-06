@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import React from 'react';
 import { styled } from 'styled-components';
-import { CaretDown } from 'phosphor-react';
+import { CaretDownIcon } from '@phosphor-icons/react';
 
 const SidebarItemDiv = styled.div<{ $visible?: boolean; $height?: string }>`
   height: ${(props) =>
@@ -71,7 +71,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
           <h2 className="text-xs uppercase">{title}</h2>
         </div>
         <Chevron $visible={visible}>
-          {React.createElement(CaretDown, { size: 12 })}
+          {React.createElement(CaretDownIcon, { size: 12 })}
         </Chevron>
       </HeaderDiv>
       {visible ? (

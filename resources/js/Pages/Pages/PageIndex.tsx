@@ -4,6 +4,7 @@ import {Head, Link, router} from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import DangerButton from '@/Components/DangerButton';
 import PrimaryButton from "@/Components/PrimaryButton";
+import IndexTable from '@/Components/IndexTable';
 
 export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pages?: any }) {
     const rows = pages?.data ?? [];
@@ -52,151 +53,18 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
         closeConfirm();
     };
 
-    const renderPagination = () => {
-        if (!pages) return null;
-
-        // Normalize links: sometimes serializer returns an object-like structure or a JSON string
-        const rawLinks = pages.links;
-        let linksArr: any[] | null;
-
-        const tryParseJson = (val: any) => {
-            if (typeof val !== 'string') return val;
-            try {
-                return JSON.parse(val);
-            } catch (e) {
-                return val;
-            }
-        };
-
-        const normalizeObjectLike = (obj: any) => {
-            if (!obj || typeof obj !== 'object') return null;
-            const keys = Object.keys(obj);
-            // If keys are all numeric ("0","1",...) keep numeric order
-            const allNumeric = keys.length > 0 && keys.every(k => /^\d+$/.test(k));
-            if (allNumeric) {
-                return keys
-                    .map(k => ({ k: Number(k), v: obj[k] }))
-                    .sort((a, b) => a.k - b.k)
-                    .map(x => x.v);
-            }
-            // Fallback: return values in insertion order
-            try {
-                return Object.values(obj);
-            } catch (e) {
-                return null;
-            }
-        };
-
-        const parsed = tryParseJson(rawLinks);
-
-        if (Array.isArray(parsed)) {
-            linksArr = parsed;
-        } else if (parsed && typeof parsed === 'object') {
-            linksArr = normalizeObjectLike(parsed);
-        } else {
-            if (process.env.NODE_ENV !== 'production') {
-                // eslint-disable-next-line no-console
-                console.warn('Pages index: unexpected pages.links shape:', rawLinks);
-            }
-            linksArr = null;
-        }
-
-        // Ensure linksArr is actually iterable with map before using it
-        if (linksArr && typeof (linksArr as any).map === 'function') {
-            const safeLinks = (linksArr as any[]).filter(Boolean);
-            return (
-                <nav className="mt-4">
-                    <ul className="inline-flex items-center -space-x-px">
-                        {safeLinks.map((link: any, idx: number) => {
-                            // Normalize individual link entries: sometimes the server returns raw anchor HTML as a string
-                            // e.g. '<a href="/pages?page=2">2</a>' — detect that and convert to an object so we render a Link
-                            let linkObj = link;
-                            if (typeof link === 'string') {
-                                const anchorMatch = link.match(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-                                if (anchorMatch) {
-                                    linkObj = { url: anchorMatch[1], label: anchorMatch[2] };
-                                } else {
-                                    linkObj = { label: link };
-                                }
-                            }
-                            // If link is not an object, render a simple label
-                            if (!linkObj || typeof linkObj !== 'object') {
-                                const plainLabel = String(linkObj ?? '');
-                                return (
-                                    <li key={idx} className="mx-1">
-                                        <span className="px-3 py-1 border rounded-md text-sm text-gray-700">{plainLabel}</span>
-                                    </li>
-                                );
-                            }
-
-                            const label = (linkObj.label || '').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»');
-                            const isActive = !!linkObj.active;
-                            return (
-                                <li key={idx} className="mx-1">
-                                    {linkObj.url ? (
-                                        <Link
-                                            href={linkObj.url}
-                                            className={
-                                                'px-3 py-1 border rounded-md text-sm ' + (isActive ? 'bg-gray-900 text-white' : 'bg-white text-gray-700')
-                                            }
-                                        >
-                                            <span dangerouslySetInnerHTML={{ __html: label }} />
-                                        </Link>
-                                    ) : (
-                                        <span className="px-3 py-1 border rounded-md text-sm text-gray-400" dangerouslySetInnerHTML={{ __html: label }} />
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-            );
-        }
-
-        // Fallback: build pagination from pages.meta (current_page, last_page)
-        const meta = pages.meta || {};
-        const current = Number(meta.current_page || 1);
-        const last = Number(meta.last_page || 1);
-        if (last <= 1) return null;
-
-        const pageLinks: any[] = [];
-        // Previous
-        pageLinks.push({ label: '«', url: current > 1 ? `${route('pages.index')}?page=${current - 1}` : null });
-        // Numeric pages (limit to a reasonable window)
-        const window = 5;
-        const start = Math.max(1, current - Math.floor(window / 2));
-        const end = Math.min(last, start + window - 1);
-
-        for (let i = start; i <= end; i++) {
-            pageLinks.push({ label: String(i), url: `${route('pages.index')}?page=${i}`, active: i === current });
-        }
-
-        // Next
-        pageLinks.push({ label: '»', url: current < last ? `${route('pages.index')}?page=${current + 1}` : null });
-
-        return (
-            <nav className="mt-4">
-                <ul className="inline-flex items-center -space-x-px">
-                    {pageLinks.map((link: any, idx: number) => (
-                        <li key={idx} className="mx-1">
-                            {link.url ? (
-                                <Link
-                                    href={link.url}
-                                    className={
-                                        'px-3 py-1 border rounded-md text-sm ' + (link.active ? 'bg-gray-900 text-white' : 'bg-white text-gray-700')
-                                    }
-                                >
-                                    {link.label}
-                                </Link>
-                            ) : (
-                                <span className="px-3 py-1 border rounded-md text-sm text-gray-400">{link.label}</span>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        );
-    };
+    const columns = [
+        { key: 'id', label: 'ID', className: 'w-16' },
+        { key: 'name', label: 'Name', sortable: true, render: (page: any) => <Link href={route('pages.edit', page.id)} className="text-blue-600">{page.name}</Link> },
+        { label: 'Actions', render: (page: any) => (
+            <div>
+                <Link href={route('pages.edit', page.id)} className="bg-gray-200 text-gray-800 py-1 px-2 rounded mr-2">Edit</Link>
+                <button onClick={() => openConfirm(page)} className="bg-red-600 text-white py-1 px-2 rounded ">Delete</button>
+            </div>
+        ) },
+        { key: 'created_at', label: 'Created At', sortable: true },
+        { key: 'updated_at', label: 'Updated At', sortable: true },
+    ];
 
     return (
         <DashboardLayout
@@ -206,41 +74,14 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
             <Head title="Pages" />
 
             <div className="p-5">
-                <table className="w-full">
-                    <thead>
-                        <tr>
-                            <th className="text-left">ID</th>
-                            <th className="text-left">Name</th>
-                            <th className="text-left">Actions</th>
-                            <th className="text-left">Created At</th>
-                            <th className="text-left">Updated At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows && rows.length ? (
-                            rows.map((page: any) => (
-                                <tr key={page.id} className="border-t">
-                                    <td className="py-2">{page.id}</td>
-                                    <td className="py-2"><Link href={route('pages.edit', page.id)}>{page.name}</Link></td>
-                                    <td className="py-2">
-                                        <Link href={route('pages.edit', page.id)} className="bg-gray-200 text-gray-800 py-1 px-2 rounded mr-2">Edit</Link>
-                                        <button onClick={() => openConfirm(page)} className="bg-red-600 text-white py-1 px-2 rounded">Delete</button>
-                                    </td>
-                                    <td className="py-2">{page.created_at}</td>
-                                    <td className="py-2">{page.updated_at}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={5} className="p-6 text-gray-900">
-                                    No pages found. Create your first page using the "Create Page" button.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-
-                {renderPagination()}
+                <IndexTable
+                    rows={rows}
+                    columns={columns}
+                    pages={pages}
+                    searchEnabled={true}
+                    searchPlaceholder="Search pages..."
+                    baseRoute="pages.index"
+                />
 
                 {/* confirmation modal */}
                 <Modal show={confirming} onClose={closeConfirm}>

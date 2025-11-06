@@ -20,14 +20,14 @@ export default function DashboardLayout({ user, header, children }: PropsWithChi
                 <DashboardSideMenu user={user} name={instanceName} selectedInstance={selectedInstance}
                                    onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
                                    showingNavigationDropdown={showingNavigationDropdown}/>
-                <div className="w-full flex flex-col h-screen overflow-y-hidden">
+                <div className="w-full flex flex-col h-screen overflow-y-auto bg-grey-100 dark:bg-gray-800">
                     {header && (
                         <header className="bg-gray-100 shadow dark:bg-gray-700 dark:text-white">
                             <div className="py-4 px-4 sm:px-6 lg:px-8">{header}</div>
                         </header>
                     )}
 
-                    <main className={"flex flex-col h-screen bg-white dark:bg-gray-800 dark:text-white"}>{children}</main>
+                    <main className={"flex flex-col bg-white dark:bg-gray-800 dark:text-white"}>{children}</main>
                 </div>
 
             </div>

@@ -1,5 +1,5 @@
 import {Handle, Position, useStore} from "@xyflow/react";
-import { Play } from 'phosphor-react';
+import { PlayIcon } from '@phosphor-icons/react';
 
 
 export default function NodeStartHandle ({ onConnect, id, children, nodeID }: {
@@ -24,7 +24,7 @@ export default function NodeStartHandle ({ onConnect, id, children, nodeID }: {
 
                     />
                     <div className={"handle_icon absolute left-0 z-0"}>
-                        <Play size={24} weight={isConnected ? 'fill' : 'regular'} />
+                        <PlayIcon size={24} weight={isConnected ? 'fill' : 'regular'} />
                      </div>
                      <div className={"pl-6"}>
                          {children ? children : "\u00A0"}

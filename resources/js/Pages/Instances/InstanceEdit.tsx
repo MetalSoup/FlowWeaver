@@ -2,7 +2,7 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 // using `any` for the instance prop to keep the editor flexible
 import { Head, router } from "@inertiajs/react";
 import {useState} from "react";
-export default function InstanceEditor({auth, instance}: { auth: any, instance: any }) {
+export default function InstanceEdit({auth, instance}: { auth: any, instance: any }) {
     const [name, setName] = useState(instance.name ? instance.name : "");
     const [description, setDescription] = useState(instance.description ? instance.description : "");
     const onChangeName = (event: any) => {

@@ -1,15 +1,32 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import IndexTable from '@/Components/IndexTable';
 
-export default function Dashboard({auth, instances = []}: {
+export default function InstanceIndex({auth, instances = []}: {
     auth: any,
     instances?: any
 }) {
-    console.log(instances);
+    // Support either a plain array or a paginator object with .data
+    const rows = Array.isArray(instances) ? instances : (instances?.data ?? []);
+    const pages = Array.isArray(instances) ? undefined : instances;
+
     const onSelect = (id: number) => {
         // POST the instance_id to the server to set session selected_instance
         router.post(route('instances.storeSelection'), { instance_id: id });
     }
+
+    const columns = [
+        { key: 'id', label: 'ID', className: 'w-16', sortable: true },
+        { key: 'name', label: 'Name', sortable: true, render: (instance: any) => <Link href={route('instances.edit', instance.id)}>{instance.name}</Link> },
+        { label: 'Actions', render: (instance: any) => (
+            <div>
+                <button onClick={() => onSelect(instance.id)} className="bg-green-500 text-white py-1 px-2 rounded">Select</button>
+            </div>
+        ) },
+        { key: 'created_at', label: 'Created At', sortable: true, render: (instance: any) => instance.created_at ?? '' },
+        { key: 'updated_at', label: 'Updated At', sortable: true, render: (instance: any) => instance.updated_at ?? '' },
+    ];
+
     return (
         <DashboardLayout
             user={auth.user}
@@ -19,48 +36,17 @@ export default function Dashboard({auth, instances = []}: {
 
 
             <div className={"p-5"}>
-                <table className={"w-full"}>
-                    <thead>
-                    <tr>
-                        <th className={"text-left"}>
-                            ID
-                        </th>
-                        <th className={"text-left"}>
-                            Name
-                        </th>
-                        <th className={"text-left"}>
-                            Slug
-                        </th>
-                        <th className={"text-left"}>
-                            Actions
-                        </th>
-                        <th className={"text-left"}>
-                            Created At
-                        </th>
-                        <th className={"text-left"}>
-                            Updated At
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {instances && instances.length ? instances.map((instance: any) => (
-                        <tr key={instance.id}>
-                            <td>{instance.id}</td>
-                            <td><Link href={route("instances.edit", instance.id)}>{instance.name}</Link></td>
-                            <td>{instance.description}</td>
-                            <td>
-                                <button onClick={() => onSelect(instance.id)} className="bg-green-500 text-white py-1 px-2 rounded">Select</button>
-                            </td>
-                            <td>{instance.created_at}</td>
-                            <td>{instance.updated_at}</td>
-                        </tr>
-                    )) : (
-                        <tr><td colSpan={6} className="p-6 text-gray-900">No instances found.</td></tr>
-                    )}
-
-                    </tbody>
-
-                </table>
+                <IndexTable
+                    rows={rows}
+                    columns={columns}
+                    pages={pages}
+                    searchEnabled={true}
+                    searchPlaceholder="Search instances..."
+                    baseRoute="instances.index"
+                    queryParam="q"
+                    debounceMs={300}
+                    noResultsMessage="No instances found."
+                />
             </div>
 
         </DashboardLayout>

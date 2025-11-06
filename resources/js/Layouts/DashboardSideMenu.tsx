@@ -1,18 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {User} from "@/types";
-import {Link, usePage} from "@inertiajs/react";
+import {Link, router, usePage} from "@inertiajs/react";
 import Dropdown from "@/Components/Dropdown";
 import {
-    CaretLeft,
-    CaretRight,
-    ChartLineUp,
-    Cube,
-    Files,
-    FlowArrow,
-    Moon,
-    SunDim,
-    Textbox
-} from "phosphor-react";
+    CaretLeftIcon,
+    CaretRightIcon,
+    ChartLineUpIcon,
+    CubeIcon,
+    FilesIcon,
+    FlowArrowIcon,
+    MoonIcon,
+    SunDimIcon,
+    TextboxIcon,
+    BuildingOfficeIcon, IdentificationCardIcon, SignOutIcon
+} from "@phosphor-icons/react";
 
 
 export default function DashboardSideMenu(props: {
@@ -38,25 +39,51 @@ export default function DashboardSideMenu(props: {
     });
 
     // theme state (light/dark) persisted
-    // start with a safe default (light) and initialize on mount to avoid SSR window/document access
-    const [dark, setDark] = useState<boolean>(false);
-
-    // initialize theme on client mount: prefer localStorage, then OS preference
-    useEffect(() => {
+    // initialize synchronously from server-provided user.preferences.theme if present,
+    // otherwise fall back to localStorage and OS preference. We also ensure the
+    // document `dark` class is set before first paint to avoid flashing.
+    const [dark, setDark] = useState<boolean>(() => {
         try {
-            const stored = localStorage.getItem('theme');
-            if (stored) {
-                setDark(stored === 'dark');
-                return;
+            // prefer server-provided preference in the authenticated user object
+            const serverPref = (user as any)?.preferences?.theme;
+            if (serverPref) {
+                const isDark = serverPref === 'dark';
+                if (typeof document !== 'undefined') {
+                    if (isDark) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                }
+                return isDark;
             }
 
-            if (typeof window !== 'undefined' && window.matchMedia) {
-                setDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+                const stored = localStorage.getItem('theme');
+                if (stored) {
+                    const isDark = stored === 'dark';
+                    if (isDark) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                    return isDark;
+                }
+
+                if (window.matchMedia) {
+                    const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (prefers) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                    return prefers;
+                }
             }
         } catch (e) {}
-    }, []);
+        return false;
+    });
+
+    // persist collapsed state when it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
+        } catch (e) {}
+    }, [collapsed]);
 
     // write theme preference and update <html> class when `dark` changes
+    const _initialSync = useRef<boolean>(false);
     useEffect(() => {
         try {
             localStorage.setItem('theme', dark ? 'dark' : 'light');
@@ -64,8 +91,41 @@ export default function DashboardSideMenu(props: {
                 if (dark) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
             }
-        } catch (e) {}
-    }, [dark]);
+
+            // Avoid posting on initial mount (which would trigger an Inertia visit and
+            // cause the component to remount). Only persist to server when the user
+            // actually changes the theme.
+            if (!_initialSync.current) {
+                // Mark that we've completed the initial sync and skip the server post
+                _initialSync.current = true;
+                return;
+            }
+
+            // Only POST if server-stored preference is different from current value.
+            try {
+                const serverPref = (user as any)?.preferences?.theme;
+                const currentPref = dark ? 'dark' : 'light';
+                if (serverPref === currentPref) {
+                    return; // nothing to persist
+                }
+
+
+                const payload: any = { preferences: { theme: currentPref } };
+                // Post to user preferences update endpoint using inertia
+                // so it updates without a full page reload.
+                // We use `preserveState` to avoid remounting the component.
+                // @ts-ignore
+
+                router.post(route('preferences.update'), payload, {});
+
+            } catch (e) {
+                // ignore serverPref/read errors
+                console.error('Error checking server preference', e);
+            }
+        } catch (e) {
+            console.error('Error syncing theme preference', e);
+        }
+    }, [dark, user]);
 
     // derive initials for avatar fall-back
     const initials = ((user?.name ?? name ?? "")).split(" ").map(s => s[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
@@ -83,19 +143,16 @@ export default function DashboardSideMenu(props: {
 
     const navItems = [
         { href: route("dashboard"), label: "Dashboard", icon: (
-                <ChartLineUp size={25}/>
-            ) },
-        { href: route("instances.index"), label: "Instances", icon: (
-                <Cube size={25}/>
+                <ChartLineUpIcon size={25}/>
             ) },
         { href: route("pages.index"), label: "Pages", icon: (
-                <Files size={25}/>
+                <FilesIcon size={25}/>
             ) },
         { href: route("flows.index"), label: "Flows", icon: (
-                <FlowArrow size={25}/>
+                <FlowArrowIcon size={25}/>
             ) },
         { href: route("fields.index"), label: "Fields", icon: (
-                <Textbox size={25}/>
+                <TextboxIcon size={25}/>
             ) }
     ];
 
@@ -109,16 +166,7 @@ export default function DashboardSideMenu(props: {
                 </svg>
             </div>
 
-            <div className={`${collapsed ? 'hidden' : 'block'}`}>
-                <div className={`${textPrimary} font-bold`}>
-                    {selectedInstance ? (
-                        <Link href={route('instances.edit', selectedInstance.id)} className={`${textPrimary} hover:underline`}>{selectedInstance.name}</Link>
-                    ) : (
-                        <Link href={route('instances.select')} className={`${textPrimary} hover:underline`}>{name}</Link>
-                    )}
-                </div>
-                <div className={`${textSecondary} text-xs`}>Control panel</div>
-            </div>
+
 
             <div className="ml-auto flex items-center gap-2">
                 {/* collapse toggle */}
@@ -130,7 +178,7 @@ export default function DashboardSideMenu(props: {
                     className={`inline-flex items-center justify-center p-1 rounded-md ${toggleTextClass} ${toggleBgClass} ${toggleBorderClass} ${toggleHoverBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${dark ? 'focus-visible:ring-white/30' : 'focus-visible:ring-gray-300'}`}
                 >
                     {collapsed ? (
-                        <CaretRight/> ) : (<CaretLeft/>)
+                        <CaretRightIcon/> ) : (<CaretLeftIcon/>)
                     }
                 </button>
 
@@ -143,29 +191,15 @@ export default function DashboardSideMenu(props: {
                     className={`inline-flex items-center justify-center p-1 rounded-md ${toggleTextClass} ${toggleBgClass} ${toggleBorderClass} ${toggleHoverBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${dark ? 'focus-visible:ring-white/30' : 'focus-visible:ring-gray-300'}`}
                 >
                     {dark ? (
-                        <SunDim size={25} />
+                        <SunDimIcon size={25} />
                     ) : (
-                        <Moon size={25}/>
+                        <MoonIcon size={25}/>
                     )}
                 </button>
             </div>
         </div>
 
-        <div className="flex items-center gap-3 px-3 py-4">
-            <div className="flex-shrink-0">
-                <div className={`h-10 w-10 rounded-full bg-white/10 flex items-center justify-center ${textPrimary} font-semibold`}>
-                    {initials}
-                </div>
-            </div>
-            <div className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
-                <div className={`${textPrimary} text-sm truncate`}>{user ? user.name : "Guest"}</div>
-                <div className={`${textSecondary} text-xs`}>{user ? (user.email ?? "") : "Not signed in"}</div>
-                {(!collapsed) && (
-                    <div className={`${textTertiary} text-xs mt-1`}>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
-                )}
-            </div>
 
-        </div>
 
         <nav className="px-2 py-4 flex-1 overflow-y-auto">
             <ul className="space-y-1">
@@ -196,28 +230,44 @@ export default function DashboardSideMenu(props: {
                 })}
             </ul>
 
+
+            {/*{ href: route("instances.index"), label: "Instances", icon: (
+                <Cube size={25}/>
+            ) },*/}
+
             <div className="border-t border-white/10 mt-6 pt-4 px-3">
                 <div className={`text-xs ${textTertiary} px-3 ${collapsed ? 'hidden' : ''}`}>Account</div>
                 <div className="mt-2">
                     <Dropdown>
                         <Dropdown.Trigger>
-                            <button className={`w-full text-left px-4 py-2 rounded-md ${collapsed ? 'justify-center' : ''} transition ${textPrimary} hover:bg-white/5`}>{user ? user.name : "Guest"}</button>
+                            <div className="flex items-center gap-3 px-3 py-4">
+                                <div className="flex-shrink-0">
+                                    <div className={`h-10 w-10 rounded-full bg-white/10 flex items-center justify-center ${textPrimary} font-semibold`}>
+                                        {initials}
+                                    </div>
+                                </div>
+                                <div className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
+                                    <div className={`${textPrimary} text-sm truncate`}>{user ? user.name : "Guest"}</div>
+                                    <div className={`${textSecondary} text-xs`}>{user ? (user.email ?? "") : "Not signed in"}</div>
+                                    {(!collapsed) && (
+                                        <div className={`${textTertiary} text-xs mt-1`}>
+                                            <div>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
+                                            <div>{selectedInstance.name}</div>
+                                        </div>
+
+                                    )}
+                                </div>
+
+
+                            </div>
                         </Dropdown.Trigger>
                         <Dropdown.Content>
-                            <div className="px-2 py-1 text-xs text-gray-500">Switch organization</div>
-                            {organizations && Array.isArray(organizations) && organizations.length > 0 ? (
-                                organizations.map((org: any) => (
-                                    <Dropdown.Link key={org.id} href={route('organizations.storeSelection')} method="post" as="button" data={{organization_id: org.id}}>
-                                        {org.name}
-                                    </Dropdown.Link>
-                                ))
-                            ) : (
-                                <div className="px-3 py-2 text-xs text-gray-400">No organizations</div>
-                            )}
+                            <Dropdown.Link href={route("organizations.index")} className="px-2 py-1 text-gray-500 flex items-center gap-3"><span className={`flex-shrink-0 `}><BuildingOfficeIcon size={25} /></span><span>Organizations</span></Dropdown.Link>
+                            <Dropdown.Link href={route("instances.index")} className={"px-2 py-1 text-gray-500 flex items-center gap-3"}><span className={`flex-shrink-0 `}><CubeIcon size={25}/></span><span>Instances</span></Dropdown.Link>
 
                             <div className="border-t my-2" />
-                            <Dropdown.Link href={route("profile.edit")}>Profile</Dropdown.Link>
-                            <Dropdown.Link href={route("logout")} method="post" as="button">Log Out</Dropdown.Link>
+                            <Dropdown.Link href={route("profile.edit")} className={"flex items-center gap-3"}><IdentificationCardIcon size={25}/> Profile</Dropdown.Link>
+                            <Dropdown.Link href={route("logout")} method="post" as="button" className={"flex items-center gap-3"}><SignOutIcon size={25}/>Log Out</Dropdown.Link>
                         </Dropdown.Content>
                     </Dropdown>
                 </div>
@@ -246,6 +296,9 @@ export default function DashboardSideMenu(props: {
                     </svg>
                 </button>
             </div>
+
+
+
 
         </nav>
 

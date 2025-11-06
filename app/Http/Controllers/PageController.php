@@ -20,25 +20,62 @@ class PageController extends Controller
         return (bool) $request->header('X-Inertia');
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $selectedInstanceId = session('selected_instance');
-        // Paginate pages belonging to the selected instance
-        $pages = Page::where('instance_id', $selectedInstanceId)
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        // Resolve selected instance id from the authenticated user's preferences.
+        $selectedInstanceId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
+            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        }
 
-        // Return Inertia page with a paginated resource collection. The frontend
-        // should expect `pages.data` for rows and `pages.meta`/`pages.links` for
-        // pagination controls.
+        // If no instance is selected, return an empty paginator (avoids accidental cross-instance data leakage).
+        if (!$selectedInstanceId) {
+            $empty = Page::whereRaw('0 = 1')->paginate(10);
+            return inertia('Pages/PageIndex', [
+                'pages' => $empty,
+            ]);
+        }
+
+        // Build base query
+        $query = Page::where('instance_id', $selectedInstanceId);
+
+        // Optional search (q)
+        $q = $request->input('q');
+        if ($q) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('content', 'like', "%{$q}%");
+            });
+        }
+
+        // Sorting (whitelist)
+        $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
+        $sort = $request->input('sort');
+        $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        if ($sort && in_array($sort, $allowedSorts, true)) {
+            $query = $query->orderBy($sort, $direction);
+        } else {
+            $query = $query->orderBy('created_at', 'desc');
+        }
+
+        // Paginate and append relevant query params
+        $pages = $query->paginate(10)->appends($request->only(['q', 'sort', 'direction']));
+
+        // Transform paginator items using PageResource while preserving paginator meta/links
+        $rawPages = $pages->getCollection() ?? collect();
+        $pages->setCollection(collect(PageResource::collection($rawPages)->resolve()));
+
         return inertia('Pages/PageIndex', [
-            'pages' => PageResource::collection($pages),
+            'pages' => $pages,
         ]);
     }
 
     public function store(PageRequest $request)
     {
-        $selectedInstanceId = session('selected_instance');
+        $selectedInstanceId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
+            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        }
 
         // If no instance is selected, send the user to instance selection (always Inertia)
         if (!$selectedInstanceId) {
@@ -202,7 +239,10 @@ class PageController extends Controller
     // Show the editor for creating a new page
     public function create()
     {
-        $selectedInstanceId = session('selected_instance');
+        $selectedInstanceId = null;
+        if (auth()->user() && method_exists(auth()->user(), 'selectedInstance') && auth()->user()->selectedInstance()) {
+            $selectedInstanceId = auth()->user()->selectedInstance()->id;
+        }
         if (!$selectedInstanceId) {
             return redirect()->route('instances.select');
         }
@@ -223,7 +263,10 @@ class PageController extends Controller
     // New editor route for the Craft.js editor (explicit)
     public function edit(Page $page)
     {
-        $selectedInstanceId = session('selected_instance');
+        $selectedInstanceId = null;
+        if (auth()->user() && method_exists(auth()->user(), 'selectedInstance') && auth()->user()->selectedInstance()) {
+            $selectedInstanceId = auth()->user()->selectedInstance()->id;
+        }
         if ($page->instance_id != $selectedInstanceId) {
             abort(403);
         }
@@ -274,7 +317,10 @@ class PageController extends Controller
     public function update(PageRequest $request, Page $page)
     {
 
-        $selectedInstanceId = session('selected_instance');
+        $selectedInstanceId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
+            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        }
         if ($page->instance_id != $selectedInstanceId) {
             abort(403);
         }
@@ -338,8 +384,11 @@ class PageController extends Controller
 
     public function destroy(Request $request, Page $page)
     {
-        $selectedInstanceId = session('selected_instance');
-        if($page->instance_id != $selectedInstanceId){
+        $selectedInstanceId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
+            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        }
+        if ($page->instance_id != $selectedInstanceId) {
             abort(403);
         }
         $page->delete();

@@ -1,7 +1,7 @@
 import React from "react";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
-import { Trash } from 'phosphor-react';
+import { TrashIcon } from '@phosphor-icons/react';
 
 export function SortableItem({id, children, onDeleteField, field, className = ''}: {
     id: string,
@@ -35,7 +35,7 @@ export function SortableItem({id, children, onDeleteField, field, className = ''
                     className="bg-transparent text-gray-200 hover:text-red-500 flex-col px-2"
                     onClick={() => onDeleteField(field.id)}
                 >
-                    <Trash size={20} />
+                    <TrashIcon size={20} />
                 </button>
             )
             }

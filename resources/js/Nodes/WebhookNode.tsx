@@ -12,7 +12,7 @@ import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 import {v4 as uuidv4} from 'uuid';
-import { PlusCircle } from 'phosphor-react';
+import { PlusCircleIcon } from '@phosphor-icons/react';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
@@ -354,7 +354,7 @@ export default function WebhookNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addField}
                         >
-                            <PlusCircle size={24} />
+                            <PlusCircleIcon size={24} />
                         </div>
                     </NodeSection>
                     <NodeSection className={"relative nodrag"}>
@@ -407,7 +407,7 @@ export default function WebhookNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addHeader}
                         >
-                            <PlusCircle size={24} />
+                            <PlusCircleIcon size={24} />
                         </div>
                     </NodeSection>
                 </DndContext>

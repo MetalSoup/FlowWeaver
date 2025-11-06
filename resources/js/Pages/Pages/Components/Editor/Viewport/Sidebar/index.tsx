@@ -2,7 +2,7 @@ import { useEditor } from '@craftjs/core';
 import { Layers } from '@craftjs/layers';
 import React, { useState } from 'react';
 import { styled } from 'styled-components';
-import { Pen, Stack } from 'phosphor-react';
+import { PenIcon, StackIcon } from '@phosphor-icons/react';
 
 import { SidebarItem } from './SidebarItem';
 
@@ -26,7 +26,7 @@ export const Sidebar = () => {
     <SidebarDiv $enabled={enabled} className="sidebar transition bg-white w-2">
       <div className="flex flex-col h-full">
         <SidebarItem
-          icon={Pen}
+          icon={PenIcon}
           title="Customize"
           height={!layersVisible ? 'full' : '55%'}
           visible={toolbarVisible}
@@ -36,7 +36,7 @@ export const Sidebar = () => {
           <Toolbar />
         </SidebarItem>
         <SidebarItem
-          icon={Stack}
+          icon={StackIcon}
           title="Layers"
           height={!toolbarVisible ? 'full' : '45%'}
           visible={layersVisible}

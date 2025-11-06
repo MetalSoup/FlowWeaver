@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Instance;
 use App\Http\Requests\StoreInstanceRequest;
 use App\Http\Requests\UpdateInstanceRequest;
+use App\Http\Resources\InstanceResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Cookie;
 
 /**
  * @method mixed authorize(string $ability, array|mixed $arguments = [])
@@ -19,8 +19,39 @@ class InstanceController extends Controller
     public function select()
     {
         //dd('select');
-        $instances = auth()->user()->instances;
-        return inertia('Instances/InstanceSelect', [
+        $user = auth()->user();
+        if (!$user) abort(403);
+
+        // Determine the selected organization id from the user's preferences helper
+        $selectedOrgId = null;
+        if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
+            $selectedOrgId = $user->selectedOrganization()->id;
+        }
+
+        // Determine org IDs the user belongs to
+        $userOrgIds = $user->organizations()->pluck('id')->toArray();
+
+        // If we have a selected organization (and the user belongs to it), show instances for that org.
+        if ($selectedOrgId && in_array($selectedOrgId, $userOrgIds, true)) {
+            $instances = Instance::where('organization_id', $selectedOrgId)->get();
+        } else {
+            // Show instances across all organizations the user belongs to
+            $instances = Instance::whereIn('organization_id', $userOrgIds)->get();
+        }
+
+        // If there are no instances at all for the user's organizations, redirect to create.
+        if ($instances->isEmpty()) {
+            $hasAny = Instance::whereIn('organization_id', $userOrgIds)->exists();
+            if (!$hasAny) {
+                return redirect()->route('instances.create');
+            }
+            // otherwise $instances is already an empty collection; continue and render select with empty list
+        }
+
+        // Use InstanceResource for consistent formatting
+        $instances = InstanceResource::collection($instances);
+
+        return inertia('Instances/InstanceIndex', [
             'instances' => $instances,
         ]);
         //return view('instances.select', compact('instances'));
@@ -34,28 +65,30 @@ class InstanceController extends Controller
         $request->validate(['instance_id' => 'required|exists:instances,id']);
         $instanceId = $request->instance_id;
 
-        // set session
-        $request->session()->put('selected_instance', $instanceId);
-
-        // persist to user if logged in
+        // Persist selection into the user's `preferences` JSON column.
+        // We no longer use the legacy `selected_instance` session key or the
+        // `selected_instance_id` column on the users table.
         if ($request->user()) {
             $user = $request->user();
-            $user->selected_instance_id = $instanceId;
+
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
+            }
+
+            $prefs['selected_instance_id'] = $instanceId;
+            $user->preferences = $prefs;
             $user->save();
         }
 
-        // set cookie for longer-term persistence (30 days)
-        $secure = config('session.secure', false);
-        $cookie = Cookie::make('selected_instance', $instanceId, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
-
-        return Redirect::intended('/dashboard')->withCookie($cookie);
-        //return redirect()->route('dashboard');
+        return redirect()->route('dashboard');
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         // Show instances belonging to organizations the user is a member of
         $user = auth()->user();
@@ -64,7 +97,35 @@ class InstanceController extends Controller
         }
 
         $orgIds = $user->organizations()->pluck('id')->toArray();
-        $instances = Instance::whereIn('organization_id', $orgIds)->get();
+
+        // Build base query
+        $query = Instance::whereIn('organization_id', $orgIds);
+
+        // Optional search (q)
+        $q = $request->input('q');
+        if ($q) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            });
+        }
+
+        // Sorting (whitelist to prevent SQL injection)
+        $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
+        $sort = $request->input('sort');
+        $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        if ($sort && in_array($sort, $allowedSorts, true)) {
+            $query = $query->orderBy($sort, $direction);
+        } else {
+            $query = $query->orderBy('created_at', 'desc');
+        }
+
+        // Paginate results (default 15 per page) and preserve query string for appends
+        $instances = $query->paginate(15)->appends($request->only(['q', 'sort', 'direction']));
+
+        // Transform paginator items with InstanceResource (keeps paginator meta intact)
+        $raw = $instances->getCollection() ?? collect();
+        $instances->setCollection(collect(InstanceResource::collection($raw)->resolve()));
 
         return Inertia::render('Instances/InstanceIndex', [
             'instances' => $instances,
@@ -102,9 +163,14 @@ class InstanceController extends Controller
         if (!$user) {
             abort(403);
         }
-        $selectedOrganizationId = $user->selected_organization_id;
-
-
+        // Prefer selection from user's preferences helper which reads the preferences JSON
+        $selectedOrganizationId = null;
+        if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
+            $selectedOrganizationId = $user->selectedOrganization()->id;
+        } elseif (isset($user->selected_organization_id)) {
+            // fallback in case legacy column still exists
+            $selectedOrganizationId = $user->selected_organization_id;
+        }
 
 
 
@@ -118,35 +184,31 @@ class InstanceController extends Controller
 
         // enforce that the organization belongs to the user (StoreInstanceRequest already checks this)
         $instance = Instance::create($data);
-        // Only auto-select the newly created instance if no instance is currently selected.
-        // Determine existing selection from user, session, or cookie (consistent with HandleInertiaRequests).
+        // Only auto-select the newly created instance if no instance is currently selected in preferences.
         $currentSelected = null;
-        if ($request->user() && isset($request->user()->selected_instance_id) && $request->user()->selected_instance_id) {
-            $currentSelected = $request->user()->selected_instance_id;
-        } elseif (session('selected_instance')) {
-            $currentSelected = session('selected_instance');
-        } elseif ($request->cookie('selected_instance')) {
-            $currentSelected = $request->cookie('selected_instance');
-        }
-
-        $cookie = null;
-        if (!$currentSelected) {
-            // No instance selected yet — select and persist this new instance.
-            $request->session()->put('selected_instance', $instance->id);
-
-            if ($request->user()) {
-                $user = $request->user();
-                $user->selected_instance_id = $instance->id;
-                $user->save();
+        if ($request->user()) {
+            $user = $request->user();
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
             }
-
-            // set cookie for longer-term persistence (30 days)
-            $secure = config('session.secure', false);
-            $cookie = Cookie::make('selected_instance', $instance->id, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
+            $currentSelected = $prefs['selected_instance_id'] ?? null;
         }
 
-        $response = redirect()->route('instances.edit', $instance->id);
-        return $cookie ? $response->withCookie($cookie) : $response;
+        if (!$currentSelected && $request->user()) {
+            $user = $request->user();
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
+            }
+            $prefs['selected_instance_id'] = $instance->id;
+            $user->preferences = $prefs;
+            $user->save();
+        }
+
+        return redirect()->route('instances.edit', $instance->id);
     }
 
     /**

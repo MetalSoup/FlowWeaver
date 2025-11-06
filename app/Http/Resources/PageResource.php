@@ -12,8 +12,8 @@ class PageResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'created_at' => (new Carbon($this->created_at))->format('Y-m-d'),
-            'updated_at' => (new Carbon($this->updated_at))->format('Y-m-d'),
+            'created_at' => (new Carbon($this->created_at))->format('Y-m-d H:i:s'),
+            'updated_at' => (new Carbon($this->updated_at))->format('Y-m-d H:i:s'),
             'id' => $this->id,
             'name' => $this->name,
             'content' => $this->content,

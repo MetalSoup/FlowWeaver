@@ -2,7 +2,7 @@ import { Element, useEditor } from '@craftjs/core';
 import { Tooltip } from '@mui/material';
 import React from 'react';
 import { styled } from 'styled-components';
-import { FileText, SquaresFour, Play, Square } from 'phosphor-react';
+import { FileTextIcon, SquaresFourIcon, PlayIcon, SquareIcon } from '@phosphor-icons/react';
 
 import { Button } from '../../Selectors/Button/Button';
 import { Container, Column, Text } from '@/Pages/Pages/Components/Selectors';
@@ -64,7 +64,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Container" placement="right">
             <Item $move>
-              <Square size={28} />
+              <SquareIcon size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -78,7 +78,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Text" placement="right">
             <Item $move>
-              <FileText size={28} />
+              <FileTextIcon size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -89,7 +89,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Button" placement="right">
             <Item $move>
-              <Square size={28} />
+              <SquareIcon size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -100,7 +100,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Video" placement="right">
             <Item $move>
-              <Play size={28} />
+              <PlayIcon size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -111,7 +111,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Form" placement="right">
               <Item $move>
-                  <FileText size={28} />
+                  <FileTextIcon size={28} />
               </Item>
           </Tooltip>
         </div>
@@ -133,7 +133,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Column" placement="right">
             <Item $move>
-              <SquaresFour size={28} />
+              <SquaresFourIcon size={28} />
             </Item>
           </Tooltip>
         </div>

@@ -47,8 +47,17 @@ Route::get('/dashboard', function () {
     // data to the frontend dashboard for charts/stats.
     $user = auth()->user();
 
-    $selectedInstanceId = $user->selected_instance_id ?? null;
-    $selectedOrganizationId = $user->selected_organization_id ?? null;
+    // Prefer persisted preferences on the user; preferences is the single source of truth.
+    $selectedInstanceId = null;
+    $selectedOrganizationId = null;
+    if ($user) {
+        if (method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
+            $selectedInstanceId = $user->selectedInstance()->id;
+        }
+        if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
+            $selectedOrganizationId = $user->selectedOrganization()->id;
+        }
+    }
 
     $query = \App\Models\Submission::query();
 
@@ -91,9 +100,22 @@ Route::get('/flow/{flow}/{startNode?}', [FlowController::class, 'show'])->name('
 
 Route::middleware(['auth', CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class])->group(function () {
     Route::prefix('dashboard')->group(function () {
+        // Ensure models being accessed belong to the user's selected instance
+        Route::middleware([\App\Http\Middleware\EnsureModelBelongsToSelectedInstance::class])->group(function () {
+
+            // The dashboard resources remain inside the group that already applies both selection middlewares
+            Route::resource('/pages', PageController::class);
+            Route::resource('/flows', FlowController::class);
+            Route::resource('/fields', FieldController::class);
+
+        });
+
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        // Save user preferences (JSON partial update)
+        Route::post('/preferences', [\App\Http\Controllers\PreferencesController::class, 'update'])->name('preferences.update');
 
         // Organizations select routes should be reachable without the selection middlewares
         Route::get('/organizations/select', [OrganizationController::class, 'select'])->name('organizations.select')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
@@ -107,16 +129,6 @@ Route::middleware(['auth', CheckInstanceSelectedMiddleware::class, SelectOrganiz
         Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
         Route::resource('/instances', InstanceController::class)->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
 
-        // The dashboard resources remain inside the group that already applies both selection middlewares
-        Route::middleware([])->group(function () {
-
-            Route::resource('/pages', PageController::class);
-            // New route for the Craft.js based editor (Editor V2)
-
-            Route::resource('/flows', FlowController::class);
-            Route::resource('/fields', FieldController::class);
-
-       });
 
 
     });
@@ -137,8 +149,16 @@ route::get('get_flow/{flow}', [FlowController::class, 'getFlow'])->name('get_flo
 Route::get('/dashboard/stats', function () {
     $user = auth()->user();
 
-    $selectedInstanceId = $user->selected_instance_id ?? null;
-    $selectedOrganizationId = $user->selected_organization_id ?? null;
+    $selectedInstanceId = null;
+    $selectedOrganizationId = null;
+    if ($user) {
+        if (method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
+            $selectedInstanceId = $user->selectedInstance()->id;
+        }
+        if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
+            $selectedOrganizationId = $user->selectedOrganization()->id;
+        }
+    }
 
     $query = \App\Models\Submission::query();
 

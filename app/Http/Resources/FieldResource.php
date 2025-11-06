@@ -18,8 +18,8 @@ class FieldResource extends JsonResource
             'label' => $this->label,
             'instance_id' => $this->instance_id,
             'options' => $this->options,
-            'created_at' => (new Carbon($this->created_at))->format('Y-m-d'),
-            'updated_at' => (new Carbon($this->updated_at))->format('Y-m-d'),
+            'created_at' => (new Carbon($this->created_at))->format('Y-m-d H:i:s'),
+            'updated_at' => (new Carbon($this->updated_at))->format('Y-m-d H:i:s'),
         ];
     }
 }

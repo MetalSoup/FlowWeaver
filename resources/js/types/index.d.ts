@@ -5,8 +5,8 @@ export interface User {
     name: string;
     email: string;
     email_verified_at: string;
-    selected_instance_id?: number | null;
-    selected_organization_id?: number | null;
+    // persisted preferences JSON (may include selected_instance_id, selected_organization_id, etc.)
+    preferences: Record<string, unknown> | null;
 }
 
 export type MaybeSelectedInstance = { id: number; name: string } | null;

@@ -16,7 +16,7 @@ import { Video } from './Components/Selectors/Video/Video';
 import { Flow } from './Components/Selectors/Flow/Flow';
 import { Text } from './Components/Selectors/Text/Text';
 // Icons for viewport toggles
-import { Eye, PencilSimple, DeviceMobile, DeviceTablet, Desktop, ArrowCounterClockwise, ArrowClockwise } from 'phosphor-react';
+import { EyeIcon, PencilSimpleIcon, DeviceMobileIcon, DeviceTabletIcon, DesktopIcon, ArrowCounterClockwiseIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
 
 
 
@@ -435,7 +435,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         title="Undo"
                         aria-label="Undo"
                     >
-                        <ArrowCounterClockwise className="w-5 h-5" />
+                        <ArrowCounterClockwiseIcon className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -447,7 +447,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         title="Redo"
                         aria-label="Redo"
                     >
-                        <ArrowClockwise className="w-5 h-5" />
+                        <ArrowClockwiseIcon className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -470,7 +470,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         aria-pressed={editorEnabledState}
                         aria-label="Toggle preview"
                     >
-                        {editorEnabledState ? <Eye className="w-5 h-5" /> : <PencilSimple className="w-5 h-5" />}
+                        {editorEnabledState ? <EyeIcon className="w-5 h-5" /> : <PencilSimpleIcon className="w-5 h-5" />}
                         <span className="ml-2 text-sm">{editorEnabledState ? 'Preview' : 'Edit'}</span>
                     </button>
                 </div>
@@ -484,7 +484,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         title="Mobile (375px)"
                         aria-label="Mobile preview"
                     >
-                        <DeviceMobile className="w-5 h-5" />
+                        <DeviceMobileIcon className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -494,7 +494,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         title="Tablet (768px)"
                         aria-label="Tablet preview"
                     >
-                        <DeviceTablet className="w-5 h-5" />
+                        <DeviceTabletIcon className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -504,7 +504,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         title="Desktop (full width)"
                         aria-label="Desktop preview"
                     >
-                        <Desktop className="w-5 h-5" />
+                        <DesktopIcon className="w-5 h-5" />
                     </button>
                 </div>
                  <button onClick={save} disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">

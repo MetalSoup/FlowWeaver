@@ -6,7 +6,6 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,9 +26,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'selected_instance_id',
-        'selected_organization_id',
-    ];
+        // migrated into `preferences` JSON
+        'preferences',
+        // note: selected_instance_id and selected_organization_id were removed in favor of `preferences`
+     ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -46,16 +46,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Organization::class, 'organization_user', 'user_id', 'organization_id');
     }
 
-    public function selectedInstance(): BelongsTo
-    {
-        return $this->belongsTo(Instance::class, 'selected_instance_id');
-    }
-
-    public function selectedOrganization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class, 'selected_organization_id');
-    }
-
     /**
      * Get the attributes that should be cast.
      *
@@ -66,8 +56,33 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'preferences' => 'array',
         ];
     }
 
+
+    /**
+     * Convenience helpers to fetch the related Instance/Organization models from `preferences`.
+     * Note: these return model instances (or null), not Eloquent relation objects.
+     */
+    public function selectedInstance()
+    {
+        $prefs = $this->preferences ?? null;
+        if (is_string($prefs)) {
+            $prefs = json_decode($prefs, true);
+        }
+        $id = is_array($prefs) && array_key_exists('selected_instance_id', $prefs) ? $prefs['selected_instance_id'] : null;
+        return $id ? Instance::find($id) : null;
+    }
+
+    public function selectedOrganization()
+    {
+        $prefs = $this->preferences ?? null;
+        if (is_string($prefs)) {
+            $prefs = json_decode($prefs, true);
+        }
+        $id = is_array($prefs) && array_key_exists('selected_organization_id', $prefs) ? $prefs['selected_organization_id'] : null;
+        return $id ? Organization::find($id) : null;
+    }
 
 }

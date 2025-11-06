@@ -20,6 +20,12 @@ class StoreInstanceRequest extends FormRequest
         // selected_organization_id, however the FormRequest's authorize runs before the controller
         // so we must accept the selected organization here to avoid an unauthorized 403.
         $orgId = $this->input('organization_id') ?: ($user->selected_organization_id ?? null);
+        // Prefer selection from user's preferences helper which reads the preferences JSON
+        if (!$orgId) {
+            if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
+                $orgId = $user->selectedOrganization()->id;
+            }
+        }
         if (!$orgId) return false;
 
         // Check membership

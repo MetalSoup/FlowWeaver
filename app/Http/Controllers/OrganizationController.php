@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Instance;
 use App\Models\Organization;
+use App\Http\Resources\OrganizationResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -13,17 +14,29 @@ use Illuminate\Support\Facades\Cookie;
 
 class OrganizationController extends Controller
 {
+
+    public function index()
+    {
+        //
+        $organizations = auth()->user() ? (auth()->user()->organizations ?? collect()) : collect();
+
+        return inertia('Organizations/OrganizationIndex', [
+            'organizations' => OrganizationResource::collection($organizations),
+        ]);
+    }
+
     public function select()
     {
-        $organizations = auth()->user()->organizations;
+        $organizations = auth()->user() ? (auth()->user()->organizations ?? collect()) : collect();
 
         //if there are no organizations, redirect to create organization page
         if ($organizations->isEmpty()) {
             return redirect()->route('organizations.create');
         }
 
-        return inertia('Organizations/OrganizationSelect', [
-            'organizations' => $organizations,
+        // Use OrganizationResource collection for consistent formatting
+        return inertia('Organizations/OrganizationIndex', [
+            'organizations' => OrganizationResource::collection($organizations),
         ]);
     }
 
@@ -35,22 +48,33 @@ class OrganizationController extends Controller
         $request->validate(['organization_id' => 'required|exists:organizations,id']);
         $organizationId = $request->organization_id;
 
-        // set session
-        $request->session()->put('selected_organization', $organizationId);
-
-        // persist to user if logged in
+        // Persist selection into the user's `preferences` JSON column.
+        // We no longer use the legacy `selected_organization` session key or the
+        // `selected_organization_id` column on the users table.
         if ($request->user()) {
             $user = $request->user();
-            $user->selected_organization_id = $organizationId;
+
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
+            }
+
+            $prefs['selected_organization_id'] = $organizationId;
+            // When organization changes we must clear any previously selected instance
+            // since instances are scoped to organizations. This forces the frontend to
+            // prompt the user to re-select an instance that belongs to the new org.
+            if (array_key_exists('selected_instance_id', $prefs)) {
+                unset($prefs['selected_instance_id']);
+            }
+            $user->preferences = $prefs;
             $user->save();
         }
 
-        // set cookie for longer-term persistence (30 days)
-        $secure = config('session.secure', false);
-        $cookie = Cookie::make('selected_organization', $organizationId, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
-
-        return Redirect::intended('/dashboard')->withCookie($cookie);
-        //return redirect()->route('dashboard');
+        // Note: we intentionally do not set a session key or cookie named
+        // `selected_organization` here; the application now prefers the
+        // `preferences` JSON column on the user for persisted selections.
+        return Redirect::intended('/dashboard');
     }
 
 
@@ -58,8 +82,9 @@ class OrganizationController extends Controller
     public function create()
     {
         //
+        // Provide an empty OrganizationResource for consistency
         return Inertia::render('Organizations/OrganizationEdit', [
-            'organization' => new Organization,
+            'organization' => OrganizationResource::make(new Organization),
         ]);
     }
 
@@ -68,7 +93,7 @@ class OrganizationController extends Controller
     {
         //
         return Inertia::render('Organizations/OrganizationEdit', [
-            'organization' => $organization,
+            'organization' => OrganizationResource::make($organization),
         ]);
     }
 
@@ -83,16 +108,24 @@ class OrganizationController extends Controller
         $organization->users()->attach($user->id);
 
         // persist selection if user logged in
+        // Persist selection into the user's preferences JSON column instead of
+        // using the legacy selected_organization_id column or a cookie.
         if ($user) {
-            $user->selected_organization_id = $organization->id;
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
+            }
+            $prefs['selected_organization_id'] = $organization->id;
+            // Clear any selected_instance when a new organization is created and selected
+            if (array_key_exists('selected_instance_id', $prefs)) {
+                unset($prefs['selected_instance_id']);
+            }
+            $user->preferences = $prefs;
             $user->save();
         }
 
-        // set cookie for longer-term persistence (30 days)
-        $secure = config('session.secure', false);
-        $cookie = Cookie::make('selected_organization', $organization->id, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
-
-        return redirect()->route('organizations.select')->withCookie($cookie);
+        return redirect()->route('organizations.select');
     }
 
     public function update(UpdateOrganizationRequest $request, Instance $instance)
