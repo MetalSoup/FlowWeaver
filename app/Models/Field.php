@@ -15,6 +15,7 @@ class Field extends Model
         'instance_id',
         'type',
         'options',
+        'description'
     ];
 
     protected $casts = [

@@ -6,10 +6,12 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Instance;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -25,6 +27,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'selected_instance_id',
+        'selected_organization_id',
     ];
 
     /**
@@ -40,6 +44,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class, 'organization_user', 'user_id', 'organization_id');
+    }
+
+    public function selectedInstance(): BelongsTo
+    {
+        return $this->belongsTo(Instance::class, 'selected_instance_id');
+    }
+
+    public function selectedOrganization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'selected_organization_id');
     }
 
     /**

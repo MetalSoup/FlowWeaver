@@ -16,7 +16,7 @@ export const FlowSettings = () => {
           full={true}
           propKey="flow_id"
           type="select"
-          label="Select flow"
+          label="InstanceSelect flow"
           onChange={(v: any) => (v === '' ? null : Number(v))}
         >
           <option value="">-- none --</option>

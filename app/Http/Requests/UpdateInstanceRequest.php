@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Instance;
 
 class UpdateInstanceRequest extends FormRequest
 {
@@ -11,8 +12,17 @@ class UpdateInstanceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Allow authenticated users to update instances; adjust as needed for permissions.
-        return true;
+        // Only allow authenticated users who belong to this instance's organization to update it.
+        $user = $this->user();
+        if (!$user) return false;
+
+        $instance = $this->route('instance');
+        if (!$instance || !($instance instanceof Instance)) return false;
+
+        $orgId = $instance->organization_id;
+        if (!$orgId) return false;
+
+        return $user->organizations()->where('id', $orgId)->exists();
     }
 
     /**

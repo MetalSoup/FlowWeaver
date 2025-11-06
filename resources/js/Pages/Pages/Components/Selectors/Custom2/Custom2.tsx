@@ -1,8 +1,8 @@
 import { Element, useNode } from '@craftjs/core';
 import React from 'react';
 
-import { Container } from '../Container';
-import { Video } from '../Video';
+import { Container } from '../Container/Container';
+import { Video } from '../Video/Video';
 
 export const Custom2VideoDrop = ({ children }) => {
   const {

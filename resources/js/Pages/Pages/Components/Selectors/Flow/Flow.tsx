@@ -4,7 +4,7 @@ import { FlowSettings } from './FlowSettings';
 
 
 
-import ShowFlow from "@/Pages/Flows/Show";
+import ShowFlow from "@/Pages/Flows/FlowShow";
 import {useEditor, useNode} from "@craftjs/core";
 import { usePage } from '@inertiajs/react';
 

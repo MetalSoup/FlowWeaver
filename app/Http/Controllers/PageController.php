@@ -31,7 +31,7 @@ class PageController extends Controller
         // Return Inertia page with a paginated resource collection. The frontend
         // should expect `pages.data` for rows and `pages.meta`/`pages.links` for
         // pagination controls.
-        return inertia('Pages/Index', [
+        return inertia('Pages/PageIndex', [
             'pages' => PageResource::collection($pages),
         ]);
     }
@@ -132,7 +132,7 @@ class PageController extends Controller
                 })->values()->toArray();
             }
 
-            return inertia('Pages/Editor', [
+            return inertia('Pages/PageEditor', [
                 'page' => new PageResource($page),
                 'forms' => $forms,
                 'flows' => $flows,
@@ -151,7 +151,7 @@ class PageController extends Controller
         //$page_content = str_replace('[ki-path:1]', 'ki-path-1', $page_content);
         //dd($page_content);
 
-        return inertia('Pages/Show', [
+        return inertia('Pages/PageShow', [
             'page' => $page
         ]);
     }
@@ -213,7 +213,7 @@ class PageController extends Controller
         $forms = [];
 
 
-        return inertia('Pages/Editor', [
+        return inertia('Pages/PageEditor', [
             'page' => null,
             'forms' => $forms,
             'flows' => $flows,
@@ -254,7 +254,7 @@ class PageController extends Controller
             })->values()->toArray();
         }
 
-        return inertia('Pages/Editor', [
+        return inertia('Pages/PageEditor', [
             'page' => new PageResource($page),
             'forms' => $forms,
             'flows' => $flows,

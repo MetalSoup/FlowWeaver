@@ -1,14 +1,15 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Link} from "@inertiajs/react";
 import {FlowProps} from "@/types";
-import {Button} from "@headlessui/react";
 
-export default function Flows({ auth, flows } :FlowProps) {
+
+export default function FlowIndex({ auth, flows } :FlowProps) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h1>Flows</h1>}>
-            <Link href={route('flows.create')} className="bg-gray-100 inline-block ">Create New Flow</Link>
+            header={<div className="flex justify-between items-center"><h1>Flows</h1><Link href={route('flows.create')} className="bg-blue-500 text-white py-1 px-3 rounded">Create Flow</Link></div>}
+        >
+
             <div className={"p-5"}>
                 <table className={"w-full"}>
                     <thead>
@@ -32,7 +33,7 @@ export default function Flows({ auth, flows } :FlowProps) {
                     {flows.data.map((flow) => (
                         <tr key={flow.id}>
                             <td>{flow.id}</td>
-                            <td><Link href={route("flows.edit", flow.id)}>{flow.name}</Link></td>
+                            <td><Link href={route("flows.edit", flow.id)}>{flow.name}</Link><Link href={route("flows.edit", flow.id)}>Edit</Link><Link href={route("flows.show", flow.id)}>View</Link></td>
 
                             <td>{flow.created_at}</td>
                             <td>{flow.updated_at}</td>

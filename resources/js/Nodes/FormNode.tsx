@@ -10,7 +10,7 @@ import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
 import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import {v4 as uuidv4} from 'uuid';
-import {PlusCircleIcon} from '@heroicons/react/20/solid';
+import { PlusCircle } from 'phosphor-react';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import {usePage} from "@inertiajs/react";
@@ -23,8 +23,9 @@ import CheckBoxWithOverride from "./NodeComponents/CheckBoxWithOverride";
 export default function FormNode({data}: { data: any }) {
     const {fields}: any = usePage().props;
 
+    // Use the field's `name` as the stored value (unique identifier), but show the human label.
     const fieldOptions = fields.map((field: any) => ({
-        value: field.id,
+        value: field.name,
         label: field.label,
     }));
     const {getEdges, setEdges} = useReactFlow();
@@ -36,13 +37,31 @@ export default function FormNode({data}: { data: any }) {
 
     const nodeID: string = data.id;
 
-    const [formFields, setFormFields] = useState(data.formFields.map((field: any) => ({...field, id: field.id || uuidv4()})));
+    // helper to create a nice fallback label from a name
+    const humanize = (name: string | null) => {
+        if (!name) return '';
+        return name.split('_').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    }
 
-
-
-
+    // Store fields as { id, name, active, label, field_id }
+    const [formFields, setFormFields] = useState(
+        data.formFields.map((f: any) => {
+            // Support legacy `value` key: prefer f.name, fallback to f.value
+            const name = f.name ?? f.value ?? null;
+            const matched = fields.find((fld: any) => fld.name === name);
+            return {
+                ...f,
+                id: f.id || uuidv4(),
+                name: name,
+                active: f.active ?? true,
+                label: matched?.label ?? f.label ?? humanize(name),
+                field_id: matched?.id ?? f.field_id ?? null,
+            };
+        })
+    );
 
     useEffect(() => {
+        // persist the structured formFields
         data.formFields = formFields;
 
         updateNodeInternals(nodeID);
@@ -59,13 +78,12 @@ export default function FormNode({data}: { data: any }) {
 
     const addField = () => {
         setFormFields((prevFields: any) => {
-            const newFields = [...prevFields, {active: true, value: '', id: uuidv4()}];
+            // New fields start with null selection but have active true
+            const newFields = [...prevFields, {id: uuidv4(), name: null, label: '', field_id: null, active: true}];
             updateNodeInternals(nodeID);
             return newFields;
         });
     };
-
-
 
     const onDeleteField = (id: string) => {
         removeConnectedEdges([id+"-field-active-override"]);
@@ -76,19 +94,24 @@ export default function FormNode({data}: { data: any }) {
         });
     };
 
-
-
-
     const onChangeFieldValue = (id: string, newValue: SingleValue<{ value: any; label: any }>) => {
+        // newValue.value is the selected field.name. When changed, also set label and field_id from fields list.
         setFormFields((prevFields: any[]) => {
-            if (newValue) {
-                return prevFields.map((field: any) =>
-                    field.id === id ? {...field, value: newValue.value} : field
-                );
-            }
+            return prevFields.map((field: any) => {
+                if (field.id !== id) return field;
+
+                const selectedName = newValue ? newValue.value : null;
+                const matched = fields.find((f: any) => f.name === selectedName);
+
+                return {
+                    ...field,
+                    name: selectedName,
+                    label: matched?.label ?? (selectedName ? humanize(selectedName) : ''),
+                    field_id: matched?.id ?? null,
+                };
+            });
         });
     };
-
 
     const onChangeFieldActive = (checked: boolean, id: string) => {
         setFormFields((prevFields: any[]) => {
@@ -97,10 +120,6 @@ export default function FormNode({data}: { data: any }) {
             );
         });
     };
-
-
-
-
 
     const onDragEnd = (event: any) => {
         const {active, over} = event;
@@ -173,17 +192,26 @@ export default function FormNode({data}: { data: any }) {
                                     </div>
 
                                         <div className={"flex-col"}>
-                                            <SelectWithoutOverride
-                                                onChange={(newValue: SingleValue<{
-                                                    value: any;
-                                                    label: any;
-                                                }>) => onChangeFieldValue(field.id, newValue)}
-                                                value={{value: field.value, label: field.value}}
-                                                className={"w-[600px]"}
-                                                isSearchable={true}
-                                                options={fieldOptions}
-                                                creatable={false}
-                                            />
+                                            {/* Compute selected option by matching the name (we store field.name in name) */}
+                                            {(() => {
+                                                const selectedOption = field.name == null
+                                                    ? null
+                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? { value: field.name, label: field.label ?? field.name });
+
+                                                return (
+                                                    <SelectWithoutOverride
+                                                        onChange={(newValue: SingleValue<{
+                                                            value: any;
+                                                            label: any;
+                                                        }>) => onChangeFieldValue(field.id, newValue)}
+                                                        value={selectedOption}
+                                                        className={"w-[600px]"}
+                                                        isSearchable={true}
+                                                        options={fieldOptions}
+                                                        creatable={false}
+                                                    />
+                                                );
+                                            })()}
                                         </div>
                                 </SortableItem>
                                 ))}
@@ -192,7 +220,7 @@ export default function FormNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addField}
                         >
-                            <PlusCircleIcon className="h-6 w-6 mx-auto"/>
+                            <PlusCircle size={24} />
                         </div>
                     </NodeSection>
 

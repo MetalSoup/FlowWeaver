@@ -13,7 +13,8 @@ class InstancePolicy
      */
     public function viewAny(User $user): bool
     {
-        //
+        // allow viewing list if user belongs to at least one organization
+        return $user->organizations()->exists();
     }
 
     /**
@@ -21,7 +22,10 @@ class InstancePolicy
      */
     public function view(User $user, Instance $instance): bool
     {
-        //
+        $orgId = $instance->organization_id;
+        if (!$orgId) return false;
+
+        return $user->organizations()->where('id', $orgId)->exists();
     }
 
     /**
@@ -29,7 +33,8 @@ class InstancePolicy
      */
     public function create(User $user): bool
     {
-        //
+        // allow create only if the user belongs to at least one organization
+        return $user->organizations()->exists();
     }
 
     /**
@@ -37,7 +42,10 @@ class InstancePolicy
      */
     public function update(User $user, Instance $instance): bool
     {
-        //
+        $orgId = $instance->organization_id;
+        if (!$orgId) return false;
+
+        return $user->organizations()->where('id', $orgId)->exists();
     }
 
     /**
@@ -45,7 +53,10 @@ class InstancePolicy
      */
     public function delete(User $user, Instance $instance): bool
     {
-        //
+        $orgId = $instance->organization_id;
+        if (!$orgId) return false;
+
+        return $user->organizations()->where('id', $orgId)->exists();
     }
 
     /**
@@ -53,7 +64,7 @@ class InstancePolicy
      */
     public function restore(User $user, Instance $instance): bool
     {
-        //
+        return $this->delete($user, $instance);
     }
 
     /**
@@ -61,6 +72,6 @@ class InstancePolicy
      */
     public function forceDelete(User $user, Instance $instance): bool
     {
-        //
+        return $this->delete($user, $instance);
     }
 }

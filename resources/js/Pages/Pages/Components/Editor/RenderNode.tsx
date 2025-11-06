@@ -4,9 +4,7 @@ import * as React from 'react';
 import ReactDOM from 'react-dom';
 import { styled } from 'styled-components';
 
-import {ArrowUpIcon} from "@/Pages/Pages/Components/Icons";
-import {DeleteIcon} from "@/Pages/Pages/Components/Icons";
-import {MoveIcon} from "@/Pages/Pages/Components/Icons";
+import {ArrowUp, Trash, DotsNine} from 'phosphor-react';
 
 const IndicatorDiv = styled.div`
   height: 30px;
@@ -115,22 +113,22 @@ export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render })
               <h2 className="flex-1 mr-4">{name}</h2>
               {moveable ? (
                 <Btn
-                  className="mr-2 cursor-move"
-                  ref={(el: HTMLAnchorElement | null) => {
-                    if (el) drag(el as HTMLElement);
-                  }}
-                >
-                   <MoveIcon viewBox="-4 -3 24 24" />
+                   className="mr-2 cursor-move"
+                   ref={(el: HTMLAnchorElement | null) => {
+                     if (el) drag(el as HTMLElement);
+                   }}
+                 >
+                  <DotsNine  size={16}/>
                  </Btn>
-               ) : null}
-              {id !== ROOT_NODE && (
-                <Btn
-                  className="mr-2 cursor-pointer"
-                  onClick={() => {
-                    if (parent) actions.selectNode(parent as string);
-                  }}
-                >
-                   <ArrowUpIcon viewBox="-4 -1 24 24" />
+                ) : null}
+               {id !== ROOT_NODE && (
+                 <Btn
+                   className="mr-2 cursor-pointer"
+                   onClick={() => {
+                     if (parent) actions.selectNode(parent as string);
+                   }}
+                 >
+                  <ArrowUp size={16} />
                  </Btn>
                )}
               {deletable ? (
@@ -141,9 +139,9 @@ export const RenderNode: React.FC<{ render: React.ReactElement }> = ({ render })
                     actions.delete(id);
                   }}
                 >
-                  <DeleteIcon viewBox="-4 -3 24 24" />
-                </Btn>
-              ) : null}
+                  <Trash size={16} />
+                 </Btn>
+               ) : null}
             </IndicatorDiv>,
             (document.querySelector('.page-container') as Element) || document.body
           )

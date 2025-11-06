@@ -9,6 +9,7 @@ use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Cookie;
 
 class OrganizationController extends Controller
 {
@@ -21,7 +22,7 @@ class OrganizationController extends Controller
             return redirect()->route('organizations.create');
         }
 
-        return inertia('Organizations/Select', [
+        return inertia('Organizations/OrganizationSelect', [
             'organizations' => $organizations,
         ]);
     }
@@ -32,16 +33,32 @@ class OrganizationController extends Controller
 
         //dd($request);
         $request->validate(['organization_id' => 'required|exists:organizations,id']);
-        $request->session()->put('selected_organization', $request->organization_id);
-        return Redirect::intended('/dashboard');
+        $organizationId = $request->organization_id;
+
+        // set session
+        $request->session()->put('selected_organization', $organizationId);
+
+        // persist to user if logged in
+        if ($request->user()) {
+            $user = $request->user();
+            $user->selected_organization_id = $organizationId;
+            $user->save();
+        }
+
+        // set cookie for longer-term persistence (30 days)
+        $secure = config('session.secure', false);
+        $cookie = Cookie::make('selected_organization', $organizationId, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
+
+        return Redirect::intended('/dashboard')->withCookie($cookie);
         //return redirect()->route('dashboard');
     }
+
 
 
     public function create()
     {
         //
-        return Inertia::render('Organizations/Edit', [
+        return Inertia::render('Organizations/OrganizationEdit', [
             'organization' => new Organization,
         ]);
     }
@@ -50,7 +67,7 @@ class OrganizationController extends Controller
     public function edit(Organization $organization)
     {
         //
-        return Inertia::render('Organizations/Edit', [
+        return Inertia::render('Organizations/OrganizationEdit', [
             'organization' => $organization,
         ]);
     }
@@ -65,14 +82,23 @@ class OrganizationController extends Controller
         $organization = Organization::create($request->validated());
         $organization->users()->attach($user->id);
 
-        return redirect()->route('organizations.select');
+        // persist selection if user logged in
+        if ($user) {
+            $user->selected_organization_id = $organization->id;
+            $user->save();
+        }
+
+        // set cookie for longer-term persistence (30 days)
+        $secure = config('session.secure', false);
+        $cookie = Cookie::make('selected_organization', $organization->id, 60 * 24 * 30, null, null, $secure, true, false, 'lax'); // minutes
+
+        return redirect()->route('organizations.select')->withCookie($cookie);
     }
 
     public function update(UpdateOrganizationRequest $request, Instance $instance)
     {
         //
     }
-
 
 
 

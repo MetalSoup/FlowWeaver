@@ -37,7 +37,7 @@ export const ToolbarTextInput = ({
   };
 
   const parseToRgbObject = (c: any) => {
-    // If it's already an rgb object
+    // If it's already a rgb object
     if (!c) return { r: 0, g: 0, b: 0, a: 1 };
     if (typeof c === 'object' && ('r' in c || 'g' in c || 'b' in c)) {
       return { r: Number(c.r ?? c[0] ?? 0), g: Number(c.g ?? c[1] ?? 0), b: Number(c.b ?? c[2] ?? 0), a: Number(c.a ?? c[3] ?? 1) };

@@ -13,20 +13,37 @@ class RunFlow
     static array $nodeOutputs = [];
     static Collection $edges;
     static Collection $nodes;
+    static ?Collection $data;
+    static array $returnData;
+
+    protected Collection $first_node;
 
     public function __construct(
-        protected Collection $first_node,
-        Collection           $edges,
-        Collection           $nodes
+        Collection $first_node,
+        Collection $edges,
+        Collection $nodes,
+        ?Collection $data = null
     )
     {
+        $this->first_node = $first_node;
         self::$edges = $edges;
         self::$nodes = $nodes;
-        self::runNodeFunction($first_node);
+        self::$data = $data ?? collect();
+        // do NOT automatically run in constructor; provide explicit run() so callers can get return data
     }
 
+    /**
+     * Execute the flow and return collected outputs and data.
+     *
+     * @return array{nodeOutputs: array, data: ?Collection, customVariables: array}
+     */
+    public function run(): array
+    {
+        // start execution from the provided first node
+        self::runNodeFunction($this->first_node);
 
-
+        return self::$returnData;
+    }
 
     /**
      *
@@ -42,40 +59,41 @@ class RunFlow
 
     public static function runNodeFunction($node): void
     {
-        if(!$node)
-        {
-            dump("no node specified");
-            return;
+        if (!$node) {
+            self::$returnData[] = ['error' => 'no node specified'];
         }
         // exit if node is in loop array more than 10 times
         self::$loop[] = self::nodeID($node);
 
-        if (count(array_keys(self::$loop, self::nodeID($node))) > 10)
-        {
+        if (count(array_keys(self::$loop, self::nodeID($node))) > 10) {
             echo "Loop detected - exiting";
-            return;
+            self::$returnData['errors'][] = ['error' => 'loop detected'];
         }
 
-        //dump($node);
 
-        echo "running node function: " . $node->first()['type'] . " - " . self::nodeID($node) . "<br>";
+        if (!empty($node->first()['type'])) {
 
-        if (!empty($node->first()['type']))
-        {
-            $function = "do" . $node->first()['type'];
-
-            if (method_exists(self::class, $function))
-            {
-                self::$function($node);
+            //if node type is form and data is set, use doFormSubmit
+            if($node->first()['type'] == 'Form' && !empty(self::$data)){
+                echo "running form submit function: ".self::nodeID($node)."<br>";
+                $function = "do".$node->first()['type']."Submit";
             }
             else
             {
-                echo "Function " . $function . " doesn't exist";
+                $function = "do".$node->first()['type'];
+                echo "running function: ".$node->first()['type']." - ".self::nodeID($node)."<br>";
             }
-        }
-        else
-        {
-            echo "no function to run";
+
+
+            //$function = "do".$node->first()['type'];
+
+            if (method_exists(self::class, $function)) {
+                self::$function($node);
+            } else {
+                self::$returnData['errors'][] = 'function '.$function.' does not exist';
+            }
+        } else {
+            self::$returnData['errors'][] = ['error' => 'no function to run'];
         }
     }
 
@@ -92,52 +110,81 @@ class RunFlow
      **/
     public static function runReturnFunction($node): mixed
     {
-        echo "running return function: " . $node->first()['type'] . " - " . self::nodeID($node) . "<br>";
-        $function = "return" . $node->first()['type'];
+        echo "running return function: ".$node->first()['type']." - ".self::nodeID($node)."<br>";
+        $function = "return".$node->first()['type'];
         if (method_exists('App\RunFlow', $function)) {
             return self::$function($node);
         } else {
-            return "Function " . $function . " doesn't exist";
+            return "Function ".$function." doesn't exist";
             //return null;
 
         }
     }
 
 
-    static function doForm($node): void
+    static function doFormSubmit($node): void
     {
-        //dd($node);
-        $fields = $node->first()['data']['formFields'];
-        $form = [];
-        $show_fields = [];
-        foreach ($fields as $field)
-        {
-            $field_id = $field['value'];
-            if(!$thisField = DefaultFields::getFields()->where('id', $field_id)->first())
-            {
-                $thisField = Field::where('id', $field_id)->first()->toArray();
-                //dd('what');
-            }
-/*            else
-            {
-                //$thisField = $thisField;
-            }*/
-            $show_fields[] = $thisField;
+        $request = self::$data->get('request');
+        $submission = self::$data->get('submission');
 
+        $existing = $submission->data ?? [];
+        $incoming = $request['data'] ?? [];
+        if (!is_array($existing)) $existing = [];
+        if (!is_array($incoming)) $incoming = [];
 
+        $merged = array_merge($existing, $incoming);
 
+        $submission->data = $merged;
+        if (isset($request['step'])) {
+            $submission->step = $request['step'];
         }
+        if (isset($request['flow_id'])) {
+            $submission->flow_id = $request['flow_id'];
+        }
+        // If email/phone provided at top-level or inside data, update them on the submission.
+        $upEmail = $request['email'] ?? ($request['data']['email'] ?? null);
+        $upPhone = $request['phone'] ?? ($request['data']['phone'] ?? null);
+        if ($upEmail !== null) {
+            $submission->email = $upEmail;
+        }
+        if ($upPhone !== null) {
+            $submission->phone = $upPhone;
+        }
+        $submission->save();
+
+        // Refresh session submission_id in case it wasn't already present or to extend its life
+        session()->put('submission_id', $submission->id);
+
+        self::$returnData = [
+            'success' => true, 'submission_id' => $submission->id,'submission' => $submission];
+
+        self::$data = null;
 
 
-        dd(json_encode($show_fields));
 
-        self::$nodeOutputs[$node->first()['id']] = $form;
 
         $next_edge = self::getNextEdge($node);
-        if ($next_node = self::getNextNode($next_edge))
-        {
+        if ($next_node = self::getNextNode($next_edge)) {
             self::runNodeFunction($next_node);
         }
+
+    }
+
+
+    static function doForm($node): void
+    {
+
+            self::$returnData['nextStep'] = $node->first()['id'] ?? null;
+
+    }
+
+
+    static function doRawHtml ($node): void
+    {
+        // do form will just return which form to show next.
+
+            self::$returnData['nextStep'] = $node->first()['id'] ?? null;
+
     }
 
 
@@ -162,30 +209,21 @@ class RunFlow
 
         $data = [];
 
-        foreach ($fields as $key => $field)
-        {
-            $connectedEdges = $edges->where('targetHandle', self::nodeID($node) . '-value_' . $key) ?? false;
-            if ($connectedEdges)
-            {
+        foreach ($fields as $key => $field) {
+            $connectedEdges = $edges->where('targetHandle', self::nodeID($node).'-value_'.$key) ?? false;
+            if ($connectedEdges) {
                 $source = $connectedEdges->first()['sourceHandle'] ?? false;
-                if ($source)
-                {
-                    if (empty(self::$nodeOutputs[$source]))
-                    {
+                if ($source) {
+                    if (empty(self::$nodeOutputs[$source])) {
                         $sourceNode = $nodes->where('id', $connectedEdges->first()['source']);
-                        if ($sourceNode->first()['type'] == 'GetVariable')
-                        {
+                        if ($sourceNode->first()['type'] == 'GetVariable') {
                             $variable = $sourceNode->first()['data']['variableName'];
                             $data[$field['key']] = self::getVariable($variable);
                         }
-                    }
-                    else
-                    {
+                    } else {
                         $data[$field['key']] = self::$nodeOutputs[$source];
                     }
-                }
-                else
-                {
+                } else {
                     $data[$field['key']] = $field['value'];
                 }
             }
@@ -193,83 +231,64 @@ class RunFlow
 
         $client = new \GuzzleHttp\Client(['verify' => false]);
         $headers_array = [];
-        foreach ($headers as $header)
-        {
-            if(!empty($header['key']))
-            {
+        foreach ($headers as $header) {
+            if (!empty($header['key'])) {
                 $headers_array[$header['key']] = $header['value'];
             }
 
         }
 
-        if ($isSoap)
-        {
+        if ($isSoap) {
             $soapBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>';
-            foreach ($data as $key => $value)
-            {
+            foreach ($data as $key => $value) {
                 $soapBody .= "<$key>$value</$key>";
             }
             $soapBody .= '</soap:Body></soap:Envelope>';
 
             $headers_array['Content-Type'] = 'text/xml; charset=utf-8';
             $parameters = ['headers' => $headers_array, 'body' => $soapBody];
-        }
-        else
-        {
-            if ($method == 'GET')
-            {
+        } else {
+            if ($method == 'GET') {
                 $parameters = ['headers' => $headers_array, 'query' => $data];
-            }
-            else
-            {
-                if ($sendAsJson)
-                {
+            } else {
+                if ($sendAsJson) {
                     $parameters = ['headers' => $headers_array, 'json' => $data];
-                }
-                else
-                {
+                } else {
                     $parameters = ['headers' => $headers_array, 'form_params' => $data];
                 }
             }
         }
 
-        try
-        {
+        try {
             $res = $client->request($method, $url, $parameters);
             $result = $res->getBody()->getContents();
-        } catch (\GuzzleHttp\Exception\GuzzleException $e)
-        {
-            $result = "error:" . $e->getMessage();
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            $result = "error:".$e->getMessage();
         }
 
-        if (str_starts_with($result, '<?xml'))
-        {
+        if (str_starts_with($result, '<?xml')) {
             $xml = simplexml_load_string($result);
             $result = json_encode($xml);
         }
 
-        if (json_decode($result))
-        {
+        if (json_decode($result)) {
             $result = json_decode($result);
         }
 
-        self::$nodeOutputs[$node->first()['id'] . '-response'] = $result;
-        $output_edges = $edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-response');
-        if (!empty($output_edges->first()['target']))
-        {
-            foreach ($output_edges as $output_edge)
-            {
+        self::$nodeOutputs[$node->first()['id'].'-response'] = $result;
+        $output_edges = $edges->where('source', self::nodeID($node))->where('sourceHandle',
+            self::nodeID($node).'-response');
+        if (!empty($output_edges->first()['target'])) {
+            foreach ($output_edges as $output_edge) {
                 $output_node = $nodes->where('id', $output_edge['target']);
-                if ($output_node->first()['type'] == 'SetVariable')
-                {
+                if ($output_node->first()['type'] == 'SetVariable') {
                     self::setVariable($output_node->first()['data']['variableName'], $result);
                 }
             }
         }
 
         $next_edge = self::getNextEdge($node);
-        if ($next_node = self::getNextNode($next_edge))
-        {
+        if ($next_node = self::getNextNode($next_edge)) {
             self::runNodeFunction($next_node);
         }
     }
@@ -283,12 +302,15 @@ class RunFlow
      *
      *
      **/
-    public static function getNextEdge($node)
+    public static function getNextEdge($node): Collection
     {
-        return self::$edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-next');
+
+      /*  dump("getting next edge for node: ".self::nodeID($node));
+        dump(self::nodeID($node).'-next');
+        dd(self::$edges);*/
+        return self::$edges->where('source', self::nodeID($node))->whereIn('sourceHandle', [self::nodeID($node).'-next' , 'next']);
 
     }
-
 
 
     /**
@@ -299,16 +321,14 @@ class RunFlow
      *
      *
      **/
-    public static function getOverrideEdge($node, $targetHandle) : Collection
+    public static function getOverrideEdge($node, $targetHandle): Collection
     {
         return self::$edges->where('target', self::nodeID($node))->where('targetHandle', $targetHandle);
     }
-/*    {
-        return self::$edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
+    /*    {
+            return self::$edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
 
-    }*/
-
-
+        }*/
 
 
     /**
@@ -319,15 +339,12 @@ class RunFlow
      *
      *
      **/
-    public static function getNextNode($nextEdge) : ?Collection
+    public static function getNextNode($nextEdge): ?Collection
     {
 
-        if (!empty($nextEdge->first()['target']))
-        {
+        if (!empty($nextEdge->first()['target'])) {
             return self::$nodes->where('id', $nextEdge->first()['target']);
-        }
-        else
-        {
+        } else {
             return null;
         }
 
@@ -345,71 +362,65 @@ class RunFlow
     static function doBranch($node): void
     {
 
-        if($OverrideEdge = self::getOverrideEdge($node, "boolean-override")->first())
-        {
+        if ($OverrideEdge = self::getOverrideEdge($node, "boolean-override")->first()) {
             $overrideNode = self::$nodes->where('id', $OverrideEdge['source']);
             $booleanOverride = self::runReturnFunction($overrideNode);
             //dd($booleanOverride);
             $branch_condition = $booleanOverride;
 
 
-        }
-        else
-        {
+        } else {
             $branch_condition = $node->first()['data']['isTrue'];
         }
 
-        if ($branch_condition)
-        {
+        if ($branch_condition) {
             $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', 'trueNext');
-        }
-        else
-        {
+        } else {
             $next_edge = self::$edges->where('source', self::nodeID($node))->where('sourceHandle', 'falseNext');
         }
 
         $next_node = self::getNextNode($next_edge);
         self::runNodeFunction($next_node);
 
-   /*     dd($next_edge);
+        /*     dd($next_edge);
 
 
-        //dd($overrideNode);
-        $booleanOverride = self::$edges->where('target', self::nodeID($node))->where('targetHandle', self::nodeID($node) . '-boolean-override');
-        dd($booleanOverride);
+             //dd($overrideNode);
+             $booleanOverride = self::$edges->where('target', self::nodeID($node))->where('targetHandle', self::nodeID($node) . '-boolean-override');
+             dd($booleanOverride);
 
-        if (!empty($booleanOverride->first()['source']))
-        {
-            //dd($booleanOverride->first()['source']);
-            $comparisonNode = self::$nodes->where('id', $booleanOverride->first()['source']);
-            //dd($comparisonNode);
+             if (!empty($booleanOverride->first()['source']))
+             {
+                 //dd($booleanOverride->first()['source']);
+                 $comparisonNode = self::$nodes->where('id', $booleanOverride->first()['source']);
+                 //dd($comparisonNode);
 
-            $branch_condition = self::runReturnFunction($comparisonNode) ?? false;
-            dd($branch_condition);
-            //self::doComparison($comparisonNode, $edges, $nodes);
-        }
-        else
-        {
+                 $branch_condition = self::runReturnFunction($comparisonNode) ?? false;
+                 dd($branch_condition);
+                 //self::doComparison($comparisonNode, $edges, $nodes);
+             }
+             else
+             {
 
 
-            $branch_condition = $node->first()['data']['isTrue'];
-        }
+                 $branch_condition = $node->first()['data']['isTrue'];
+             }
 
-        if ($branch_condition)
-        {
+             if ($branch_condition)
+             {
 
-            $next_edge = $edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-trueNext');
-        }
-        else
-        {
-            $next_edge = $edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-falseNext');
-        }
+                 $next_edge = $edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-trueNext');
+             }
+             else
+             {
+                 $next_edge = $edges->where('source', self::nodeID($node))->where('sourceHandle', self::nodeID($node) . '-falseNext');
+             }
 
-        if (!empty($next_edge->first()['target']))
-        {
-            $next_node = $nodes->where('id', $next_edge->first()['target']);
-            self::runNodeFunction($next_node, $edges, $nodes);
-        }*/
+             if (!empty($next_edge->first()['target']))
+             {
+                 $next_node = $nodes->where('id', $next_edge->first()['target']);
+                 self::runNodeFunction($next_node, $edges, $nodes);
+             }*/
     }
 
 
@@ -422,6 +433,17 @@ class RunFlow
         return null;
     }
 
+    // convenience wrapper for getting variables by name (used by webhooks etc)
+    public static function getVariable(string $name): mixed
+    {
+        return \Session::get($name);
+    }
+
+    // convenience wrapper for setting variables by name
+    public static function setVariable(string $name, mixed $value): void
+    {
+        \Session::put($name, $value);
+    }
 
 
     static function doSetVariable($node): void
@@ -430,14 +452,11 @@ class RunFlow
 
 
         //check if there is an override edge for value
-        if($valueOverrideEdge = self::getOverrideEdge($node, 'variableValue-override')->first())
-        {
+        if ($valueOverrideEdge = self::getOverrideEdge($node, 'variableValue-override')->first()) {
             $valueOverrideNode = self::$nodes->where('id', $valueOverrideEdge['source']);
             $valueOverride = self::runReturnFunction($valueOverrideNode);
             $value = $valueOverride;
-        }
-        else
-        {
+        } else {
             $value = $node['data']['variableValue'] ?? null;
         }
 
@@ -445,17 +464,11 @@ class RunFlow
 
 
         $next_edge = self::getNextEdge($node);
-        if ($next_node = self::getNextNode($next_edge))
-        {
+        if ($next_node = self::getNextNode($next_edge)) {
             self::runNodeFunction($next_node);
         }
 
     }
-
-
-
-
-
 
 
     /**
@@ -469,32 +482,25 @@ class RunFlow
     {
         $nodeData = $node->first()['data'] ?? [];
 
-        if($leftComparandOverrideEdge = self::getOverrideEdge($node, 'leftComparand-override')->first())
-        {
+        if ($leftComparandOverrideEdge = self::getOverrideEdge($node, 'leftComparand-override')->first()) {
             $leftComparandOverrideNode = self::$nodes->where('id', $leftComparandOverrideEdge['source']);
             $leftComparandOverride = self::runReturnFunction($leftComparandOverrideNode);
             $leftComparand = $leftComparandOverride;
-        }
-        else
-        {
+        } else {
             $leftComparand = $nodeData['leftComparand'];
         }
 
-        if($rightComparandOverrideEdge = self::getOverrideEdge($node, 'rightComparand-override')->first())
-        {
+        if ($rightComparandOverrideEdge = self::getOverrideEdge($node, 'rightComparand-override')->first()) {
             $rightComparandOverrideNode = self::$nodes->where('id', $rightComparandOverrideEdge['source']);
             $rightComparandOverride = self::runReturnFunction($rightComparandOverrideNode);
             $rightComparand = $rightComparandOverride;
-        }
-        else
-        {
+        } else {
             $rightComparand = $nodeData['rightComparand'];
         }
 
 
         /*dump($leftComparand);
         dump($rightComparand);*/
-
 
 
         $operator = $nodeData['operator'];
@@ -507,16 +513,13 @@ class RunFlow
             '<' => $leftComparand < $rightComparand,
             '>=' => $leftComparand >= $rightComparand,
             '<=' => $leftComparand <= $rightComparand,
-            'regex' => preg_match('/' . trim($rightComparand, '/') . '/', $leftComparand), // todo make sure this works as expected
+            'regex' => preg_match('/'.trim($rightComparand, '/').'/',
+                $leftComparand), // todo make sure this works as expected
             default => false,
         };
 
 
     }
-
-
-
-
 
 
     /**
@@ -526,12 +529,9 @@ class RunFlow
     public static function nodeID($node): mixed
     {
         //dump($node);
-        if($node)
-        {
+        if ($node) {
             return $node->first()['id'];
-        }
-        else
-        {
+        } else {
             return null;
         }
 

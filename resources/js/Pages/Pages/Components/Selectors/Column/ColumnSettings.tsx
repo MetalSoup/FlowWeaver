@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNode } from '@craftjs/core';
 
-export default function FlexColumnSettings() {
+export default function ColumnSettings() {
   const {
     actions: { setProp },
     props,

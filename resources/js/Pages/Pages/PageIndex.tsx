@@ -3,6 +3,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, Link, router} from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import DangerButton from '@/Components/DangerButton';
+import PrimaryButton from "@/Components/PrimaryButton";
 
 export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pages?: any }) {
     const rows = pages?.data ?? [];
@@ -248,7 +249,7 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
                         <p className="mt-2 text-sm text-gray-600">Are you sure you want to delete the page "{selectedPage?.name}"? This action cannot be undone.</p>
 
                         <div className="mt-6 flex justify-end">
-                            <button onClick={closeConfirm} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                            <PrimaryButton onClick={closeConfirm} className="px-4 py-2">Cancel</PrimaryButton>
                             <DangerButton className="ms-3" onClick={deletePage}>Delete</DangerButton>
                         </div>
                     </div>

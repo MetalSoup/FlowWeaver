@@ -2,11 +2,10 @@ import { useEditor } from '@craftjs/core';
 import { Layers } from '@craftjs/layers';
 import React, { useState } from 'react';
 import { styled } from 'styled-components';
+import { Pen, Stack } from 'phosphor-react';
 
 import { SidebarItem } from './SidebarItem';
 
-import {CustomizeIcon} from "@/Pages/Pages/Components/Icons";
-import {LayersIcon} from "@/Pages/Pages/Components/Icons";
 import { Toolbar } from '../../Toolbar';
 
 export const SidebarDiv = styled.div<{ $enabled: boolean }>`
@@ -15,8 +14,6 @@ export const SidebarDiv = styled.div<{ $enabled: boolean }>`
   background: #fff;
   margin-right: ${(props) => (props.$enabled ? 0 : -280)}px;
 `;
-
-
 
 export const Sidebar = () => {
   const [layersVisible, setLayerVisible] = useState(true);
@@ -29,7 +26,7 @@ export const Sidebar = () => {
     <SidebarDiv $enabled={enabled} className="sidebar transition bg-white w-2">
       <div className="flex flex-col h-full">
         <SidebarItem
-          icon={CustomizeIcon}
+          icon={Pen}
           title="Customize"
           height={!layersVisible ? 'full' : '55%'}
           visible={toolbarVisible}
@@ -39,14 +36,16 @@ export const Sidebar = () => {
           <Toolbar />
         </SidebarItem>
         <SidebarItem
-          icon={LayersIcon}
+          icon={Stack}
           title="Layers"
           height={!toolbarVisible ? 'full' : '45%'}
           visible={layersVisible}
           onChange={(val) => setLayerVisible(val)}
         >
           <div className="">
-            <Layers expandRootOnLoad={true} />
+            {typeof window !== 'undefined' && (window as any).__CRAFT_TEMP_DISABLE_LAYERS ? null : (
+              <Layers expandRootOnLoad={true} />
+            )}
           </div>
         </SidebarItem>
       </div>

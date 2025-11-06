@@ -19,5 +19,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // To seed 10,000 users quickly, run:
+        // php artisan db:seed --class=Database\Seeders\LargeUsersSeeder
+        // or register LargeUsersSeeder here by uncommenting the line below:
+        // $this->call(LargeUsersSeeder::class);
     }
 }

@@ -1,6 +1,5 @@
 import {Handle, Position, useStore} from "@xyflow/react";
-import {PlayCircleIcon as PlayCircleIconSolid} from "@heroicons/react/24/solid";
-import {PlayCircleIcon} from "@heroicons/react/24/outline";
+import { Play } from 'phosphor-react';
 
 
 export default function NodeOutputHandle ({ onConnect, id, children, nodeID }: {
@@ -27,12 +26,7 @@ export default function NodeOutputHandle ({ onConnect, id, children, nodeID }: {
 
                 />
                 <div className={"handle_icon absolute right-0 z-0"}>
-                    {isConnected ?
-
-                        <PlayCircleIconSolid className={"h-6 w-6"}/>
-                        :
-                        <PlayCircleIcon className={"h-6 w-6"}/>
-                    }
+                    <Play size={24} weight={isConnected ? 'fill' : 'regular'} />
                 </div>
 
                 <div className={"pr-7"}>

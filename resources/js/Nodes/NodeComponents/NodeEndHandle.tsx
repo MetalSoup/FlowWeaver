@@ -1,6 +1,5 @@
 import {Handle, Position, useStore} from "@xyflow/react";
-import {PlayIcon as PlayIconSolid} from "@heroicons/react/24/solid";
-import {PlayIcon} from "@heroicons/react/24/outline";
+import { Play } from 'phosphor-react';
 
 
 export default function NodeEndHandle ({ onConnect, id, children, nodeID }: {
@@ -27,11 +26,8 @@ export default function NodeEndHandle ({ onConnect, id, children, nodeID }: {
 
                 />
                 <div className={"handle_icon absolute right-0 z-0"}>
-                    {isConnected ?
-                        <PlayIconSolid className={"h-6 w-6"}/>
-                        :
-                        <PlayIcon className={"h-6 w-6"}/>
-                    }
+                    <Play size={24} weight={isConnected ? 'fill' : 'regular'} />
+                    {/* phosphor: using weight 'fill' for connected state to show visual difference */}
                 </div>
 
 

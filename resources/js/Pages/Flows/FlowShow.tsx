@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
+import SecondaryButton from "@/Components/SecondaryButton";
+import DangerButton from "@/Components/DangerButton";
+import PrimaryButton from "@/Components/PrimaryButton";
 
 export default function ShowFlow({flow_id, flow = {} }: any) {
 
@@ -103,7 +106,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                         fetchedFlowIdRef.current = flow_id; // mark as fetched only on success
                     } else {
                         console.warn('ShowFlow: could not find compiled flow in fetch response', json);
-                        // allow retry next time by not marking fetchedFlowIdRef
+                        // allow retry next time by not marking fetchedFlowId
                     }
                 }
             } catch (err) {
@@ -289,15 +292,28 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
         pendingNextRef.current = null;
         setSubmitting(true);
 
-        const handleSuccess = (page: any, returnedId?: string | number) => {
+        const handleSuccess = (page: any, returnedId: string | number, nextPage: string) => {
             setSubmissionIds(prev => ({ ...(prev || {}), [currentStepKey]: true }));
             const idFromFlash = page?.props?.flash?.submission_id ?? returnedId ?? null;
+
+            console.log(nextPage);
+
+
             if (idFromFlash) {
                 const idStr = String(idFromFlash);
                 setSubmissionId(idStr);
                 try { if (storageSubmissionKey && window.localStorage) window.localStorage.setItem(storageSubmissionKey, idStr); } catch (err) {}
             }
-            if (isLast) {
+            // Determine navigation target: prefer nextPage (from server) if provided and valid
+            let targetNext: string | null = null;
+            if (nextPage && typeof nextPage === 'string' && keys.includes(nextPage)) {
+                targetNext = nextPage;
+            } else if (!isLast) {
+                targetNext = nextKey;
+            }
+
+            // If we are at the last step and no valid nextPage provided, clear draft and submission id
+            if (isLast && !targetNext) {
                 try { if (storageKey && window.localStorage) window.localStorage.removeItem(storageKey); } catch (err) {}
                 try { if (storageSubmissionKey && window.localStorage) window.localStorage.removeItem(storageSubmissionKey); } catch (err) {}
                 setFormValues({});
@@ -306,7 +322,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                 return;
             }
             saveSucceededRef.current = true;
-            pendingNextRef.current = !isLast ? nextKey : null;
+            pendingNextRef.current = targetNext;
         };
 
         if (submissionId) {
@@ -338,7 +354,12 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                 router.post(route('submissions.store'), payload, {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: (page: any) => { handleSuccess(page); },
+                    onSuccess: (page: any) => {
+                        console.log(page)
+                        const submission_id = page.props.flash.submission_id ?? null;
+                        const form = page.props.flash.data.form ?? null;
+                        handleSuccess(page, submission_id, form);
+                    },
                     onError: (errors: any) => {
                         console.error('Submission create error (fallback)', errors);
                         alert('Failed to save submission.');
@@ -358,7 +379,11 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
             router.put(route('submissions.update', sidParam), payload, {
                 preserveScroll: true,
                 preserveState: true,
-                onSuccess: (page: any) => { handleSuccess(page); },
+                onSuccess: (page: any) => {
+                    const submission_id = page.props.flash.submission_id ?? null;
+                    const form = page.props.flash.data.form ?? null;
+                    handleSuccess(page, submission_id, form);
+                },
                 onError: (errors: any) => {
                     console.error('Submission update error', errors);
                     alert('Failed to save submission.');
@@ -378,7 +403,11 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
         router.post(route('submissions.store'), payload, {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: (page: any) => { handleSuccess(page); },
+            onSuccess: (page: any) => {
+                const submission_id = page?.props?.flash?.submission_id ?? null;
+                const form = page?.props?.flash?.data?.form ?? null;
+                handleSuccess(page, submission_id, form);
+            },
             onError: (errors: any) => {
                 console.error('Submission create error', errors);
                 alert('Failed to save submission.');
@@ -519,24 +548,24 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
              <div className="p-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                     <div className="flex items-center gap-2">
-                        <button onClick={goPrevious} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" disabled={!selectedKey || keys.indexOf(selectedKey) <= 0 || submitting}>
+                        <SecondaryButton onClick={goPrevious} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" disabled={!selectedKey || keys.indexOf(selectedKey) <= 0 || submitting}>
                             Prev
-                        </button>
-                        <button onClick={goNext} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" disabled={!selectedKey || keys.indexOf(selectedKey) === -1 || keys.indexOf(selectedKey) >= keys.length - 1 || submitting}>
+                        </SecondaryButton>
+                        <SecondaryButton onClick={goNext} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" disabled={!selectedKey || keys.indexOf(selectedKey) === -1 || keys.indexOf(selectedKey) >= keys.length - 1 || submitting}>
                             Next
-                        </button>
-                        <button onClick={clearDraft} className="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white" disabled={submitting} title="Clear draft and submission id">
+                        </SecondaryButton>
+                        <DangerButton onClick={clearDraft} className="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white" disabled={submitting} title="Clear draft and submission id">
                             Clear
-                        </button>
+                        </DangerButton>
                     </div>
 
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2 flex-1">
+                    <div className="flex gap-2 flex-1">
                         {keys.map((key, idx) => {
                             return (
-                                <button
+                                <PrimaryButton
                                     key={key}
                                     onClick={() => requestSelectKey(key)}
-                                    className={`px-2 py-1 rounded text-left truncate flex items-center gap-2 min-w-0 ${selectedKey === key ? 'bg-blue-700 text-white' : 'bg-blue-500 text-white'}`}
+                                    active={selectedKey === key}
                                     aria-pressed={selectedKey === key}
                                     aria-label={`Step ${idx + 1}: (${key})`}
                                     title={key}
@@ -547,7 +576,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                                     {submissionIds && submissionIds[key] ? (
                                         <span className="ml-auto text-xs bg-green-600 text-white px-1 py-0.5 rounded">Saved</span>
                                     ) : null}
-                                </button>
+                                </PrimaryButton>
                             );
                         })}
                     </div>

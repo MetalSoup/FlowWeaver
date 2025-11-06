@@ -12,7 +12,7 @@ import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 import {v4 as uuidv4} from 'uuid';
-import {PlusCircleIcon} from '@heroicons/react/20/solid';
+import { PlusCircle } from 'phosphor-react';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
@@ -26,8 +26,9 @@ import NodeSectionContent from "@/Nodes/NodeComponents/NodeSectionContent";
 export default function WebhookNode({data}: { data: any }) {
     const {fields}: any = usePage().props;
 
+    // Use field.name as the option value and label for display
     const fieldOptions = fields.map((field: any) => ({
-        value: field.id,
+        value: field.name,
         label: field.label,
     }));
     const {getEdges, setEdges} = useReactFlow();
@@ -41,15 +42,46 @@ export default function WebhookNode({data}: { data: any }) {
     }
     const nodeID: string = data.id;
 
-    const [hookFields, setHookFields] = useState(data.hookFields.map((field: any) => ({...field, id: field.id || uuidv4()})));
-    const [headers, setHeaders] = useState(data.headers.map((header: any) => ({...header, id: header.id || uuidv4()})));
+    // helper to create a nice fallback label from a name
+    const humanize = (name: string | null) => {
+        if (!name) return '';
+        return name.split('_').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    }
+
+    // Store hookFields and headers as { id, key, name, label, field_id }
+    const [hookFields, setHookFields] = useState(data.hookFields.map((f: any) => {
+        const name = f.name ?? f.value ?? null;
+        const matched = fields.find((fld: any) => fld.name === name || fld.id === name || fld.id === f.field_id);
+        return {
+            ...f,
+            id: f.id || uuidv4(),
+            key: f.key ?? '',
+            name: name,
+            label: matched?.label ?? f.label ?? humanize(name),
+            field_id: matched?.id ?? f.field_id ?? null,
+        };
+    }));
+
+    const [headers, setHeaders] = useState(data.headers.map((h: any) => {
+        const name = h.name ?? h.value ?? null;
+        const matched = fields.find((fld: any) => fld.name === name || fld.id === name || fld.id === h.field_id);
+        return {
+            ...h,
+            id: h.id || uuidv4(),
+            key: h.key ?? '',
+            name: name,
+            label: matched?.label ?? h.label ?? humanize(name),
+            field_id: matched?.id ?? h.field_id ?? null,
+        };
+    }));
+
     const [sendAsJson, setSendAsJson] = useState(data.sendAsJson ?? true);
     const [isSoap, setIsSoap] = useState(data.isSoap || false);
 
 
 
-
     useEffect(() => {
+        // persist the structured arrays back to node data
         data.hookFields = hookFields;
         data.headers = headers;
         updateNodeInternals(nodeID);
@@ -66,7 +98,7 @@ export default function WebhookNode({data}: { data: any }) {
 
     const addField = () => {
         setHookFields((prevFields: any) => {
-            const newFields = [...prevFields, {key: '', value: '', id: uuidv4()}];
+            const newFields = [...prevFields, {key: '', name: null, label: '', field_id: null, id: uuidv4()}];
             updateNodeInternals(nodeID);
             return newFields;
         });
@@ -74,7 +106,7 @@ export default function WebhookNode({data}: { data: any }) {
 
     const addHeader = () => {
         setHeaders((prevHeaders: any) => {
-            const newHeaders = [...prevHeaders, {key: '', value: '', id: uuidv4()}];
+            const newHeaders = [...prevHeaders, {key: '', name: null, label: '', field_id: null, id: uuidv4()}];
             updateNodeInternals(nodeID);
             return newHeaders;
         });
@@ -110,11 +142,19 @@ export default function WebhookNode({data}: { data: any }) {
 
     const onChangeFieldValue = (id: string, newValue: SingleValue<{ value: any; label: any }>) => {
         setHookFields((prevFields: any[]) => {
-            if (newValue) {
-                return prevFields.map((field: any) =>
-                    field.id === id ? {...field, value: newValue.value} : field
-                );
-            }
+            return prevFields.map((field: any) => {
+                if (field.id !== id) return field;
+
+                const selectedName = newValue ? newValue.value : null;
+                const matched = fields.find((f: any) => f.name === selectedName || f.id === selectedName);
+
+                return {
+                    ...field,
+                    name: selectedName,
+                    label: matched?.label ?? (selectedName ? humanize(selectedName) : ''),
+                    field_id: matched?.id ?? null,
+                };
+            });
         });
     };
 
@@ -128,11 +168,19 @@ export default function WebhookNode({data}: { data: any }) {
 
     const onChangeHeaderValue = (id: string, newValue: SingleValue<{ value: any; label: any }>) => {
         setHeaders((prevHeaders: any[]) => {
-            if (newValue) {
-                return prevHeaders.map((header: any) =>
-                    header.id === id ? {...header, value: newValue.value} : header
-                );
-            }
+            return prevHeaders.map((header: any) => {
+                if (header.id !== id) return header;
+
+                const selectedName = newValue ? newValue.value : null;
+                const matched = fields.find((f: any) => f.name === selectedName || f.id === selectedName);
+
+                return {
+                    ...header,
+                    name: selectedName,
+                    label: matched?.label ?? (selectedName ? humanize(selectedName) : ''),
+                    field_id: matched?.id ?? null,
+                };
+            });
         });
     };
 
@@ -283,7 +331,15 @@ export default function WebhookNode({data}: { data: any }) {
                                                 label: any;
                                             }>) => onChangeFieldValue(field.id, newValue)}
                                             handleID={field.id + "-field-value-override"}
-                                            value={{value: field.value, label: field.value}}
+/*                                            value={{value: field.value, label: field.value}}*/
+
+                                            value={(() => {
+                                                const selectedOption = field.name == null
+                                                    ? null
+                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? { value: field.name, label: field.label ?? field.name });
+
+                                                return selectedOption;
+                                            })()}
                                             nodeID={nodeID}
                                             className={"nodrag text-gray-700"}
                                             isSearchable={true}
@@ -298,7 +354,7 @@ export default function WebhookNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addField}
                         >
-                            <PlusCircleIcon className="h-6 w-6 mx-auto"/>
+                            <PlusCircle size={24} />
                         </div>
                     </NodeSection>
                     <NodeSection className={"relative nodrag"}>
@@ -329,7 +385,14 @@ export default function WebhookNode({data}: { data: any }) {
                                                 label: any;
                                             }>) => onChangeHeaderValue(header.id, newValue)}
                                             handleID={header.id + "-header-value-override"}
-                                            value={{value: header.value, label: header.value}}
+
+                                            value={(() => {
+                                                const selectedOption = header.name == null
+                                                    ? null
+                                                    : (fieldOptions.find((o: any) => o.value === header.name) ?? { value: header.name, label: header.label ?? header.name });
+
+                                                return selectedOption;
+                                            })()}
                                             nodeID={nodeID}
                                             className={"nodrag text-gray-700"}
                                             isSearchable={true}
@@ -344,7 +407,7 @@ export default function WebhookNode({data}: { data: any }) {
                             className="addButton block py-1 text-center w-full"
                             onClick={addHeader}
                         >
-                            <PlusCircleIcon className="h-6 w-6 mx-auto"/>
+                            <PlusCircle size={24} />
                         </div>
                     </NodeSection>
                 </DndContext>

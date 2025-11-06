@@ -7,6 +7,7 @@ use App\Models\Field;
 use App\Http\Requests\StoreFieldRequest;
 use App\Http\Requests\UpdateFieldRequest;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 
 class FieldController extends Controller
 {
@@ -19,7 +20,7 @@ class FieldController extends Controller
         $selectedInstanceId = session('selected_instance');
         $fields = Field::where('instance_id', $selectedInstanceId)->get();
 
-        return inertia('Fields/Index', [
+        return inertia('Fields/FieldIndex', [
             'fields' => FieldResource::collection($fields),
         ]);
 
@@ -32,7 +33,7 @@ class FieldController extends Controller
     {
         //
         $selectedInstanceId = session('selected_instance');
-        return inertia('Fields/Create', [
+        return inertia('Fields/FieldCreate', [
             'field' => new FieldResource(new Field(['instance_id' => $selectedInstanceId])),
         ]);
     }
@@ -45,11 +46,9 @@ class FieldController extends Controller
         //
         Log::info('store field');
         $selectedInstanceId = session('selected_instance');
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'label' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
-        ]);
+
+        // validated data comes from the StoreFieldRequest
+        $validated = $request->validated();
         $validated['instance_id'] = $selectedInstanceId;
 
         Field::create($validated);
@@ -72,6 +71,9 @@ class FieldController extends Controller
     public function edit(Field $field)
     {
         //
+        return inertia('Fields/FieldEdit', [
+            'field' => $field,
+        ]);
     }
 
     /**
@@ -80,19 +82,13 @@ class FieldController extends Controller
     public function update(UpdateFieldRequest $request, Field $field)
     {
         //
-        //dd('test');
         $selectedInstanceId = session('selected_instance');
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'label' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
-        ]);
+        $validated = $request->validated();
+
         $validated['instance_id'] = $selectedInstanceId;
         if ($field) $field->update($validated);
         else $field = Field::create($validated);
-        return inertia('Fields/Edit', [
-            'field' => new FieldResource($field),
-        ]);
+        return Redirect::route('fields.edit', ['field' => $field->id])->with('success', 'Field updated successfully.');
 
 
     }

@@ -2,19 +2,12 @@ import { Element, useEditor } from '@craftjs/core';
 import { Tooltip } from '@mui/material';
 import React from 'react';
 import { styled } from 'styled-components';
+import { FileText, SquaresFour, Play, Square } from 'phosphor-react';
 
-import {ButtonIcon} from "@/Pages/Pages/Components/Icons";
-import {SquareIcon} from "@/Pages/Pages/Components/Icons";
-import {TypeIcon} from "@/Pages/Pages/Components/Icons";
-import {YoutubeIcon} from "@/Pages/Pages/Components/Icons";
-import { Button } from '../../Selectors/Button';
-import { Container } from '../../Selectors/Container';
-import { Text } from '../../Selectors/Text';
-import { Video } from '../../Selectors/Video';
-import { Flow } from '../../Selectors/Flow';
-import { FlexRow } from '../../Selectors';
-import { ContainerIcon } from '@/Pages/Pages/Components/ToolboxIcons';
-import { FlexColumn } from '../../Selectors';
+import { Button } from '../../Selectors/Button/Button';
+import { Container, Column, Text } from '@/Pages/Pages/Components/Selectors';
+import { Video } from '../../Selectors/Video/Video';
+import { Flow } from '../../Selectors/Flow/Flow';
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
   transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -61,17 +54,17 @@ export const Toolbox = () => {
               <Element
                 canvas
                 is={Container}
-                background={{ r: 78, g: 78, b: 78, a: 1 }}
+                background={{ r: 255, g: 255, b: 255, a: 1 }}
                 color={{ r: 0, g: 0, b: 0, a: 1 }}
-                height="300px"
-                width="300px"
-              ></Element>
+                height="auto"
+                width="100%"
+              ><Column/></Element>
             );
           }}
         >
           <Tooltip title="Container" placement="right">
             <Item $move>
-              <SquareIcon viewBox="-3 -3 24 24" />
+              <Square size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -85,7 +78,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Text" placement="right">
             <Item $move>
-              <TypeIcon viewBox="-3 -3 28 28" />
+              <FileText size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -96,7 +89,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Button" placement="right">
             <Item $move>
-              <ButtonIcon viewBox="-4 -3 24 24" />
+              <Square size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -107,7 +100,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Video" placement="right">
             <Item $move>
-              <YoutubeIcon viewBox="-3 -3 28 28" />
+              <Play size={28} />
             </Item>
           </Tooltip>
         </div>
@@ -118,7 +111,7 @@ export const Toolbox = () => {
         >
           <Tooltip title="Form" placement="right">
               <Item $move>
-                  <YoutubeIcon viewBox="-3 -3 28 28" />
+                  <FileText size={28} />
               </Item>
           </Tooltip>
         </div>
@@ -128,23 +121,19 @@ export const Toolbox = () => {
               ref,
               <Element
                 canvas
-                is={FlexRow}
-                columns={2}
-                gap={16}
+                is={Column}
                 background={{ r: 255, g: 255, b: 255, a: 0 }}
-                color={{ r: 0, g: 0, b: 0, a: 1 }}
                 height="auto"
-                width="100%"
+
+
               >
-                <Element canvas is={FlexColumn} />
-                <Element canvas is={FlexColumn} />
               </Element>
             );
           }}
         >
-          <Tooltip title="Flex Row" placement="right">
+          <Tooltip title="Column" placement="right">
             <Item $move>
-              <ContainerIcon viewBox="-3 -3 24 24" />
+              <SquaresFour size={28} />
             </Item>
           </Tooltip>
         </div>

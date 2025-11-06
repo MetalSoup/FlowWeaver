@@ -1,5 +1,5 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import {Link, router, useForm} from "@inertiajs/react";
+import {Head, Link, router, useForm} from "@inertiajs/react";
 import { useState } from 'react';
 
 export default function Fields({ auth, fields }:{auth:any,fields:any}) {
@@ -13,8 +13,9 @@ export default function Fields({ auth, fields }:{auth:any,fields:any}) {
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h1>Fields</h1>}>
-            <Link href={route('fields.create')} className="bg-gray-100 inline-block ">Create New Field</Link>
+            header={<div className="flex justify-between items-center"><h1>Fields</h1><Link href={route('fields.create')} className="bg-blue-500 text-white py-1 px-3 rounded">Create Field</Link></div>}
+        >
+            <Head title="Fields"/>
             <div className={"p-5"}>
 
                 <table className={"w-full"}>

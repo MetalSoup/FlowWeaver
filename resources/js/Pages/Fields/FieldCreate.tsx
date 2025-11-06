@@ -4,9 +4,9 @@ import TextInput from "@/Components/TextInput";
 import {Head, Link, router, useForm} from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import SelectInput from "@/Components/SelectInput";
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 
-export default function Create({auth, selected_instance}: { auth: any; selected_instance?: number | null }) {
+export default function FieldCreate({auth, selected_instance}: { auth: any; selected_instance?: number | null }) {
     const {data, setData, post, errors} = useForm({
         name: "",
         type: "text",
@@ -22,35 +22,55 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
         }
     }, [selected_instance]);
 
+    const [nameClientError, setNameClientError] = useState<string | null>(null);
+
     const generateSlug = (text: string) => {
         return text
             .toString()
             .toLowerCase()
-            .replace(/\s+/g, '_') // Replace spaces with -
-            .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-            .replace(/--+/g, '-') // Replace multiple - with single -
-            ; // Trim - from end of text
+            .replace(/\s+/g, '_') // Replace spaces with _
+            .replace(/[^A-Za-z0-9_-]+/g, '') // Remove all chars except letters, numbers, underscore, hyphen
+            .replace(/__+/g, '_') // collapse multiple underscores
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
+    };
+
+    const validateNameClient = (value: string) => {
+        if (!value) return 'Name is required.';
+        const re = /^[A-Za-z][A-Za-z0-9_-]*$/;
+        if (!re.test(value)) {
+            return 'Name must start with a letter and contain only letters, numbers, underscores, or hyphens.';
+        }
+        return null;
     };
 
     const onChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-
-        setData("name", generateSlug(value));
+        const slug = generateSlug(e.target.value);
+        setData("name", slug);
+        const clientErr = validateNameClient(slug);
+        setNameClientError(clientErr);
     };
 
     const onChangeLabel = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setData("label", value);
 
-        // Generate name from label This doesn't work. It's either field name or label
-        //setData("name", generateSlug(value));
-
-
-
+        // keep name generation optional; do not overwrite if user already changed name
+        if (!data.name) {
+            const slug = generateSlug(value);
+            setData("name", slug);
+            const clientErr = validateNameClient(slug);
+            setNameClientError(clientErr);
+        }
     };
 
     const onSubmit = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
+
+        // client-side validation
+        const clientErr = validateNameClient(data.name);
+        setNameClientError(clientErr);
+        if (clientErr) return;
 
         // ensure instance_id is present
         setData('instance_id', selected_instance ?? null);
@@ -76,7 +96,7 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
                 className={"p-5"}
             >
                 <div className="mt-4">
-                    <InputLabel htmlFor="field_name" value="Label"/>
+                    <InputLabel htmlFor="field_label" value="Label"/>
 
                     <TextInput
                         id="label"
@@ -88,7 +108,7 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
                         onChange={onChangeLabel}
                     />
 
-                    <InputError message={errors.name} className="mt-2"/>
+                    <InputError message={errors.label} className="mt-2"/>
                 </div>
 
                 <div className="mt-4">
@@ -104,12 +124,12 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
                         onChange={onChangeName}
                     />
 
-                    <InputError message={errors.name} className="mt-2"/>
+                    <InputError message={errors.name ?? nameClientError} className="mt-2"/>
                 </div>
                 <div className="mt-4">
                     <InputLabel htmlFor="field_type" value="Field Type"/>
 
-                    <SelectInput onChange={(e) => setData("type", e.target.value)}>
+                    <SelectInput onChange={(e) => setData("type", e.target.value)} value={data.type}>
 
                         <option value="text">Text</option>
                         <option value="email">Email</option>
@@ -139,7 +159,7 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
 
                     </SelectInput>
 
-                    <InputError message={errors.name} className="mt-2"/>
+                    <InputError message={errors.type} className="mt-2"/>
                 </div>
 
 
@@ -151,7 +171,10 @@ export default function Create({auth, selected_instance}: { auth: any; selected_
                         Cancel
                     </Link>
                     <button
-                        className="bg-emerald-500 py-1 px-3 text-white rounded shadow transition-all hover:bg-emerald-600">
+                        className="bg-emerald-500 py-1 px-3 text-white rounded shadow transition-all hover:bg-emerald-600"
+                        type="submit"
+                        disabled={!!(errors.name || nameClientError)}
+                    >
                         Submit
                     </button>
                 </div>

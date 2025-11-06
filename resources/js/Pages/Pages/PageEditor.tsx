@@ -7,17 +7,18 @@ import { Editor as CraftEditor, Frame, Element, useEditor } from '@craftjs/core'
 
 // Local editor building blocks (already present in the repo)
 import { Viewport, RenderNode } from './Components/Editor';
-import { Container, Text, FlexRow } from './Components/Selectors';
-import { FlexColumn } from './Components/Selectors';
-import { Button } from './Components/Selectors/Button';
-import { Custom1, OnlyButtons } from './Components/Selectors/Custom1';
-import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
-import { Custom3 } from './Components/Selectors/Custom3';
-import { Video } from './Components/Selectors/Video';
-import { Flow } from './Components/Selectors/Flow';
+import { Column, Container } from './Components/Selectors';
+import { Button } from './Components/Selectors/Button/Button';
+import { Custom1, OnlyButtons } from './Components/Selectors/Custom1/Custom';
+import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2/Custom2';
+import { Custom3 } from './Components/Selectors/Custom3/Custom3';
+import { Video } from './Components/Selectors/Video/Video';
+import { Flow } from './Components/Selectors/Flow/Flow';
+import { Text } from './Components/Selectors/Text/Text';
 // Icons for viewport toggles
-import { DevicePhoneMobileIcon, DeviceTabletIcon, ComputerDesktopIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon } from '@heroicons/react/24/outline';
-import { CheckIcon, CustomizeIcon } from './Components/Icons';
+import { Eye, PencilSimple, DeviceMobile, DeviceTablet, Desktop, ArrowCounterClockwise, ArrowClockwise } from 'phosphor-react';
+
+
 
 // Module-scoped debug helpers so they can be exported and won't trigger unused warnings
 export const debugEcho = async (payload: any) => {
@@ -93,7 +94,7 @@ export const sendFormViaFetch = async (url: string, payload: any, method: 'post'
 try { (window as any).__debugEcho = debugEcho; } catch (e) { /* ignore */ }
 try { (window as any).__sendFormViaFetch = sendFormViaFetch; } catch (e) { /* ignore */ }
 
-export default function Editor({ auth, page = null, forms: _forms = {}, flows: _flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
+export default function PageEditor({ auth, page = null, forms: _forms = {}, flows: _flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
     const isEditing = !!page;
 
     // Derive an initial page id from common API shapes so we populate the form state correctly
@@ -434,7 +435,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         title="Undo"
                         aria-label="Undo"
                     >
-                        <ArrowUturnLeftIcon className="w-5 h-5" />
+                        <ArrowCounterClockwise className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -446,7 +447,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         title="Redo"
                         aria-label="Redo"
                     >
-                        <ArrowUturnRightIcon className="w-5 h-5" />
+                        <ArrowClockwise className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -469,7 +470,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         aria-pressed={editorEnabledState}
                         aria-label="Toggle preview"
                     >
-                        {editorEnabledState ? <CheckIcon viewBox="-3 -3 20 20" /> : <CustomizeIcon viewBox="2 0 16 16" />}
+                        {editorEnabledState ? <Eye className="w-5 h-5" /> : <PencilSimple className="w-5 h-5" />}
                         <span className="ml-2 text-sm">{editorEnabledState ? 'Preview' : 'Edit'}</span>
                     </button>
                 </div>
@@ -483,7 +484,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         title="Mobile (375px)"
                         aria-label="Mobile preview"
                     >
-                        <DevicePhoneMobileIcon className="w-5 h-5" />
+                        <DeviceMobile className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -493,7 +494,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         title="Tablet (768px)"
                         aria-label="Tablet preview"
                     >
-                        <DeviceTabletIcon className="w-5 h-5" />
+                        <DeviceTablet className="w-5 h-5" />
                     </button>
                     <button
                         type="button"
@@ -503,7 +504,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
                         title="Desktop (full width)"
                         aria-label="Desktop preview"
                     >
-                        <ComputerDesktopIcon className="w-5 h-5" />
+                        <Desktop className="w-5 h-5" />
                     </button>
                 </div>
                  <button onClick={save} disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
@@ -519,8 +520,7 @@ export default function Editor({ auth, page = null, forms: _forms = {}, flows: _
     const resolver = {
         Container,
         Text,
-        FlexRow,
-        FlexColumn,
+        FlexColumn: Column,
         Custom1,
         Custom2,
         Custom2VideoDrop,

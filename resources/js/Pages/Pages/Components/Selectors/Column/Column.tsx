@@ -1,9 +1,9 @@
 import React from 'react';
 import { Resizer } from '../Resizer';
 import { useNode } from '@craftjs/core';
-import FlexColumnSettings from './FlexColumnSettings';
+import ColumnSettings from './ColumnSettings';
 
-export type FlexColumnProps = {
+export type ColumnProps = {
   width?: string;
   height?: string;
   padding?: string[];
@@ -12,7 +12,7 @@ export type FlexColumnProps = {
   children?: React.ReactNode;
 };
 
-const defaultProps: Partial<FlexColumnProps> = {
+const defaultProps: Partial<ColumnProps> = {
   width: 'auto',
   height: 'auto',
   padding: ['0', '0', '0', '0'],
@@ -34,8 +34,8 @@ const normalizeColor = (c: any) => {
   return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
 };
 
-export const FlexColumn = (incomingProps: Partial<FlexColumnProps>) => {
-  const props = { ...defaultProps, ...incomingProps } as FlexColumnProps;
+export const Column = (incomingProps: Partial<ColumnProps>) => {
+  const props = { ...defaultProps, ...incomingProps } as ColumnProps;
   const { width, height, padding, margin, background, children } = props;
 
   const { isConnected } = useNode((node) => ({ isConnected: Boolean(node.data.nodes && Object.keys(node.data.nodes).length) }));
@@ -63,15 +63,15 @@ export const FlexColumn = (incomingProps: Partial<FlexColumnProps>) => {
   );
 };
 
-(FlexColumn as any).craft = {
-  displayName: 'FlexColumn',
+(Column as any).craft = {
+  displayName: 'Column',
   props: defaultProps,
   rules: {
     canMoveIn: () => true,
   },
   related: {
-    toolbar: FlexColumnSettings,
+    toolbar: ColumnSettings,
   },
 };
 
-export default FlexColumn;
+export default Column;

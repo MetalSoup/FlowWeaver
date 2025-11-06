@@ -11,8 +11,19 @@ class StoreInstanceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Allow authenticated users to create instances; adjust as needed for permissions.
-        return true;
+        // Only allow authenticated users who belong to the target organization to create an instance for it.
+        $user = $this->user();
+        if (!$user) return false;
+
+        // Prefer an explicit organization_id supplied in the request, but fall back to the user's
+        // currently selected organization. The controller sets organization_id from the user's
+        // selected_organization_id, however the FormRequest's authorize runs before the controller
+        // so we must accept the selected organization here to avoid an unauthorized 403.
+        $orgId = $this->input('organization_id') ?: ($user->selected_organization_id ?? null);
+        if (!$orgId) return false;
+
+        // Check membership
+        return $user->organizations()->where('id', $orgId)->exists();
     }
 
     /**
@@ -25,7 +36,7 @@ class StoreInstanceRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'organization_id' => ['nullable', 'exists:organizations,id'],
+
         ];
     }
 }

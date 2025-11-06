@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\FlowRequest;
@@ -14,33 +13,49 @@ use Inertia\Inertia;
 
 class FlowController extends Controller
 {
+    protected function resolveSelectedInstanceId()
+    {
+        $sel = session('selected_instance') ?? null;
 
+        // If session holds an object/array with id, extract it
+        if (is_array($sel) && isset($sel['id'])) {
+            return (int) $sel['id'];
+        }
 
+        if (is_object($sel) && isset($sel->id)) {
+            return (int) $sel->id;
+        }
 
+        // If it's a scalar (already an id)
+        if (is_numeric($sel)) {
+            return (int) $sel;
+        }
+
+        return null;
+    }
 
     public function index()
     {
-        $selectedInstanceId = session('selected_instance');
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
         $flows = Flow::where('instance_id', $selectedInstanceId)->get();
 
-        return inertia('Flows/Index', [
+        return inertia('Flows/FlowIndex', [
             'flows' => FlowResource::collection($flows),
         ]);
     }
 
     public function create()
     {
-        $selectedInstanceId = session('selected_instance');
-        return inertia('Flows/Edit', [
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        return inertia('Flows/FlowEdit', [
             'flow' => new FlowResource(new Flow(['instance_id' => $selectedInstanceId])),
         ]);
     }
 
     public function store(FlowRequest $request)
     {
-
         // Prefer the session selected instance; fall back to an instance_id supplied in the request.
-        $selectedInstanceId = session('selected_instance') ?? $request->input('instance_id');
+        $selectedInstanceId = $this->resolveSelectedInstanceId() ?? $request->input('instance_id');
 
         // If we still don't have an instance id, redirect the user to select one before creating flows.
         if (!$selectedInstanceId) {
@@ -48,7 +63,7 @@ class FlowController extends Controller
         }
 
         $data = $request->validated();
-        $data['instance_id'] = $selectedInstanceId;
+        $data['instance_id'] = (int) $selectedInstanceId;
 
         $flow = Flow::create($data);
 
@@ -57,80 +72,50 @@ class FlowController extends Controller
 
     public function show(Flow $flow, $startNode = null)
     {
-        //dd($flow->sequence);
-/*        return inertia('Flows/Show', [
-            'flow' => new FlowResource($flow),
-        ]);*/
+        $compiledSteps = $this->compileFlow($flow);
 
-        if($sequence = $flow->sequence){
+        //dd($compiledSteps);
 
-            //dump($sequence);
-
-
-        $edges = $sequence['edges'];
-        $edges = collect($edges);
-
-        $nodes = collect($sequence['nodes']);
-        $start_node = $nodes->where('type','Entry');
-            //dump($start_node);
-        if($startNode){
-            $start_node = $nodes->where('id',$startNode);
-        }
-        else
-        {
-            //find edge that starts on start node
-            //dump($start_node->first());
-            $start_edge = $edges->where('source',$start_node->first()['id']);
-
-            //dump($start_edge->first());
-            $start_node = $nodes->where('id',$start_edge->first()['target']);
-        }
-
-
-        // run first node function
-        $runFlow = new RunFlow($start_node,$edges,$nodes);
-        //Flow::runNodeFunction($first_node,$edges,$nodes);
-        }
-        else {
-            Log::info('No sequence found for flow: '.$flow->id);
-        }
-
-
-
-
-
-
+        return Inertia::render('Flows/TestFlowShow', [
+            'flow_id' => $flow->id,
+            'flow' => $compiledSteps,
+        ]);
     }
 
     public function edit(Flow $flow)
     {
-
-        $selectedInstanceId = session('selected_instance');
-        if($flow->instance_id != $selectedInstanceId){
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        if ($flow->instance_id != $selectedInstanceId) {
             abort(403);
         }
 
-        return inertia('Flows/Edit', [
+        return inertia('Flows/FlowEdit', [
             'flow' => new FlowResource($flow),
         ]);
     }
 
-
     public function update(FlowRequest $request, Flow $flow)
     {
-        $selectedInstanceId = session('selected_instance');
-        if($flow->instance_id != $selectedInstanceId){
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        if ($flow->instance_id != $selectedInstanceId) {
             abort(403);
         }
 
-        $flow->update($request->validated());
+        $data = $request->validated();
+        // Ensure the instance_id being saved is an integer and matches resolved instance
+        if (isset($data['instance_id'])) {
+            $data['instance_id'] = (int) $data['instance_id'];
+        } else {
+            $data['instance_id'] = (int) $selectedInstanceId;
+        }
 
+        $flow->update($data);
     }
 
     public function destroy(Flow $flow)
     {
-        $selectedInstanceId = session('selected_instance');
-        if($flow->instance_id != $selectedInstanceId){
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        if ($flow->instance_id != $selectedInstanceId) {
             abort(403);
         }
         $flow->delete();
@@ -140,16 +125,14 @@ class FlowController extends Controller
 
     public function compile(Flow $flow)
     {
-
-        $selectedInstanceId = session('selected_instance');
-/*        if($flow->instance_id != $selectedInstanceId){
-            abort(403);
-        }*/
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        /*        if($flow->instance_id != $selectedInstanceId){
+                    abort(403);
+                }*/
 
         $compiledSteps = $this->compileFlow($flow);
 
-
-        return Inertia::render('Flows/Show', [
+        return Inertia::render('Flows/FlowShow', [
             'flow_id' => $flow->id,
             'flow' => $compiledSteps,
         ]);
@@ -176,19 +159,17 @@ class FlowController extends Controller
         // `X-Inertia` header — they must receive an Inertia response.
         $isInertia = (bool) request()->header('X-Inertia');
         if ((request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') && !$isInertia) {
-             return response()->json([
-                 'flow_id' => $flow->id,
-                 'flow' => $compiled,
-             ]);
-         }
+            return response()->json([
+                'flow_id' => $flow->id,
+                'flow' => $compiled,
+            ]);
+        }
 
-         // Otherwise return a full Inertia page so Inertia.get/onSuccess can
-         // also extract the flow from page props if needed.
-         return Inertia::render('Flows/Show', [
-             'flow_id' => $flow->id,
-             'flow' => $compiled,
-         ]);
-     }
-
-
+        // Otherwise return a full Inertia page so Inertia.get/onSuccess can
+        // also extract the flow from page props if needed.
+        return Inertia::render('Flows/FlowShow', [
+            'flow_id' => $flow->id,
+            'flow' => $compiled,
+        ]);
+    }
 }

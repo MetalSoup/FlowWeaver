@@ -1,7 +1,7 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import {Head, router} from "@inertiajs/react";
 
-export default function Select({auth, instances = []}: {
+export default function InstanceSelect({auth, instances = []}: {
     auth: any,
     instances?: any[]
 }) {
@@ -17,14 +17,14 @@ export default function Select({auth, instances = []}: {
         <DashboardLayout
             user={auth.user}
 
-            header={<h1>Select Instance</h1>}
+            header={<h1>InstanceSelect Instance</h1>}
         >
-            <Head title="Select Instance" />
+            <Head title="InstanceSelect Instance" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">Select an instance to edit</div>
+                        <div className="p-6 text-gray-900">InstanceSelect an instance to edit</div>
                         {instances && instances.length ? (
                             instances.map((instance) => (
                                 <div onClick={onClick} key={instance.id} id={instance.id} className="p-6 text-gray-900">{instance.name}</div>

@@ -5,7 +5,7 @@ import { styled } from 'styled-components';
 
 import { ButtonSettings } from './ButtonSettings';
 
-import { Text } from '../Text';
+import { Text } from '../Text/Text';
 
 // Helper: stable rgba string builder
 const normalizeColor = (c: any) => {

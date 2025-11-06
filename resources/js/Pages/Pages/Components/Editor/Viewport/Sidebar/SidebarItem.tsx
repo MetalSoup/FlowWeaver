@@ -1,8 +1,7 @@
 import classNames from 'classnames';
 import React from 'react';
 import { styled } from 'styled-components';
-
-import {ArrowIcon} from "@/Pages/Pages/Components/Icons";
+import { CaretDown } from 'phosphor-react';
 
 const SidebarItemDiv = styled.div<{ $visible?: boolean; $height?: string }>`
   height: ${(props) =>
@@ -14,8 +13,7 @@ const SidebarItemDiv = styled.div<{ $visible?: boolean; $height?: string }>`
       ? `1`
       : 'unset'};
   color: #545454;
-  border-bottom: 1px solid transparent;
-  border-color: ${(props) => (props.$visible ? '#eee' : 'transparent')};
+  border-bottom: 1px solid ${(props) => (props.$visible ? '#eee' : 'transparent')};
 `;
 
 const Chevron = styled.a<{ $visible: boolean }>`
@@ -73,7 +71,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
           <h2 className="text-xs uppercase">{title}</h2>
         </div>
         <Chevron $visible={visible}>
-          <ArrowIcon viewBox="-2 -1 12 12" />
+          {React.createElement(CaretDown, { size: 12 })}
         </Chevron>
       </HeaderDiv>
       {visible ? (

@@ -1,4 +1,3 @@
-export * from './Container';
-export * from './Text';
-export * from './FlexRow';
-export * from './FlexColumn';
+export * from './Container/Container';
+export * from './Text/Text';
+export * from '@/Pages/Pages/Components/Selectors/Column/Column';

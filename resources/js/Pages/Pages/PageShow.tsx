@@ -2,13 +2,13 @@ import React from 'react';
 import { Editor as CraftEditor, Frame, Element } from '@craftjs/core';
 
 import { Container, Text } from './Components/Selectors';
-import { Button } from './Components/Selectors/Button';
-import { Custom1, OnlyButtons } from './Components/Selectors/Custom1';
-import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2';
-import { Custom3 } from './Components/Selectors/Custom3';
-import { Video } from './Components/Selectors/Video';
+import { Button } from './Components/Selectors/Button/Button';
+import { Custom1, OnlyButtons } from './Components/Selectors/Custom1/Custom';
+import { Custom2, Custom2VideoDrop } from './Components/Selectors/Custom2/Custom2';
+import { Custom3 } from './Components/Selectors/Custom3/Custom3';
+import { Video } from './Components/Selectors/Video/Video';
 import { RenderNode } from './Components/Editor/RenderNode';
-import { Flow}  from "@/Pages/Pages/Components/Selectors/Flow";
+import { Flow}  from "@/Pages/Pages/Components/Selectors/Flow/Flow";
 
 type PageLike = {
     content?: any;
@@ -17,7 +17,7 @@ type PageLike = {
     [key: string]: any;
 };
 
-export default function Show(props: any) {
+export default function PageShow(props: any) {
     // Accept a few common server prop shapes (page, data.page, model, etc.)
     const page = (props?.page ?? props) as PageLike;
     const rawContent = page?.content ?? page?.data?.content ?? page?.model?.content ?? '';
