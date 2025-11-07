@@ -5,7 +5,7 @@ import { usePage } from '@inertiajs/react';
 
 
 
-export default function DashboardLayout({ user, header, children }: PropsWithChildren<{ user: User, header?: ReactNode }>) {
+export default function DashboardLayout({ user, header, children, containerClassName = "" }: PropsWithChildren<{ user: User, header?: ReactNode , containerClassName?: string }>) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     const { props } = usePage();
@@ -27,7 +27,7 @@ export default function DashboardLayout({ user, header, children }: PropsWithChi
                         </header>
                     )}
 
-                    <main className={"flex flex-col bg-white dark:bg-gray-800 dark:text-white"}>{children}</main>
+                    <main className={"flex flex-col bg-white dark:bg-gray-800 dark:text-white " + containerClassName}>{children}</main>
                 </div>
 
             </div>

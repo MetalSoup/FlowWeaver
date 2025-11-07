@@ -378,6 +378,7 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
         <DashboardLayout
             user={auth.user}
             /*header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Flow - {flow.data.name}</h2>}*/
+            containerClassName={"h-screen"}
         >
             <Head title={"Edit Flow - " + flow.data.name}/>
             <div className={"flex flex-col md:flex-row h-full"}>

@@ -27,7 +27,6 @@ export default function DashboardSideMenu(props: {
 
     const { props: pageProps } = usePage();
     const selectedOrganization = (pageProps as any).selected_organization;
-    const organizations = ((user as any)?.organizations) ?? [];
 
     // collapsed state for a compact sidebar (persisted)
     const [collapsed, setCollapsed] = useState<boolean>(() => {

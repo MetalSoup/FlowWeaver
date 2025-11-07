@@ -1,10 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
-import {DndContext, closestCenter} from "@dnd-kit/core";
-import {
-    arrayMove,
-    SortableContext,
-    verticalListSortingStrategy
-} from "@dnd-kit/sortable";
+import {closestCenter, DndContext} from "@dnd-kit/core";
+import {arrayMove, SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
 import NodeHeading from "@/Nodes/NodeComponents/NodeHeading";
 import NodeStartHandle from "@/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Nodes/NodeComponents/NodeBody";
@@ -12,7 +8,7 @@ import NodeEndHandle from "@/Nodes/NodeComponents/NodeEndHandle";
 import InputWithOverride from "@/Nodes/NodeComponents/InputWithOverride";
 import NodeOutputHandle from "@/Nodes/NodeComponents/NodeOutputHandle";
 import {v4 as uuidv4} from 'uuid';
-import { PlusCircleIcon } from '@phosphor-icons/react';
+import {PlusCircleIcon} from '@phosphor-icons/react';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import SelectWithoutOverride from "@/Nodes/NodeComponents/SelectWithoutOverride";
@@ -334,11 +330,12 @@ export default function WebhookNode({data}: { data: any }) {
 /*                                            value={{value: field.value, label: field.value}}*/
 
                                             value={(() => {
-                                                const selectedOption = field.name == null
+                                                return field.name == null
                                                     ? null
-                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? { value: field.name, label: field.label ?? field.name });
-
-                                                return selectedOption;
+                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? {
+                                                        value: field.name,
+                                                        label: field.label ?? field.name
+                                                    });
                                             })()}
                                             nodeID={nodeID}
                                             className={"nodrag text-gray-700"}
@@ -387,11 +384,12 @@ export default function WebhookNode({data}: { data: any }) {
                                             handleID={header.id + "-header-value-override"}
 
                                             value={(() => {
-                                                const selectedOption = header.name == null
+                                                return header.name == null
                                                     ? null
-                                                    : (fieldOptions.find((o: any) => o.value === header.name) ?? { value: header.name, label: header.label ?? header.name });
-
-                                                return selectedOption;
+                                                    : (fieldOptions.find((o: any) => o.value === header.name) ?? {
+                                                        value: header.name,
+                                                        label: header.label ?? header.name
+                                                    });
                                             })()}
                                             nodeID={nodeID}
                                             className={"nodrag text-gray-700"}

@@ -219,7 +219,7 @@ class InstanceController extends Controller
         // authorize view
         $this->authorize('view', $instance);
 
-        return Inertia::render('Instances/InstanceShow', [
+        return Inertia::render('Instances/InstanceIndex', [
             'instance' => $instance,
         ]);
     }
