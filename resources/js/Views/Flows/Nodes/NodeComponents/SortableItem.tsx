@@ -30,15 +30,15 @@ export function SortableItem({id, children, onDeleteField, field, className = ''
             <div className={"flex"}>
                 {children}
             </div>
-            {onDeleteField && field && (
+            {/*{onDeleteField && field && (*/}
                 <button
                     className="bg-transparent text-gray-200 hover:text-red-500 flex-col px-2"
                     onClick={() => onDeleteField(field.id)}
                 >
                     <TrashIcon size={20} />
                 </button>
-            )
-            }
+     {/*       )
+            }*/}
 
             <button {...attributes} {...listeners} className={"flex-col px-2"}>
                 ⣿

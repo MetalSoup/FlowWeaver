@@ -16,28 +16,26 @@ import CheckBoxWithOverride from "@/Views/Flows/Nodes/NodeComponents/CheckBoxWit
 import {SortableItem} from "@/Views/Flows/Nodes/NodeComponents/SortableItem";
 import {v4 as uuidv4} from 'uuid';
 import { PlusCircleIcon } from '@phosphor-icons/react';
-import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
+import {useReactFlow, useUpdateNodeInternals, useStore} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import {usePage} from "@inertiajs/react";
+import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
+import { TrashIcon } from '@phosphor-icons/react';
+import HtmlEditor from "@/Views/Flows/Nodes/NodeComponents/HtmlEditor";
 
 
 
 export default function FormNode({data}: { data: any }) {
     const {fields}: any = usePage().props;
 
-    // Use the field's `name` as the stored value (unique identifier), but show the human label.
-    const fieldOptions = fields.map((field: any) => ({
-        value: field.name,
-        label: field.label,
-    }));
+    // react-flow helpers and node id (declare early so effects can use them)
     const {getEdges, setEdges} = useReactFlow();
     const updateNodeInternals = useUpdateNodeInternals();
-
-    if (!Array.isArray(data.formFields)) {
-        data.formFields = [];
-    }
-
     const nodeID: string = data.id;
+    const storeEdges = useStore(store => store.edges);
+
+    // build select options from fields
+    const fieldOptions = (Array.isArray(fields) ? fields : []).map((field: any) => ({ value: field.name, label: field.label }));
 
     // helper to create a nice fallback label from a name
     const humanize = (name: string | null) => {
@@ -45,29 +43,20 @@ export default function FormNode({data}: { data: any }) {
         return name.split('_').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
     }
 
-    // Store fields as { id, name, active, label, field_id }
-    const [formFields, setFormFields] = useState(
-        data.formFields.map((f: any) => {
-            // Support legacy `value` key: prefer f.name, fallback to f.value
-            const name = f.name ?? f.value ?? null;
-            const matched = fields.find((fld: any) => fld.name === name);
-            return {
-                ...f,
-                id: f.id || uuidv4(),
-                name: name,
-                active: f.active ?? true,
-                label: matched?.label ?? f.label ?? humanize(name),
-                field_id: matched?.id ?? f.field_id ?? null,
-            };
-        })
-    );
+    // Use unified ordered `items` array stored in `data.formFields` (each item must include a `type`)
+    const buildInitialItems = () => {
+        if (!Array.isArray(data.formFields)) return [];
+        return data.formFields.map((it: any) => ({ ...it, id: it.id || uuidv4() }));
+    };
 
+    const [items, setItems] = useState<any[]>(buildInitialItems());
+
+    // persist items back to data.formFields whenever they change
     useEffect(() => {
-        // persist the structured formFields
-        data.formFields = formFields;
-
-        updateNodeInternals(nodeID);
-    }, [formFields, updateNodeInternals, nodeID]);
+        // Persist the unified ordered items under data.formFields
+        data.formFields = items.map(it => ({ ...it }));
+         updateNodeInternals(nodeID);
+     }, [items, updateNodeInternals, nodeID]);
 
     const removeConnectedEdges = useCallback((handleIds: any | any[]) => {
         const edges = getEdges();
@@ -79,62 +68,62 @@ export default function FormNode({data}: { data: any }) {
     }, [getEdges, setEdges]);
 
     const addField = () => {
-        setFormFields((prevFields: any) => {
-            // New fields start with null selection but have active true
-            const newFields = [...prevFields, {id: uuidv4(), name: null, label: '', field_id: null, active: true}];
-            updateNodeInternals(nodeID);
-            return newFields;
-        });
+        const newField = { type: 'field', id: uuidv4(), name: null, label: '', field_id: null, active: true };
+        setItems(prev => { const next = [...prev, newField]; updateNodeInternals(nodeID); return next; });
     };
 
     const onDeleteField = (id: string) => {
-        removeConnectedEdges([id+"-field-active-override"]);
-        setFormFields((prevFields: any[]) => {
-            const updatedFields = prevFields.filter((field: any) => field.id !== id);
+        // remove any connected edges for both possible handle types
+        removeConnectedEdges([id + "-field-active-override", id + '-section-override']);
+        setItems(prev => {
+            const next = prev.filter(i => i.id !== id);
             updateNodeInternals(nodeID);
-            return updatedFields;
+            return next;
         });
     };
 
     const onChangeFieldValue = (id: string, newValue: SingleValue<{ value: any; label: any }>) => {
-        // newValue.value is the selected field.name. When changed, also set label and field_id from fields list.
-        setFormFields((prevFields: any[]) => {
-            return prevFields.map((field: any) => {
-                if (field.id !== id) return field;
-
-                const selectedName = newValue ? newValue.value : null;
-                const matched = fields.find((f: any) => f.name === selectedName);
-
-                return {
-                    ...field,
-                    name: selectedName,
-                    label: matched?.label ?? (selectedName ? humanize(selectedName) : ''),
-                    field_id: matched?.id ?? null,
-                };
-            });
-        });
+        const selectedName = newValue ? newValue.value : null;
+        const matched = fields.find((f: any) => f.name === selectedName);
+        setItems(prev => prev.map(i => i.id === id ? { ...i, name: selectedName, label: matched?.label ?? (selectedName ? humanize(selectedName) : ''), field_id: matched?.id ?? null } : i));
     };
 
     const onChangeFieldActive = (checked: boolean, id: string) => {
-        setFormFields((prevFields: any[]) => {
-            return prevFields.map((field: any) =>
-                field.id === id ? { ...field, active: checked } : field
-            );
-        });
+        setItems(prev => prev.map(i => i.id === id ? { ...i, active: checked } : i));
     };
 
     const onDragEnd = (event: any) => {
         const {active, over} = event;
+        if (!active || !over) return;
+        if (active.id === over.id) return;
 
-        if (active.id !== over.id) {
-            setFormFields((items: any[]) => {
-                const oldIndex = items.findIndex(item => item.id === active.id);
-                const newIndex = items.findIndex(item => item.id === over.id);
-                return arrayMove(items, oldIndex, newIndex);
-            });
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
 
+        const newOrdered = arrayMove(items, oldIndex, newIndex);
+        setItems(newOrdered.map(i => ({ ...i })));
+        updateNodeInternals(nodeID);
+    };
 
-        }
+    const addSectionAt = () => {
+        // position param is ignored; append to end and user can drag into place
+        const newSection = { type: 'html', id: uuidv4(), html: '<p>New section</p>' };
+        setItems(prev => { const next = [...prev, newSection]; updateNodeInternals(nodeID); return next; });
+    };
+
+    const updateSectionHtml = (id: string, html: string) => {
+        setItems(prev => prev.map(i => i.id === id ? { ...i, html } : i));
+    };
+
+    const deleteItem = (id: string) => {
+        // remove connected edges for both potential handles
+        removeConnectedEdges([id + '-section-override', id + '-field-active-override']);
+        setItems(prev => {
+            const next = prev.filter(i => i.id !== id);
+            updateNodeInternals(nodeID);
+            return next;
+        });
     };
 
     return (
@@ -178,57 +167,81 @@ export default function FormNode({data}: { data: any }) {
                             </h2>
                         </NodeSectionContent>
 
-                        <SortableContext items={formFields} strategy={verticalListSortingStrategy}>
-                            {formFields.map((field: any) => (
-                                <SortableItem key={field.id} id={field.id} onDeleteField={onDeleteField} field={field}>
-                                    <div className={"flex-col"}>
-                                        <CheckBoxWithOverride
-                                            id={field.id}
-                                            onChange={onChangeFieldActive}
-                                            isTrue={field.active} handleID={field.id+"-field-active-override"}
-                                            nodeID={nodeID}
-                                            title={"Show"}>
-
-
-                                        </CheckBoxWithOverride>
-                                    </div>
-
-                                        <div className={"flex-col"}>
-                                            {/* Compute selected option by matching the name (we store field.name in name) */}
-                                            {(() => {
-                                                const selectedOption = field.name == null
-                                                    ? null
-                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? { value: field.name, label: field.label ?? field.name });
-
-                                                return (
-                                                    <SelectWithoutOverride
-                                                        onChange={(newValue: SingleValue<{
-                                                            value: any;
-                                                            label: any;
-                                                        }>) => onChangeFieldValue(field.id, newValue)}
-                                                        value={selectedOption}
-                                                        className={"w-[600px]"}
-                                                        isSearchable={true}
-                                                        options={fieldOptions}
-                                                        creatable={false}
-                                                    />
-                                                );
-                                            })()}
-                                        </div>
+                        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                            {items.map((item) => (
+                                <SortableItem key={item.id} id={item.id} onDeleteField={item.type === 'field' ? onDeleteField : undefined} field={item.type === 'field' ? item : undefined}>
+                                    {item.type === 'html' ? (
+                                        (() => {
+                                            const s = item;
+                                            const handleId = s.id + '-section-override';
+                                            const isConnected = storeEdges.some(edge => edge.targetHandle === handleId && edge.target === nodeID);
+                                            return (
+                                                <div className={"mb-3  bg-gray-500/20 relative nodrag w-full"}>
+                                                    <NodeInputHandle nodeID={nodeID} handleID={handleId}>
+                                                        <HtmlEditor
+                                                            value={s.html}
+                                                            onChange={(html: string) => updateSectionHtml(s.id, html)}
+                                                            disabled={isConnected}
+                                                        />
+                                                    </NodeInputHandle>
+                                                    <button className={"absolute top-2 right-2 text-red-600"} onClick={() => deleteItem(s.id)} title="Delete section">
+                                                        <TrashIcon size={16} />
+                                                    </button>
+                                                    {isConnected && <div className="absolute left-3 top-3 text-xs bg-white/60 px-2 py-0.5 rounded">Overridden</div>}
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        (() => {
+                                            const f = item;
+                                            const selectedOption = f.name == null
+                                                ? null
+                                                : (fieldOptions.find((o: any) => o.value === f.name) ?? { value: f.name, label: f.label ?? f.name });
+                                            return (
+                                                <div className={"flex items-center gap-3 w-full"}>
+                                                    <div className={"flex-col"}>
+                                                        <CheckBoxWithOverride
+                                                            id={f.id}
+                                                            onChange={onChangeFieldActive}
+                                                            isTrue={f.active} handleID={f.id+"-field-active-override"}
+                                                            nodeID={nodeID}
+                                                            title={"Show"}
+                                                        />
+                                                    </div>
+                                                    <div className={"flex-col"}>
+                                                        <SelectWithoutOverride
+                                                            onChange={(newValue: SingleValue<{ value: any; label: any }>) => onChangeFieldValue(f.id, newValue)}
+                                                            value={selectedOption}
+                                                            className={"w-[600px]"}
+                                                            isSearchable={true}
+                                                            options={fieldOptions}
+                                                            creatable={false}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()
+                                    )}
                                 </SortableItem>
-                                ))}
+                            ))}
                         </SortableContext>
-                        <div
-                            className="addButton block py-1 text-center w-full"
-                            onClick={addField}
-                        >
-                            <PlusCircleIcon size={24} />
+
+                        {/* Footer actions: add field and add section buttons */}
+                        <div className="flex items-center justify-center gap-4 mt-3 w-full">
+                            <button onClick={addField} className="flex items-center gap-2 px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-white">
+                                <PlusCircleIcon size={18} />
+                                <span>Add Field</span>
+                            </button>
+                            <button onClick={() => addSectionAt()} className="flex items-center gap-2 px-3 py-2 rounded border border-gray-300 hover:bg-gray-50">
+                                <PlusCircleIcon size={16} />
+                                <span className="text-sm text-gray-700">Add Section</span>
+                            </button>
                         </div>
                     </NodeSection>
 
-                </DndContext>
+                 </DndContext>
 
-            </NodeBody>
-        </>
-    );
-}
+             </NodeBody>
+         </>
+     );
+ }

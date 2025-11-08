@@ -10,12 +10,21 @@ class CheckInstanceSelectedMiddleware
     {
         // Use only the user's persisted preferences to resolve the selected instance.
         // Legacy session/cookie/column behavior has been removed.
-        $selectedId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedId = $request->user()->selectedInstance()->id;
+        $user = $request->user();
+
+        // If the user does not have a selected organization, send them to organization selection first.
+        // This prevents the instance-selection middleware from redirecting users to instance flows
+        // when they don't yet belong to an organization (which previously led to /instances/create -> 403).
+        if ($user && (! method_exists($user, 'selectedOrganization') || ! $user->selectedOrganization())) {
+            return redirect()->route('organizations.select');
         }
 
-        if (!$selectedId) {
+        $selectedId = null;
+        if ($user && method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
+            $selectedId = $user->selectedInstance()->id;
+        }
+
+        if (! $selectedId) {
             return redirect()->route('instances.select');
         }
 

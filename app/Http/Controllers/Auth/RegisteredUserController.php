@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Organization;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,38 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // Ensure any previously stored "intended" URL (from before registration/login)
+        // is cleared so subsequent calls to redirect()->intended() do not send the
+        // newly-logged-in user to some protected URL like instances.create.
+        session()->forget('url.intended');
+        session()->forget('_previous');
+
+        // Automatically create a personal organization for the new user, select it,
+        // and redirect to the instance creation page.
+        if (! $user->organizations()->exists()) {
+            $orgName = $user->name . "'s Organization";
+            $organization = Organization::create(['name' => $orgName]);
+            // attach the user to the new organization
+            $organization->users()->attach($user->id);
+
+            // Persist selection into the user's `preferences` JSON column.
+            $prefs = $user->preferences ?? [];
+            if (is_string($prefs)) {
+                $decoded = json_decode($prefs, true);
+                $prefs = is_array($decoded) ? $decoded : [];
+            }
+            $prefs['selected_organization_id'] = $organization->id;
+            // clear any selected instance
+            if (array_key_exists('selected_instance_id', $prefs)) {
+                unset($prefs['selected_instance_id']);
+            }
+            $user->preferences = $prefs;
+            $user->save();
+
+            // Now redirect the user to create an instance for their organization
+            return redirect()->route('instances.create');
+        }
+
+        return redirect()->route('dashboard');
     }
 }

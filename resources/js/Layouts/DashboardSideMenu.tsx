@@ -251,7 +251,7 @@ export default function DashboardSideMenu(props: {
                                     {(!collapsed) && (
                                         <div className={`${textTertiary} text-xs mt-1`}>
                                             <div>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
-                                            <div>{selectedInstance.name}</div>
+                                            <div>{selectedInstance ? (selectedInstance.name ?? '') : ''}</div>
                                         </div>
 
                                     )}

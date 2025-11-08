@@ -33,6 +33,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Clear any previously stored intended URL to avoid redirecting the user to
+        // a protected page they visited before authentication (which may not be
+        // valid for newly-registered users who lack an organization).
+        session()->forget('url.intended');
+        session()->forget('_previous');
+
+        $user = Auth::user();
+        if ($user && ! $user->organizations()->exists()) {
+            return redirect()->route('organizations.create');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

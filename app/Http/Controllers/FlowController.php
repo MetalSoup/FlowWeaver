@@ -20,6 +20,11 @@ class FlowController extends Controller
         if ($user && method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
             $selectedId = $user->selectedInstance()->id;
         }
+
+        if (!$selectedId) {
+            return Redirect::route('instances.select')->with('error', 'Please select an instance before creating a flow.');
+        }
+
         return $selectedId;
     }
 
@@ -43,13 +48,9 @@ class FlowController extends Controller
 
     public function store(FlowRequest $request)
     {
-        // Prefer the session selected instance; fall back to an instance_id supplied in the request.
-        $selectedInstanceId = $this->resolveSelectedInstanceId() ?? $request->input('instance_id');
 
-        // If we still don't have an instance id, redirect the user to select one before creating flows.
-        if (!$selectedInstanceId) {
-            return Redirect::route('instances.select')->with('error', 'Please select an instance before creating a flow.');
-        }
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+
 
         $data = $request->validated();
         $data['instance_id'] = (int) $selectedInstanceId;
@@ -58,6 +59,23 @@ class FlowController extends Controller
 
         return redirect()->route('flows.edit', $flow->id);
     }
+
+    public function update(FlowRequest $request, Flow $flow)
+    {
+
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        if ($flow->instance_id != $selectedInstanceId) {
+            return Redirect::route('instances.select')->with('error', 'You do not have permission to edit this Flow.');
+        }
+
+        $data = $request->validated();
+        $data['instance_id'] = (int) $selectedInstanceId;
+
+
+        $flow->update($data);
+        return redirect::back()->with('success', 'Flow updated successfully.');
+    }
+
 
     public function show(Flow $flow, $startNode = null)
     {
@@ -83,23 +101,7 @@ class FlowController extends Controller
         ]);
     }
 
-    public function update(FlowRequest $request, Flow $flow)
-    {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        if ($flow->instance_id != $selectedInstanceId) {
-            abort(403);
-        }
 
-        $data = $request->validated();
-        // Ensure the instance_id being saved is an integer and matches resolved instance
-        if (isset($data['instance_id'])) {
-            $data['instance_id'] = (int) $data['instance_id'];
-        } else {
-            $data['instance_id'] = (int) $selectedInstanceId;
-        }
-
-        $flow->update($data);
-    }
 
     public function destroy(Flow $flow)
     {

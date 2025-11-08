@@ -31,6 +31,11 @@ class InstanceController extends Controller
         // Determine org IDs the user belongs to
         $userOrgIds = $user->organizations()->pluck('id')->toArray();
 
+        // If the user doesn't belong to any organizations, send them to create one first.
+        if (empty($userOrgIds)) {
+            return redirect()->route('organizations.create');
+        }
+
         // If we have a selected organization (and the user belongs to it), show instances for that org.
         if ($selectedOrgId && in_array($selectedOrgId, $userOrgIds, true)) {
             $instances = Instance::where('organization_id', $selectedOrgId)->get();

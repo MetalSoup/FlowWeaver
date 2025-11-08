@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\DefaultFields;
 
 class FieldController extends Controller
 {
@@ -24,11 +25,25 @@ class FieldController extends Controller
             $selectedInstanceId = $request->user()->selectedInstance()->id;
         }
 
+        // Always include the application's default fields (read-only, displayed without edit links)
+        $defaultFields = DefaultFields::getFields()->map(function ($f) {
+            return [
+                'id' => $f['id'] ?? null,
+                'name' => $f['name'] ?? '',
+                'label' => $f['label'] ?? ($f['name'] ?? ''),
+                'type' => $f['type'] ?? '',
+                'instance_id' => null,
+                'options' => null,
+                'created_at' => '',
+                'updated_at' => '',
+                'is_default' => true,
+            ];
+        })->toArray();
+
         if (!$selectedInstanceId) {
-            // no instance selected - return empty paginator
-            $empty = Field::whereRaw('0 = 1')->paginate(15);
+            // no instance selected - show only default fields (read-only)
             return Inertia::render('Fields/FieldIndex', [
-                'fields' => $empty,
+                'fields' => $defaultFields,
             ]);
         }
 
@@ -40,12 +55,13 @@ class FieldController extends Controller
         if ($q) {
             $query->where(function ($sub) use ($q) {
                 $sub->where('name', 'like', "%{$q}%")
-                    ->orWhere('type', 'like', "%{$q}%");
+                    ->orWhere('type', 'like', "%{$q}%")
+                    ->orWhere('label', 'like', "%{$q}%");
             });
         }
 
         // Sorting (whitelist)
-        $allowedSorts = ['id', 'name', 'type', 'created_at', 'updated_at'];
+        $allowedSorts = ['id', 'name', 'label', 'type', 'created_at', 'updated_at'];
         $sort = $request->input('sort');
         $direction = strtolower($request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
         if ($sort && in_array($sort, $allowedSorts, true)) {
@@ -59,7 +75,16 @@ class FieldController extends Controller
 
         // Transform items with FieldResource while keeping paginator meta
         $raw = $fields->getCollection() ?? collect();
-        $fields->setCollection(collect(FieldResource::collection($raw)->resolve()));
+        // Add an `is_default` flag to DB fields (false) and merge default fields so the UI
+        // can render defaults (read-only) alongside instance fields.
+        $dbFields = collect(FieldResource::collection($raw)->resolve())->map(function ($row) {
+            $row['is_default'] = false;
+            return $row;
+        });
+
+        // Prepend default fields so they appear first in the list
+        $combined = collect($defaultFields)->merge($dbFields);
+        $fields->setCollection($combined);
 
         return Inertia::render('Fields/FieldIndex', [
             'fields' => $fields,
