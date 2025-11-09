@@ -28,7 +28,7 @@ import RawHtmlNode from "@/Views/Flows/Nodes/RawHtmlNode";
 import EditableText from "@/Views/Flows/Nodes/NodeComponents/EditableText";
 import FormNode from "@/Views/Flows/Nodes/FormNode";
 import EntryNode from "@/Views/Flows/Nodes/EntryNode";
-import {LegendPanel} from "@/Views/Flows/Nodes/EditorComponents/LegendPanel";
+import {LegendPanel} from "@/Views/Flows/EditorComponents/LegendPanel";
 import PrimaryButton from "@/Components/PrimaryButton";
 
 
