@@ -2,10 +2,11 @@ import NodeHeading from "@/Views/Flows/Nodes/NodeComponents/NodeHeading";
 import InputWithOverride from "@/Views/Flows/Nodes/NodeComponents/InputWithOverride";
 import NodeStartHandle from "@/Views/Flows/Nodes/NodeComponents/NodeStartHandle";
 import NodeBody from "@/Views/Flows/Nodes/NodeComponents/NodeBody";
-import SelectWithOverride from "@/Views/Flows/Nodes/NodeComponents/SelectWithOverride";
 import NodeEndHandle from '@/Views/Flows/Nodes/NodeComponents/NodeEndHandle';
 import NodeSection from "@/Views/Flows/Nodes/NodeComponents/NodeSection";
 import {usePage} from "@inertiajs/react";
+import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
+import CreatableSelect from "react-select/creatable";
 
 
 export default function SetVariableNode({data}: { data: any }) {
@@ -67,20 +68,16 @@ export default function SetVariableNode({data}: { data: any }) {
 
 
                     {/* Variable name select (choose from existing fields). Allows override/connection. */}
-                    <SelectWithOverride
-                        value={
-                            data.variableName == null
-                                ? null
-                                : (fieldOptions.find((o: any) => o.value === data.variableName) ?? {value: data.variableName, label: data.variableName})
-                        }
-                        onChange={onVariableNameChange}
-                        handleID={"variableName-override"}
-                        nodeID={nodeID}
-                        className={"mb-7 nodrag text-gray-700"}
-                        isSearchable={true}
-                        options={fieldOptions}
-                        creatable={true}
-                    />
+                    <NodeInputHandle nodeID={nodeID} handleID={"variableName-override"} dataType={"text"}>
+                        <CreatableSelect
+                            className={"r-select w-[300px] nowheel mb-7 nodrag text-gray-700"}
+                            onChange={onVariableNameChange}
+                            defaultValue={data.variableName == null ? null : (fieldOptions.find((o: any) => o.value === data.variableName) ?? {value: data.variableName, label: data.variableName})}
+                            id={"variableName"}
+                            isSearchable={true}
+                            options={fieldOptions}
+                        />
+                    </NodeInputHandle>
 
 
                     <InputWithOverride
@@ -89,6 +86,7 @@ export default function SetVariableNode({data}: { data: any }) {
                         onChange={onVariableValueChange}
                         handleID={"variableValue-override"}
                         nodeID={nodeID}
+                        dataType={"any"}
                     />
                 </NodeSection>
 

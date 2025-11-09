@@ -12,7 +12,8 @@ export default function InputWithOverride(
         onConnect,
         style,
         label,
-        className = ""
+        className = "",
+        dataType
 
     }: {
 
@@ -26,6 +27,7 @@ export default function InputWithOverride(
         style?: any,
         label?: string,
         className?: string
+        dataType?: string
 
 
     }) {
@@ -39,7 +41,7 @@ export default function InputWithOverride(
             {label && <label className="px-7">{label}</label>}
             <div className={"relative " + className}>
 
-                <NodeInputHandle nodeID={nodeID} handleID={handleID} onConnect={onConnect}>
+                <NodeInputHandle nodeID={nodeID} handleID={handleID} onConnect={onConnect} dataType={dataType} >
 
 
                     <input

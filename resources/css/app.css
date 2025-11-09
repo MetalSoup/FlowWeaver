@@ -1,3 +1,5 @@
+@import "flow-handles.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -102,36 +104,6 @@ h2
 }
 
 
-.react-flow__node .react-flow__handle {
-    background:transparent;
-    border-radius: 0;
-    border:none;
-}
-
-
-
-.react-flow__handle-left
-{
-    left:0 !important;
-    transform: translate(0 , -50%) !important;
-    width:1.5rem !important;
-    height: 1.5rem !important;
-
-
-
-}
-
-
-
-
-.react-flow__handle-right
-{
-    right:0;
-    width:1.5rem !important;
-    height: 1.5rem !important;
-    transform: translate(0 , -50%) !important;
-
-}
 
 
 
@@ -140,86 +112,8 @@ h2
 
 
 
-.handle_icon
-{
-    top:50%;
-    transform: translate(0, -50%);
 
 
-}
-
-/* Handle type specific styles */
-.node_start_handle .handle_icon {
-    left: 0;
-    width: 34px;
-    height: 34px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(150,222,131,0.12); /* light green */
-    color: var(--kd-green);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
-}
-.node_start_handle .handle_icon.connected {
-    background: var(--kd-green);
-    color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
-
-.node_end_handle .handle_icon {
-    right: 0;
-    width: 34px;
-    height: 34px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(150,222,131,0.12); /* light green */
-    color: var(--kd-green);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
-}
-.node_end_handle .handle_icon.connected {
-    background: var(--kd-green);
-    color: white;
-    box-shadow: 0 6px 18px rgba(18,103,219,0.14);
-}
-
-.node_input_handle .handle_icon {
-    left: 0;
-    width: 24px;
-    height: 24px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(242,177,46,0.12); /* light orange */
-    color: var(--kd-orange);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
-}
-.node_input_handle .handle_icon.connected {
-    background: var(--kd-orange);
-    color: white;
-    box-shadow: 0 6px 18px rgba(242,177,46,0.12);
-}
-
-.node_output_handle .handle_icon {
-    right: 0;
-    width: 24px;
-    height: 24px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(176,157,224,0.12); /* light purple */
-    color: var(--kd-purple);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
-}
-.node_output_handle .handle_icon.connected {
-    background: var(--kd-purple);
-    color: white;
-    box-shadow: 0 6px 18px rgba(176,157,224,0.12);
-}
 
 
 

@@ -1,23 +1,26 @@
+import React from 'react';
 import Select, {SingleValue} from "react-select";
 import CreatableSelect from "react-select/creatable";
 import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
 
-export default function SelectWithOverride({className = '',isSearchable, options, onChange, handleID, value, nodeID, label,creatable = false, id}: {
+interface SelectWithOverrideProps {
+    onChange: any;
+    handleID: string;
+    value: SingleValue<any>;
+    nodeID: string;
+    children?: any;
+    style?: any;
+    label?: string;
+    className?: string;
+    isSearchable?: boolean;
+    options?: { value: string; label: string }[];
+    creatable?: boolean;
+    id?: string;
+    dataType?: string;
+    [key: string]: any;
+}
 
-    onChange: any,
-    handleID: string,
-    value: SingleValue<any>,
-    nodeID: string,
-    children?: any
-    style?: any
-    label?: string
-    className?: string
-    isSearchable?: boolean
-    options?:{ value: string; label: string }[];
-    creatable?: boolean
-    id?: string
-
-}) {
+const SelectWithOverride: any = ({className = '',isSearchable, options, onChange, handleID, value, nodeID, label,creatable = false, id, dataType}) => {
 
     if (options && value) {
         let option = options.find(option => option.value === value.value);
@@ -33,7 +36,7 @@ export default function SelectWithOverride({className = '',isSearchable, options
             <div className={"relative"}>
 
 
-                <NodeInputHandle nodeID={nodeID} handleID={handleID}>
+                <NodeInputHandle nodeID={nodeID} handleID={handleID} dataType={dataType}>
 
 
                         {!creatable &&
@@ -74,4 +77,6 @@ export default function SelectWithOverride({className = '',isSearchable, options
             </div>
         </>
     );
-}
+};
+
+export default SelectWithOverride as any;

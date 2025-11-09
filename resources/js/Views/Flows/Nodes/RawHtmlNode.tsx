@@ -49,6 +49,8 @@ export default function RawHtmlNode({data}: { data: any }) {
                     handleID={"html-override"}
                     value={html}
                     nodeID={nodeID}
+                    dataType={"html"}
+
                 />
             </NodeBody>
         </>

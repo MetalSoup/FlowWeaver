@@ -63,7 +63,10 @@ export default function ComparisonNode({data}: { data: any}) {
                     </div>
                     <NodeOutputHandle
                                       nodeID={nodeID}
-                                      id={"boolean-value"}>
+                                      id={"boolean-value"}
+                                      dataType={"boolean"}
+                    >
+
                     </NodeOutputHandle>
                 </NodeSection>
                 <NodeSection>
@@ -75,6 +78,7 @@ export default function ComparisonNode({data}: { data: any}) {
                                    nodeID={nodeID}
                                    className={"mb-7"}
                                    placeholder={"Value 1"}
+                                   dataType={"text"}
                 ></InputWithOverride>
 
 
@@ -100,6 +104,8 @@ export default function ComparisonNode({data}: { data: any}) {
                                    handleID={"rightComparand-override"}
                                    nodeID={nodeID}
                                    placeholder={"Value 2"}
+                                   dataType={"text"}
+
 
                 ></InputWithOverride>
                 </NodeSection>

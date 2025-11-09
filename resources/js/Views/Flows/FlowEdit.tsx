@@ -28,6 +28,8 @@ import RawHtmlNode from "@/Views/Flows/Nodes/RawHtmlNode";
 import EditableText from "@/Views/Flows/Nodes/NodeComponents/EditableText";
 import FormNode from "@/Views/Flows/Nodes/FormNode";
 import EntryNode from "@/Views/Flows/Nodes/EntryNode";
+import {LegendPanel} from "@/Views/Flows/Nodes/EditorComponents/LegendPanel";
+import PrimaryButton from "@/Components/PrimaryButton";
 
 
 const nodeTypes = {
@@ -358,18 +360,54 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
     const defaultViewport = initialFlow.viewport ? initialFlow.viewport : {x: 0, y: 0, zoom: 1};
 
 
+    // helper to parse a handle id like "value::boolean" into {base, type}
+    const parseHandle = (handle?: string) => {
+        if (!handle) return { base: undefined as string | undefined, type: undefined as string | undefined };
+        const parts = handle.split('::');
+        if (parts.length === 1) return { base: parts[0], type: undefined };
+        const type = parts.slice(1).join('::'); // in case `::` appears in base for any reason
+        return { base: parts[0], type };
+    };
+
+    // simple compatibility map. "any" is compatible with everything. Add more rules here later.
+    const areTypesCompatible = (sourceType?: string, targetType?: string) => {
+        if (!sourceType || !targetType) return false;
+        if (sourceType === targetType) return true;
+        if (sourceType === 'any' || targetType === 'any') return true;
+        // allow text <- number implicitly by converting number to text (optional)
+        if ((sourceType === 'number' && targetType === 'text') || (sourceType === 'text' && targetType === 'number')) return false;
+        return false;
+    };
+
     // @ts-ignore
     const isValidConnection: IsValidConnection = (connection: Connection) => {
-        //console.log(connection)
-        if (connection.targetHandle?.includes('previous'))
-        {
+        // preserve existing special-case behavior but enforce types for override
+        if (connection.targetHandle?.includes('previous')) {
             return connection.sourceHandle?.toLowerCase().includes('next') || false;
-        }
-        else if (connection.targetHandle?.includes('override'))
-        {
-            return connection.sourceHandle?.includes('value') || false;
+        } else if (connection.targetHandle?.includes('override')) {
+            // must come from a 'value' source
+            if (!connection.sourceHandle?.includes('value')) return false;
+            // parse types from source/target handles using the ::delimiter
+            const src = parseHandle(connection.sourceHandle);
+            const tgt = parseHandle(connection.targetHandle);
+            // if either side declares a type, require compatibility
+            if (src.type || tgt.type) {
+                return areTypesCompatible(src.type, tgt.type);
+            }
+            // otherwise allow override (legacy fallback)
+            return true;
         }
 
+        // parse types from source/target handles using the ::delimiter
+        const src = parseHandle(connection.sourceHandle);
+        const tgt = parseHandle(connection.targetHandle);
+
+        // if either handle has a declared type, require both to have types and be compatible
+        if (src.type || tgt.type) {
+            return areTypesCompatible(src.type, tgt.type);
+        }
+
+        // default: disallow (keeps previous behavior where only explicit named handles are allowed)
         return false;
 
     }
@@ -413,8 +451,8 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
                             </div>
                         )}
 
-                        <Panel position="top-right">
-                            <button className={"dark:text-white"} onClick={onSave}>save</button>
+                        <Panel position="top-right" >
+                            <PrimaryButton onClick={onSave}>Save</PrimaryButton>
                             {/*<button onClick={onRestore}>restore</button>
                             <button onClick={onAdd}>add node</button>*/}
                         </Panel>
@@ -427,9 +465,12 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
                             <EditableText value={flowName} onChange={onChangeName}
                                           textClassName={"text-2xl font-bold text-white"}/>
                         </Panel>
+                        <Panel position="bottom-right">
+                            <LegendPanel />
+                        </Panel>
                         <Background variant={BackgroundVariant.Lines} color={"rgba(0,0,0,0.3)"} gap={20}
                                     size={1}/>
-                        <Controls/>
+                        <Controls className={"text-black"}/>
                         {/*<MiniMap zoomable pannable/>*/}
                     </ReactFlow>
 

@@ -3,7 +3,7 @@ import {closestCenter, DndContext} from "@dnd-kit/core";
 import {arrayMove, SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
 import {v4 as uuidv4} from 'uuid';
 import {PlusCircleIcon} from '@phosphor-icons/react';
-import {SingleValue} from 'react-select';
+import Select, { SingleValue } from 'react-select';
 import {useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
 
 import NodeHeading from "@/Views/Flows/Nodes/NodeComponents/NodeHeading";
@@ -13,12 +13,12 @@ import NodeEndHandle from "@/Views/Flows/Nodes/NodeComponents/NodeEndHandle";
 import InputWithOverride from "@/Views/Flows/Nodes/NodeComponents/InputWithOverride";
 import NodeOutputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeOutputHandle";
 import SelectWithoutOverride from "@/Views/Flows/Nodes/NodeComponents/SelectWithoutOverride";
-import SelectWithOverride from "@/Views/Flows/Nodes/NodeComponents/SelectWithOverride";
 import {usePage} from "@inertiajs/react";
 import {SortableItem} from "@/Views/Flows/Nodes/NodeComponents/SortableItem";
 import NodeSection from "@/Views/Flows/Nodes/NodeComponents/NodeSection";
 import CheckBoxWithoutOverride from "@/Views/Flows/Nodes/NodeComponents/CheckBoxWithoutOverride";
 import NodeSectionContent from "@/Views/Flows/Nodes/NodeComponents/NodeSectionContent";
+import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
 
 export default function WebhookNode({data}: { data: any }) {
     const {fields}: any = usePage().props;
@@ -245,7 +245,8 @@ export default function WebhookNode({data}: { data: any }) {
 
                         <NodeOutputHandle id={"response-value"}
                                           onConnect={(params: any) => console.log('handle onConnect', params)}
-                                          nodeID={nodeID}>
+                                          nodeID={nodeID}
+                                          dataType={"any"}>
                             Response
                         </NodeOutputHandle>
                     </div>
@@ -259,6 +260,7 @@ export default function WebhookNode({data}: { data: any }) {
                         label={"Endpoint URL"}
                         nodeID={nodeID}
                         className={"mb-7"}
+                        dataType={"text"}
                     />
                     <SelectWithoutOverride
                         onChange={onMethodChange}
@@ -319,31 +321,20 @@ export default function WebhookNode({data}: { data: any }) {
                                             handleID={field.id + "-field-key-override"}
                                             value={field.key}
                                             nodeID={nodeID}
+                                            dataType={"text"}
                                         />
                                     </div>
                                     <div className={"flex-col"}>
-                                        <SelectWithOverride
-                                            onChange={(newValue: SingleValue<{
-                                                value: any;
-                                                label: any;
-                                            }>) => onChangeFieldValue(field.id, newValue)}
-                                            handleID={field.id + "-field-value-override"}
-/*                                            value={{value: field.value, label: field.value}}*/
-
-                                            value={(() => {
-                                                return field.name == null
-                                                    ? null
-                                                    : (fieldOptions.find((o: any) => o.value === field.name) ?? {
-                                                        value: field.name,
-                                                        label: field.label ?? field.name
-                                                    });
-                                            })()}
-                                            nodeID={nodeID}
-                                            className={"nodrag text-gray-700"}
-                                            isSearchable={true}
-                                            options={fieldOptions}
-                                            creatable={true}
-                                        />
+                                        <NodeInputHandle nodeID={nodeID} handleID={field.id + "-field-value-override"} dataType={"text"}>
+                                            <Select
+                                                className={"r-select w-[300px] nowheel nodrag text-gray-700"}
+                                                onChange={(newValue: SingleValue<{value:any;label:any;}>) => onChangeFieldValue(field.id, newValue)}
+                                                defaultValue={field.name == null ? null : (fieldOptions.find((o: any) => o.value === field.name) ?? {value: field.name, label: field.label ?? field.name})}
+                                                id={"fieldValue"}
+                                                isSearchable={true}
+                                                options={fieldOptions}
+                                            />
+                                        </NodeInputHandle>
                                     </div>
                                 </SortableItem>
                             ))}
@@ -374,30 +365,20 @@ export default function WebhookNode({data}: { data: any }) {
                                             handleID={header.id + "-header-key-override"}
                                             value={header.key}
                                             nodeID={nodeID}
+                                            dataType={"text"}
                                         />
                                     </div>
                                     <div className={"flex-col"}>
-                                        <SelectWithOverride
-                                            onChange={(newValue: SingleValue<{
-                                                value: any;
-                                                label: any;
-                                            }>) => onChangeHeaderValue(header.id, newValue)}
-                                            handleID={header.id + "-header-value-override"}
-
-                                            value={(() => {
-                                                return header.name == null
-                                                    ? null
-                                                    : (fieldOptions.find((o: any) => o.value === header.name) ?? {
-                                                        value: header.name,
-                                                        label: header.label ?? header.name
-                                                    });
-                                            })()}
-                                            nodeID={nodeID}
-                                            className={"nodrag text-gray-700"}
-                                            isSearchable={true}
-                                            options={fieldOptions}
-                                            creatable={true}
-                                        />
+                                        <NodeInputHandle nodeID={nodeID} handleID={header.id + "-header-value-override"} dataType={"text"}>
+                                            <Select
+                                                className={"r-select w-[300px] nowheel nodrag text-gray-700"}
+                                                onChange={(newValue: SingleValue<{value:any;label:any;}>) => onChangeHeaderValue(header.id, newValue)}
+                                                defaultValue={header.name == null ? null : (fieldOptions.find((o: any) => o.value === header.name) ?? {value: header.name, label: header.label ?? header.name})}
+                                                id={"headerValue"}
+                                                isSearchable={true}
+                                                options={fieldOptions}
+                                            />
+                                        </NodeInputHandle>
                                     </div>
                                 </SortableItem>
                             ))}

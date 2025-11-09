@@ -1,0 +1,152 @@
+:root{
+  /* example colors you can tune */
+  --handle-boolean: #a70202; /* emerald */
+  --handle-text: #3B82F6; /* blue-500 */
+  --handle-html: #A78BFA; /* violet-400 */
+  --handle-any: #94A3B8; /* slate */
+  --handle-json: #F59E0B; /* amber */
+}
+
+
+
+.react-flow__node .react-flow__handle {
+    background:transparent;
+    border-radius: 0;
+    border:none;
+}
+
+
+
+.react-flow__handle-left
+{
+    left:0 !important;
+    transform: translate(0 , -50%) !important;
+    width:1.5rem !important;
+    height: 1.5rem !important;
+
+
+
+}
+
+
+
+.react-flow__handle-right
+{
+    right:0;
+    width:1.5rem !important;
+    height: 1.5rem !important;
+    transform: translate(0 , -50%) !important;
+
+}
+
+
+
+
+
+.handle-type-boolean .handle_icon
+{
+
+    background: rgba(255, 10, 10, 0.3);
+    color: red;
+
+}
+
+.handle-type-boolean .handle_icon.connected {
+    background: red;
+    color: white;
+}
+
+
+
+
+.handle-type-text .handle_icon
+ {
+  background: var(--handle-text) !important;
+  color: white;
+}
+
+.handle-type-html .handle_icon
+ {
+  background: var(--handle-html) !important;
+    color: white;
+}
+
+.handle-type-any .handle_icon
+ {
+  background: var(--handle-any) !important;
+}
+
+.handle-type-json .react-flow__handle,
+.handle-type-json {
+  background: var(--handle-json) !important;
+}
+
+/* connected state accent (applies when your components add a `connected` class) */
+.connected.handle-type-boolean .react-flow__handle,
+.handle-type-boolean.connected .react-flow__handle,
+.connected.handle-type-boolean,
+.handle-type-boolean.connected {
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.12);
+}
+
+.connected.handle-type-text .react-flow__handle,
+.handle-type-text.connected .react-flow__handle,
+.connected.handle-type-text,
+.handle-type-text.connected {
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+}
+
+/* small helper to increase clickable area */
+.react-flow__handle {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* If you prefer Tailwind utility classes, you can map these using @apply in your main CSS (requires Tailwind configured to allow this file). */
+
+
+.handle_icon
+{
+    top:50%;
+    transform: translate(0, -50%);
+    border-radius: 4444px;
+
+
+}
+
+/* Handle type specific styles */
+.node_start_handle .handle_icon {
+    left: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(150,222,131,0.12); /* light green */
+    color: var(--kd-green);
+    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+}
+.node_start_handle .handle_icon.connected {
+    background: var(--kd-green);
+    color: white;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+.node_end_handle .handle_icon {
+    right: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(150,222,131,0.12); /* light green */
+    color: var(--kd-green);
+    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+}
+.node_end_handle .handle_icon.connected {
+    background: var(--kd-green);
+    color: white;
+    box-shadow: 0 6px 18px rgba(18,103,219,0.14);
+}

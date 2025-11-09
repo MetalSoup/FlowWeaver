@@ -77,6 +77,7 @@ export default function BranchNode({data}: { data: any }) {
                     isTrue={isTrue}
                     nodeID={nodeID}
                     label={"Condition"}
+                    dataType={"boolean"}
                 >
 
                 </CheckBoxWithOverride>

@@ -75,7 +75,8 @@ export default function GetVariableNode({data}: { data: any}) {
                     </div>
                     <NodeOutputHandle
                                       nodeID={nodeID}
-                                      id={"value"}>
+                                      id={"value"}
+                                      dataType={"any"}>
                     </NodeOutputHandle>
 
                 </NodeSection>

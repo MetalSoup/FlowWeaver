@@ -177,7 +177,7 @@ export default function FormNode({data}: { data: any }) {
                                             const isConnected = storeEdges.some(edge => edge.targetHandle === handleId && edge.target === nodeID);
                                             return (
                                                 <div className={"mb-3  bg-gray-500/20 relative nodrag w-full"}>
-                                                    <NodeInputHandle nodeID={nodeID} handleID={handleId}>
+                                                    <NodeInputHandle nodeID={nodeID} handleID={handleId} dataType={"html"}>
                                                         <HtmlEditor
                                                             value={s.html}
                                                             onChange={(html: string) => updateSectionHtml(s.id, html)}
@@ -206,6 +206,7 @@ export default function FormNode({data}: { data: any }) {
                                                             isTrue={f.active} handleID={f.id+"-field-active-override"}
                                                             nodeID={nodeID}
                                                             title={"Show"}
+                                                            dataType={"boolean"}
                                                         />
                                                     </div>
                                                     <div className={"flex-col"}>
