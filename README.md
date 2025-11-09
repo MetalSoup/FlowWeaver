@@ -8,9 +8,9 @@ Seeders:
 ## todo:
 
 ### Node Improvements:
-- GetVariable should have a list of fields or the option to create a field.
-- SetVariable should have the option to choose an existing field to update or a custom variable name (from GetVariable).
-- ShowForm node should have the option to add html containers between fields.
+- ~~GetVariable should have a list of fields or the option to create a field.~~
+- ~~SetVariable should have the option to choose an existing field to update or a custom variable name (from GetVariable).~~
+- ~~ShowForm node should have the option to add html containers between fields.~~
 - ShowForm node should have the option to prefill fields with existing data (e.g., from a user profile).
 - There needs to be a node to get existing data from a user profile or other source to use in the workflow.
 - ShowForm should have an "extract data from submission" option that can plug into an Array node, which can then be used to map data to other nodes.
