@@ -83,7 +83,44 @@ class FlowController extends Controller
 
         //dd($compiledSteps);
 
-        return Inertia::render('Flows/TestFlowShow', [
+        return Inertia::render('Flows/FlowShow', [
+            'flow_id' => $flow->id,
+            'flow' => $compiledSteps,
+        ]);
+    }
+
+
+    public function load(Flow $flow)
+    {
+        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        if ($flow->instance_id != $selectedInstanceId) {
+            abort(403);
+        }
+
+        $compiledSteps = $this->compileFlow($flow);
+
+        // If this is an XHR/fetch request or Inertia request, return JSON/Inertia so
+        // clients that expect direct data (multiple concurrent callers) receive it
+        // in the response rather than relying on session flash (which is a single
+        // per-request store that can be overwritten by concurrent fetches).
+        $isInertia = (bool) request()->header('X-Inertia');
+        if ((request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') && !$isInertia) {
+            return response()->json([
+                'flow_id' => $flow->id,
+                'flow' => $compiledSteps,
+            ]);
+        }
+
+        if ($isInertia) {
+            // For Inertia requests return an Inertia render so page.props.flow will be present.
+            return Inertia::render('Flows/FlowShow', [
+                'flow_id' => $flow->id,
+                'flow' => $compiledSteps,
+            ]);
+        }
+
+        // Fallback for callers that expect a redirect with flash (preserves existing behavior)
+        return Redirect::back()->with([
             'flow_id' => $flow->id,
             'flow' => $compiledSteps,
         ]);

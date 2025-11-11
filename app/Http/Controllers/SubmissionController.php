@@ -36,8 +36,6 @@ class SubmissionController extends Controller
     public function store(StoreSubmissionRequest $request)
     {
         list($submission, $returnData, $compiled) = $this->saveData($request);
-
-
         return Redirect::back()->with(['success' => true, 'submission_id' => $submission->id, 'data' => $returnData, 'flow' => $compiled]);
     }
 
@@ -174,6 +172,7 @@ class SubmissionController extends Controller
 
         $flowCompiler = new \App\FlowCompiler(json_encode($flow->sequence));
         $compiled = $flowCompiler->compile();
+        /*session()->flash('flow', $compiled);*/
         return array($submission, $returnData, $compiled);
     }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 
 import { FlowSettings } from './FlowSettings';
 
@@ -6,7 +6,7 @@ import { FlowSettings } from './FlowSettings';
 
 import ShowFlow from "@/Views/Flows/FlowShow";
 import {useEditor, useNode} from "@craftjs/core";
-import { usePage } from '@inertiajs/react';
+import {router, usePage} from '@inertiajs/react';
 
 
 export type FlowProps = {
@@ -37,6 +37,7 @@ export const Flow  = ({
     // the component can render the selected flow's data.
     const { props: pageProps }: any = usePage();
     const flows: any[] = pageProps?.flows ?? pageProps?.flows?.data ?? [];
+    const [thisFlow, SetThisFlow] = useState(flow ?? null);
 
     // Try to resolve a flow object/sequence to pass into ShowFlow. Many server
     // shapes exist so try a few common locations.
@@ -44,29 +45,88 @@ export const Flow  = ({
         ? flows.find((f: any) => Number(f.id) === Number(flow_id))
         : null;
 
-    // Helper: detect whether an object looks like the compiled/display flow
-    // shape expected by ShowFlow (keyed steps with `fields` or `html`).
-    const looksLikeCompiled = (obj: any) => {
-        if (!obj || typeof obj !== 'object') return false;
-        const vals = Object.values(obj);
-        if (!Array.isArray(vals) || vals.length === 0) return false;
-        return vals.some((v: any) => v && (v.fields || v.html));
-    };
+    // Use a ref to prevent duplicate simultaneous requests and avoid triggering
+    // the effect via state changes caused by the request itself.
+    const loadingRef = useRef(false);
 
-    let flowData: any = null;
-    if (selectedFlow) {
-        // If the selectedFlow already contains compiled display steps, use it.
-        const candidate = selectedFlow.data?.sequence ?? selectedFlow.sequence ?? selectedFlow;
-        if (looksLikeCompiled(candidate)) {
-            flowData = candidate;
-        } else {
-            // Otherwise don't pass raw sequence — let ShowFlow fetch the compiled version by flow_id.
-            flowData = null;
-        }
-    } else {
-        // If no selectedFlow from props, fallback to any provided `flow` prop (from craft node props)
-        flowData = looksLikeCompiled(flow) ? flow : null;
-    }
+    useEffect(() => {
+        // Resolve an id to load: prefer selectedFlow (from page props) but fall back
+        // to the explicit `flow_id` prop. This ensures each Flow instance requests
+        // its own flow on mount even if page props are arranged differently.
+        const selId = selectedFlow?.id ?? flow_id ?? null;
+        // Only proceed if we have an identifier to load.
+        if (!selId) return;
+        if (loadingRef.current) return; // already fetching
+
+        console.log('Selected flow changed:', selectedFlow);
+        loadingRef.current = true;
+
+        // Fetch the compiled flow via the JSON endpoint `get_flow` so multiple
+        // Flow instances can load independently without stomping shared flash.
+        (async () => {
+            try {
+                const url = route('get_flow', { flow: selId });
+                const res = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                });
+                if (!res.ok) {
+                    console.warn('Flow selector: get_flow returned status', res.status);
+                    return;
+                }
+                const json = await res.json();
+                // Try several common locations where the compiled flow may appear
+                const tryPaths = [
+                    (p:any) => p?.flow,
+                    (p:any) => p?.props?.flow,
+                    (p:any) => p?.props?.page?.props?.flow,
+                    (p:any) => p?.props?.initialProps?.flow,
+                    (p:any) => p?.props?.props?.flow,
+                ];
+                let remote: any = null;
+                for (const getter of tryPaths) {
+                    try {
+                        const r = getter(json);
+                        if (r && typeof r === 'object' && Object.keys(r).length > 0) { remote = r; break; }
+                    } catch (e) { /* ignore */ }
+                }
+                // Fallback: if json contains a top-level `flow` key
+                if (!remote && json?.flow) remote = json.flow;
+                // Deep search as last resort
+                if (!remote && json?.props) {
+                    const deepFind = (obj:any) => {
+                        if (!obj || typeof obj !== 'object') return null;
+                        if (obj.flow && obj.flow && typeof obj.flow === 'object' && Object.keys(obj.flow).length > 0) return obj.flow;
+                        for (const k of Object.keys(obj)) {
+                            try {
+                                const val = obj[k];
+                                const found = deepFind(val);
+                                if (found) return found;
+                            } catch (e) {}
+                        }
+                        return null;
+                    };
+                    remote = deepFind(json.props);
+                }
+                if (remote) {
+                    console.debug('Flow selector: extracted compiled flow', remote);
+                    SetThisFlow(remote);
+                } else {
+                    console.warn('Flow selector: could not find compiled flow in get_flow response', json);
+                }
+            } catch (err) {
+                console.warn('Flow selector: fetching compiled flow failed', err);
+            } finally {
+                loadingRef.current = false;
+            }
+        })();
+
+    }, [selectedFlow?.id, flow_id]);
+
 
   return (
     <div
@@ -78,9 +138,9 @@ export const Flow  = ({
       <div style={{ pointerEvents: enabled && !selected ? 'none' : 'auto' }}>
         <ShowFlow
           // ShowFlow expects flow_id and flow (object). Disabled when editor is disabled.
-          disabled={!enabled}
+
           flow_id={flow_id}
-          flow={flowData}
+          flow={thisFlow}
         />
       </div>
     </div>

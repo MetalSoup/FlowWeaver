@@ -70,7 +70,10 @@ class RunFlow
             self::$returnData['errors'][] = ['error' => 'loop detected'];
         }
 
-
+        if(!$node){
+            self::$returnData['errors'][] = ['error' => 'no node found'];
+            return;
+        }
         if (!empty($node->first()['type'])) {
 
             //if node type is form and data is set, use doFormSubmit
@@ -323,7 +326,7 @@ class RunFlow
      **/
     public static function getOverrideEdge($node, $targetHandle): Collection
     {
-        return self::$edges->where('target', self::nodeID($node))->where('targetHandle', $targetHandle);
+        return self::$edges->where('target', self::nodeID($node))->where('targetHandle', $targetHandle);// ?? self::$edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
     }
     /*    {
             return self::$edges->where('source', $node->first()['id'])->where('sourceHandle', $node->first()['id'] . '-next');
@@ -370,7 +373,8 @@ class RunFlow
 
 
         } else {
-            $branch_condition = $node->first()['data']['isTrue'];
+            //dd($node->first());
+            $branch_condition = $node->first()['data']['isTrue'] ?? false;
         }
 
         if ($branch_condition) {

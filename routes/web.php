@@ -95,6 +95,7 @@ Route::get('/dashboard', function () {
 
 //these routes should be in /dashboard/
 
+Route::get('/flow/load/{flow}', [FlowController::class, 'load'])->name('flow.load');
 Route::get('/flow/{flow}/{startNode?}', [FlowController::class, 'show'])->name('flow.show');
 
 

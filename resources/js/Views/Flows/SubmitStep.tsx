@@ -29,8 +29,9 @@ export default function SubmitStep(
             preserveState: true,
 
             onSuccess: (page: any) => {
+                console.log('Submission create success', page);
                 const submission_id = page?.props?.flash?.submission_id ?? null;
-                const flow = page?.props?.flow ?? null;
+                const flow = page?.props?.flash?.flow ?? null;
                 const nextStep = page?.props?.flash?.data?.nextStep ?? null;
                 handleSuccess(page, submission_id, nextStep, flow);
             },
@@ -52,7 +53,19 @@ export default function SubmitStep(
         };
 
 
-        const node = flowState.find((s: any) => s && s.id === activeStep) ?? {};
+        // Find the current node by matching common id fields or index to the activeStep
+        let node: any = {};
+        let matchedIndex: number | null = null;
+        for (let i = 0; i < (flowState?.length ?? 0); i++) {
+            const s = flowState[i];
+            if (!s) continue;
+            const sid = String(s.id ?? s.step_id ?? s.field_id ?? i);
+            if (sid === String(activeStep)) {
+                node = s;
+                matchedIndex = i;
+                break;
+            }
+        }
         const currentStepKey = activeStep;
 
         const payload: any = {step: currentStepKey, data: {}};
@@ -77,8 +90,24 @@ export default function SubmitStep(
         const handleSuccess = (page: any, submission_id: string | number, serverNext: string | null, flow: any) => {
             // Prefer server-provided flow/state when available, otherwise keep current flowState
             if (flow) {
+
                 try {
-                    setFlowState(flow);
+                    // Normalize server-provided flow into an array of steps to keep FlowShow consistent
+                    const normalize = (src: any): any[] => {
+                        if (!src) return [];
+                        if (Array.isArray(src)) return src;
+                        if (src.steps && Array.isArray(src.steps)) return src.steps;
+                        if (src.data && Array.isArray(src.data)) return src.data;
+                        if (src.flow && Array.isArray(src.flow)) return src.flow;
+                        if (src.type || src.fields || src.html) return [src];
+                        if (typeof src === 'object') {
+                            const vals = Object.values(src);
+                            if (vals.length > 0 && vals.every((v: any) => v && (v.id !== undefined || v.field_id !== undefined || v.type || v.fields))) return vals;
+                        }
+                        return [];
+                    };
+                    const normalizedFlow = normalize(flow);
+                    setFlowState(normalizedFlow);
                 } catch (e) {
                     // ignore errors updating flow state
                 }
@@ -102,7 +131,17 @@ export default function SubmitStep(
                     }
                     // attempt to set current step from the newly-provided flow if available, else from local flowState
                     const sourceFlow = flow && Array.isArray(flow) ? flow : flowState;
-                    const found = Array.isArray(sourceFlow) ? sourceFlow.find((s: any) => s.id === chosenNext) : null;
+                    let found: any = null;
+                    if (Array.isArray(sourceFlow)) {
+                        for (let i = 0; i < sourceFlow.length; i++) {
+                            const s = sourceFlow[i];
+                            if (!s) continue;
+                            const sid = String(s.id ?? s.step_id ?? s.field_id ?? i);
+                            if (sid === String(chosenNext)) { found = s; break; }
+                        }
+                    } else {
+                        found = sourceFlow && sourceFlow[chosenNext] ? sourceFlow[chosenNext] : null;
+                    }
                     setCurrentStep(found ?? null);
                 } catch (e) {
                     // ignore any errors setting step

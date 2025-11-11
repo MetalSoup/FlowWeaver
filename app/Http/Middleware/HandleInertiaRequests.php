@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
                  'success' => $request->session()->get('success'),
                  'submission_id' => $request->session()->get('submission_id'),
                  'data' => $request->session()->get('data'),
+                 'flow' => $request->session()->get('flow'),
              ],
 // prepend default fields to 'fields' prop
 

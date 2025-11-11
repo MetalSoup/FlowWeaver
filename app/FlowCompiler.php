@@ -1,4 +1,5 @@
 <?php
+
 namespace App;
 
 use App\Models\Field;
@@ -74,55 +75,74 @@ class FlowCompiler
                 ];
 
                 foreach ($step['data']['formFields'] ?? [] as $field) {
-                    // Prefer the explicit `name` set by the node; fall back to legacy `value` if present
-                    $selectedName = $field['name'] ?? $field['value'] ?? null;
+                    $item_type = $field['type'] ?? 'field';
 
-                    // Try to resolve against DefaultFields by name first (if available)
-                    $defaultField = null;
-                    if (method_exists(\App\DefaultFields::class, 'getFields') && $selectedName) {
-                        $defaultField = \App\DefaultFields::getFields()->firstWhere('name', $selectedName);
-                    }
+                    if ($item_type === "html") {
+                        $form['fields'][] = [
+                            'id' => $field['id'] ?? null,
+                            'field_id' => null,
+                            'label' => null,
+                            'name' => null,
+                            'type' => 'html',
+                            'active' => $field['active'] ?? true,
+                            'html' => $field['html'] ?? '',
+                        ];
 
-                    // Try to resolve a persisted Field model. Prefer an explicit field_id stored in the node data.
-                    $customField = null;
-                    $explicitFieldId = $field['field_id'] ?? null;
+                    } elseif ($item_type === "field") {
 
-                    if (!$defaultField) {
-                        if (!empty($explicitFieldId)) {
-                            $customField = Field::find($explicitFieldId);
-                        } elseif ($selectedName) {
-                            $customField = Field::where('name', $selectedName)->first();
+                        // Prefer the explicit `name` set by the node; fall back to legacy `value` if present
+                        $selectedName = $field['name'] ?? $field['value'] ?? null;
+
+                        // Try to resolve against DefaultFields by name first (if available)
+                        $defaultField = null;
+                        if (method_exists(\App\DefaultFields::class, 'getFields') && $selectedName) {
+                            $defaultField = \App\DefaultFields::getFields()->firstWhere('name', $selectedName);
                         }
+
+                        // Try to resolve a persisted Field model. Prefer an explicit field_id stored in the node data.
+                        $customField = null;
+                        $explicitFieldId = $field['field_id'] ?? null;
+
+                        if (!$defaultField) {
+                            if (!empty($explicitFieldId)) {
+                                $customField = Field::find($explicitFieldId);
+                            } elseif ($selectedName) {
+                                $customField = Field::where('name', $selectedName)->first();
+                            }
+                        }
+
+                        // Build sensible fallbacks safely (avoid accessing properties on null)
+                        $label = $field['label'] ??
+                            ($defaultField['label'] ?? null) ??
+                            ($customField ? $customField->label : null) ??
+                            ($selectedName ? ucwords(str_replace('_', ' ', $selectedName)) : 'Unknown');
+
+                        $nameResolved = $defaultField['name'] ?? ($customField ? $customField->name : ($selectedName ?? 'unknown'));
+
+                        $fieldType = $defaultField['type'] ?? ($customField ? $customField->type : 'default');
+
+                        $answers = null;
+                        if (isset($defaultField['options']['answers'])) {
+                            $answers = $defaultField['options']['answers'];
+
+
+                        } elseif ($customField && isset($customField->options) && isset($customField->options['answers'])) {
+                            $answers = $customField->options['answers'];
+                        }
+
+
+                        $resolvedFieldId = $customField ? $customField->id : ($explicitFieldId ?? null);
+
+                        $form['fields'][] = [
+                            'id' => $field['id'] ?? null,
+                            'field_id' => $resolvedFieldId,
+                            'label' => $label,
+                            'name' => $nameResolved,
+                            'type' => $fieldType,
+                            'active' => $field['active'] ?? true,
+                            'answers' => $answers,
+                        ];
                     }
-
-                    // Build sensible fallbacks safely (avoid accessing properties on null)
-                    $label = $field['label'] ??
-                             ($defaultField['label'] ?? null) ??
-                             ($customField ? $customField->label : null) ??
-                             ($selectedName ? ucwords(str_replace('_', ' ', $selectedName)) : 'Unknown');
-
-                    $nameResolved = $defaultField['name'] ?? ($customField ? $customField->name : ($selectedName ?? 'unknown'));
-
-                    $fieldType = $defaultField['type'] ?? ($customField ? $customField->type : 'default');
-
-                    $answers = null;
-                    if (isset($defaultField['options']['answers'])) {
-                        $answers = $defaultField['options']['answers'];
-                    } elseif ($customField && isset($customField->options) && is_array($customField->options) && isset($customField->options['answers'])) {
-                        $answers = $customField->options['answers'];
-                    }
-
-                    $resolvedFieldId = $customField ? $customField->id : ($explicitFieldId ?? null);
-
-                    $form['fields'][] = [
-                        'id' => $field['id'] ?? null,
-                        'field_id' => $resolvedFieldId,
-                        'label' => $label,
-                        'name' => $nameResolved,
-                        'type' => $fieldType,
-                        'active' => $field['active'] ?? true,
-                        'answers' => $answers,
-                    ];
                 }
 
                 $result[] = $form;
@@ -139,9 +159,9 @@ class FlowCompiler
                             $fields = $sourceNode['data']['hookFields'] ?? [];
                             $rows = '';
                             foreach ($fields as $f) {
-                                $rows .= "<li>" . htmlspecialchars(($f['key'] ?? 'key')) . ": " . htmlspecialchars((string)($f['value'] ?? '')) . "</li>";
+                                $rows .= "<li>".htmlspecialchars(($f['key'] ?? 'key')).": ".htmlspecialchars((string) ($f['value'] ?? ''))."</li>";
                             }
-                            $html = "<div><h2>Webhook response preview</h2><p>Source: " . htmlspecialchars($url) . "</p><ul>{$rows}</ul></div>";
+                            $html = "<div><h2>Webhook response preview</h2><p>Source: ".htmlspecialchars($url)."</p><ul>{$rows}</ul></div>";
                             break;
                         }
                     }

@@ -17,6 +17,7 @@ export default function BranchNode({data}: { data: any }) {
 
 
 
+
     const [isTrue, setIsTrue] = useState(data.isTrue ?? true);
 
 
