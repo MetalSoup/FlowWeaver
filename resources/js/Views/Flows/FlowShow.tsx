@@ -3,7 +3,7 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import RenderField from "@/Views/Flows/RenderField";
 import SubmitStep from "./SubmitStep";
 
-export default function FlowShow({ flow, flow_id }: { flow: any, flow_id: number }) {
+export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, isEditorEnabled, selectedFieldId }: { flow: any, flow_id: number, pageOverrides?: any, onSelectField?: any, isEditorEnabled?: boolean, selectedFieldId?: any }) {
 
     // NOTE: we must call hooks unconditionally. Previously there was an early return
     // here that returned when `flow` was empty which caused hooks to run conditionally
@@ -108,12 +108,6 @@ export default function FlowShow({ flow, flow_id }: { flow: any, flow_id: number
     }, [activeStep, flowState]);
 
     // safe initial active step
-
-
-    const onSubmit = (e: { preventDefault: () => void }) => {
-        e.preventDefault();
-    };
-
 
 
     const submitStep = SubmitStep({activeStep, setSubmitting, setActiveStep, flowState, stepNames, formValues, setFormValues, submissionId, setSubmissionId, flow_id, requestSelectKey, setFlowState,setCurrentStep, saveSucceededRef, pendingNextRef});
@@ -224,13 +218,18 @@ export default function FlowShow({ flow, flow_id }: { flow: any, flow_id: number
                             .filter((field: any) => field.active)
                             .map((field: any) => (
                                 <div key={field.id} className={""}>
-                                    {field.type === 'html' ? (
-                                        <div dangerouslySetInnerHTML={{ __html: field.html || '' }} />
-                                        ) :
-                                    <RenderField field={field} formValues={formValues} setFormValues={setFormValues} />
-                                    }
+                                    <RenderField
+                                        field={field}
+                                        formValues={formValues}
+                                        setFormValues={setFormValues}
+                                        pageOverrides={pageOverrides}
+                                        onSelectField={onSelectField}
+                                        isEditorEnabled={isEditorEnabled}
+                                        selectedFieldId={selectedFieldId}
+                                    />
                                 </div>
                             ))}
+
                         <PrimaryButton onClick={submitStep} disabled={submitting}>Submit</PrimaryButton>
                     </div>)}
 

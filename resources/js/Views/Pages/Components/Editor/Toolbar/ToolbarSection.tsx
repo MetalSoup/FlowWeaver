@@ -17,35 +17,11 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
       }, {}),
   }));
   return (
-    <Accordion
-      sx={{
-        background: 'transparent',
-        boxShadow: 'none',
-        '&:before': {
-          backgroundColor: 'rgba(0, 0, 0, 0.05)',
-        },
-        '&.Mui-expanded': {
-          margin: '0 0',
-          minHeight: '40px',
-          '&:before': {
-            opacity: '1',
-          },
-          '& + .MuiExpansionPanel-root:before ': {
-            display: 'block',
-          },
-        },
-      }}
-    >
-      <AccordionSummary
-        sx={{
-          minHeight: '36px',
-          padding: 0,
-          outline: 'none!important',
-        }}
-      >
+    <Accordion>
+      <AccordionSummary>
         <div className="px-6 w-full">
           <Grid container direction="row" alignItems="center" spacing={3}>
-            <Grid size={{ xs: 4 }}>
+            <Grid>
               <h5 className="text-sm text-light-gray-1 text-left font-medium text-dark-gray">
                 {title}
               </h5>

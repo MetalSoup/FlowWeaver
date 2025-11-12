@@ -6,7 +6,7 @@ import { FlowSettings } from './FlowSettings';
 
 import ShowFlow from "@/Views/Flows/FlowShow";
 import {useEditor, useNode} from "@craftjs/core";
-import {router, usePage} from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 
 
 export type FlowProps = {
@@ -23,16 +23,54 @@ export const Flow  = ({
                           flow,
                           flow_id,
                       }: Partial<FlowProps>) => {
-    const {
-        connectors: { connect, drag },
-        selected,
-    } = useNode((node) => ({
+    const { connectors: { connect, drag }, selected } = useNode((node: any) => ({
+        connectors: node.connectors,
         selected: node.events.selected,
     }));
+    // get setProp from actions with explicit any to avoid TS type issues
+    const { actions: { setProp } }: any = useNode((node: any) => ({ actions: node.actions }));
     const { enabled } = useEditor((state) => ({
         enabled: state.options.enabled,
     }));
 
+    // Read any page-local overrides stored on this craft node (set by FlowSettings)
+    const { field_overrides: pageOverrides } = useNode((node: any) => ({
+        field_overrides: node.data.props.field_overrides,
+    }));
+
+    // Read the currently-selected field id (so preview can highlight it)
+    const { field_id: selectedFieldId } = useNode((node: any) => ({
+        field_id: node.data.props.field_id,
+    }));
+
+    // Handler to set the selected field id on this flow node (used by RenderField click)
+    const handleSelectField = (fieldId: any) => {
+        try {
+            setProp((props: any) => {
+                props.field_id = fieldId;
+            });
+        } catch (e) {
+            console.warn('handleSelectField failed', e);
+        }
+    };
+    // Click on canvas outside of any field should clear the selected field id
+    const handleCanvasClick = (e: React.MouseEvent) => {
+        // Only clear when editor is enabled (we're in edit mode)
+        if (!enabled) return;
+        try {
+            const target = e.target as Element | null;
+            if (!target) return;
+            // If the click occurred inside an element that has data-flow-field-id, do nothing
+            const inside = target.closest && target.closest('[data-flow-field-id]');
+            if (!inside) {
+                setProp((props: any) => {
+                    props.field_id = null;
+                });
+            }
+        } catch (err) {
+            // ignore
+        }
+    };
     // Get flows provided as page props so editor toolbar can list them and
     // the component can render the selected flow's data.
     const { props: pageProps }: any = usePage();
@@ -135,12 +173,16 @@ export const Flow  = ({
         if (dom) connect(drag(dom));
       }}
     >
-      <div style={{ pointerEvents: enabled && !selected ? 'none' : 'auto' }}>
+      <div style={{ pointerEvents: enabled && !selected ? 'none' : 'auto' }} onClick={handleCanvasClick}>
         <ShowFlow
           // ShowFlow expects flow_id and flow (object). Disabled when editor is disabled.
 
           flow_id={flow_id}
           flow={thisFlow}
+          pageOverrides={pageOverrides}
+         onSelectField={handleSelectField}
+         isEditorEnabled={enabled}
+         selectedFieldId={selectedFieldId}
         />
       </div>
     </div>

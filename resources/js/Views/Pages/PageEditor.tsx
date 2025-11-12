@@ -101,6 +101,8 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
     const initialPageId = page?.data?.id ?? page?.id ?? null;
     const initialPageContent = page?.data?.content ?? page?.content ?? '';
     const initialPageName = page?.data?.name ?? page?.name ?? '';
+    // New: custom CSS initial value (try a few common shapes)
+    const initialPageCustomCss = page?.data?.custom_css ?? page?.custom_css ?? page?.data?.customCss ?? page?.customCss ?? '';
 
 
 
@@ -108,6 +110,8 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         name: initialPageName ?? '',
         content: initialPageContent ?? '',
         id: initialPageId,
+        // include custom_css in the form so Inertia will send it with requests
+        custom_css: initialPageCustomCss ?? '',
     });
 
     // Viewport preview size (mobile/tablet/desktop)
@@ -178,6 +182,38 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
             // ignore storage errors
         }
     }, [viewportSize]);
+
+    // Inject custom CSS into document.head so it is applied after other styles and can override them.
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const id = 'page-editor-custom-css';
+        let styleEl = document.getElementById(id) as HTMLStyleElement | null;
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = id;
+            // ensure it's appended at the end of head so it takes precedence
+            document.head.appendChild(styleEl);
+        }
+
+        const raw = data.custom_css || '';
+        try {
+            styleEl.textContent = raw.replace(/([^{]+)\{([^}]+)}/g, (m, selector, body) => {
+                const decls = body.split(';').map(d => d.trim()).filter(Boolean);
+                const newDecls = decls.map(d => {
+                    if (!d.includes(':') || d.startsWith('/*') || /!important\s*$/.test(d)) return d + ';';
+                    return d + ' !important;';
+                }).join(' ');
+                return `${selector}{${newDecls}}`;
+            });
+        } catch (e) {
+            styleEl.textContent = raw;
+        }
+
+        return () => {
+            // remove on unmount to avoid leaking styles
+            try { styleEl?.remove(); } catch (e) { /* ignore */ }
+        };
+    }, [data.custom_css]);
 
     // Warn on mount if we're editing but couldn't find an id — helps debugging server prop shapes
     useEffect(() => {
@@ -258,19 +294,18 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
 
         if (!page_id) {
-            router.post(route('pages.store'), {name: page_name, content: newContent}, {
+            router.post(route('pages.store'), {name: page_name, content: newContent, custom_css: data.custom_css}, {
                 onSuccess: () => {
                     console.log('Successfully stored page id');
                 }
             });
         } else {
-            router.put(route('pages.update', page_id), {name: page_name, content: newContent}, {
+            router.put(route('pages.update', page_id), {name: page_name, content: newContent, custom_css: data.custom_css}, {
                 onSuccess: () => {
                     console.log('Successfully stored page id');
                 }
             });
         }
-
 
 
 
@@ -559,6 +594,8 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         <DashboardLayout user={auth.user} header={header}>
              <Head title={isEditing ? `Edit: ${page?.name || 'Page'}` : 'Create Page'} />
              <div className="h-full">
+                 {/* Custom CSS is injected into document.head by a useEffect so it reliably appears after other styles and is applied with !important. */}
+
                  <CraftEditor resolver={resolver} onRender={RenderNode}>
                      {/* initializer must be rendered inside the editor so useEditor works */}
                      <EditorInitializer pageContent={page?.content} />
@@ -571,7 +608,23 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                 {/* Hidden form field so Inertia has the latest content if user navigates away using other flows */}
                 {/* Add a name so html-form based tools (and some integrations) will pick this up if needed */}
                 <input type="hidden" name="content" value={data.content} />
+                <input type="hidden" name="custom_css" value={data.custom_css} />
 
+                {/* New: small UI for editing custom CSS. Kept minimal and accessible. */}
+                <div className="mt-4 bg-gray-50 border rounded p-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-sm font-medium">Custom CSS (applies to this page)</h2>
+                        <button type="button" className="text-xs text-gray-600" onClick={() => setData('custom_css', '')}>Clear</button>
+                    </div>
+                    <textarea
+                        aria-label="Custom CSS for this page"
+                        value={data.custom_css}
+                        onChange={e => setData('custom_css', e.target.value)}
+                        placeholder={"/* Your custom CSS goes here. Declarations will be flagged as important to ensure they override other rules. */"}
+                        className="w-full font-mono text-sm p-2 border rounded h-40"
+                    />
+                    <div className="mt-2 text-xs text-gray-500">CSS is injected into the editor DOM so it will override other rules. Declarations are automatically appended with <code>!important</code>.</div>
+                </div>
 
              </div>
         </DashboardLayout>
