@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Flow;
-use App\Models\Instance;
+use App\Models\Site;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
@@ -19,7 +19,7 @@ class FlowFactory extends Factory
             'name' => $this->faker->name(),
             'sequence' => $this->faker->words(),
 
-            'instance_id' => Instance::factory(),
+            'site_id' => Site::factory(),
         ];
     }
 }

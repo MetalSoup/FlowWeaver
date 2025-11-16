@@ -4,14 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreInstanceRequest extends FormRequest
+class StoreSiteRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        // Only allow authenticated users who belong to the target organization to create an instance for it.
+        // Only allow authenticated users who belong to the target organization to create a site for it.
         $user = $this->user();
         if (!$user) return false;
 

@@ -6,21 +6,21 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import SelectInput from "@/Components/SelectInput";
 import React, {useEffect, useState} from "react";
 
-export default function FieldCreate({auth, selected_instance}: { auth: any; selected_instance?: number | null }) {
+export default function FieldCreate({auth, selected_site}: { auth: any; selected_site?: number | null }) {
     const {data, setData, post, errors} = useForm({
         name: "",
         type: "text",
         label: "",
-        instance_id: selected_instance ?? null,
+        site_id: selected_site ?? null,
 
     });
 
-    // require instance selection
+    // require site selection
     useEffect(() => {
-        if (!selected_instance) {
-            router.get(route('instances.select'));
+        if (!selected_site) {
+            router.get(route('sites.select'));
         }
-    }, [selected_instance]);
+    }, [selected_site]);
 
     const [nameClientError, setNameClientError] = useState<string | null>(null);
 
@@ -72,8 +72,8 @@ export default function FieldCreate({auth, selected_instance}: { auth: any; sele
         setNameClientError(clientErr);
         if (clientErr) return;
 
-        // ensure instance_id is present
-        setData('instance_id', selected_instance ?? null);
+        // ensure site_id is present
+        setData('site_id', selected_site ?? null);
         post(route("fields.store"));
     };
 

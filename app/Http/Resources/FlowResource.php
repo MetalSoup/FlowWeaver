@@ -20,7 +20,7 @@ class FlowResource extends JsonResource
             'name' => $this->name,
             'sequence' => $this->sequence,
 
-            'instance_id' => $this->instance_id,
+            'site_id' => $this->site_id,
         ];
     }
 }

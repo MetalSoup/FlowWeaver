@@ -10,7 +10,7 @@ class FlowRequest extends FormRequest
     {
         return [
             'name' => ['required'],
-            'instance_id' => ['nullable'],
+            'site_id' => ['nullable'],
             'sequence' => ['nullable'],
         ];
     }

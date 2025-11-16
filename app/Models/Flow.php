@@ -14,7 +14,7 @@ class Flow extends Model
 
     protected $fillable = [
         'name',
-        'instance_id',
+        'site_id',
         'sequence',
     ];
 
@@ -142,9 +142,9 @@ class Flow extends Model
     }
 
 
-    public function instance(): BelongsTo
+    public function site(): BelongsTo
     {
-        return $this->belongsTo(Instance::class);
+        return $this->belongsTo(Site::class);
     }
 
 }

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DashboardLayout from '@/Layouts/DashboardLayout';
-import {Head, router, useForm} from '@inertiajs/react';
+// Removed unused MUI Snackbar/Alert imports from PageEditor since toasts will use the global app snackbar in DashboardLayout.
 
 // Craft.js
 import { Editor as CraftEditor, Frame, Element, useEditor } from '@craftjs/core';
@@ -17,6 +16,9 @@ import { Flow } from './Components/Selectors/Flow/Flow';
 import { Text } from './Components/Selectors/Text/Text';
 // Icons for viewport toggles
 import { EyeIcon, PencilSimpleIcon, DeviceMobileIcon, DeviceTabletIcon, DesktopIcon, ArrowCounterClockwiseIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
+import { showAppToast } from '@/utils/toast';
+import {Head, router, useForm} from "@inertiajs/react";
+import DashboardLayout from "@/Layouts/DashboardLayout";
 
 
 
@@ -113,6 +115,24 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         // include custom_css in the form so Inertia will send it with requests
         custom_css: initialPageCustomCss ?? '',
     });
+
+    // Keep form state in sync when the server sends updated page props (e.g. after save)
+    useEffect(() => {
+        try {
+            const serverPage = page?.data ?? page ?? null;
+            if (!serverPage) return;
+            // Map options.custom_css (if present) into the form's custom_css
+            const serverCustomCss = (serverPage.options && serverPage.options.custom_css) ?? serverPage.custom_css ?? '';
+            setData('id', serverPage.id ?? data.id);
+            setData('name', serverPage.name ?? data.name);
+            // prefer server content when provided
+            setData('content', typeof serverPage.content === 'string' ? serverPage.content : (serverPage.content ? JSON.stringify(serverPage.content) : data.content));
+            setData('custom_css', serverCustomCss ?? data.custom_css ?? '');
+        } catch (e) {
+            // ignore sync errors
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]);
 
     // Viewport preview size (mobile/tablet/desktop)
     const [viewportSize, setViewportSize] = useState<'mobile'|'tablet'|'desktop'>(() => {
@@ -224,10 +244,13 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         }
     }, [isEditing, initialPageId]);
 
-    const [message] = useState<string | null>(null);
-
     // A ref that will be populated by EditorInitializer with the craftjs API (actions + query)
     const editorApiRef = useRef<any>(null);
+
+    // Use the exported showAppToast utility
+    const showToast = (msg: string) => {
+        try { showAppToast(msg); } catch (e) { /* ignore */ }
+    };
 
     // Helper to detect if stored content is serialized craft JSON
     const isSerialized = (() => {
@@ -294,25 +317,116 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
 
         if (!page_id) {
-            router.post(route('pages.store'), {name: page_name, content: newContent, custom_css: data.custom_css}, {
-                onSuccess: () => {
-                    console.log('Successfully stored page id');
-                }
-            });
-        } else {
-            router.put(route('pages.update', page_id), {name: page_name, content: newContent, custom_css: data.custom_css}, {
-                onSuccess: () => {
-                    console.log('Successfully stored page id');
-                }
-            });
-        }
+            // If there are page settings written by the settings panel, include them in the create payload
+            try {
+                const globalSettings = (window as any).__PAGE_SETTINGS || {};
+                const settingsKey = 'unsaved';
+                const pageSettings = globalSettings[settingsKey] || {};
+                // Build payload but avoid sending an empty `name` which could overwrite existing name with a default
+                const payload: any = { content: newContent };
+                const settingsName = pageSettings.name && String(pageSettings.name).trim() ? String(pageSettings.name).trim() : null;
+                const formName = page_name && String(page_name).trim() ? String(page_name).trim() : null;
+                if (settingsName) payload.name = settingsName;
+                else if (formName) payload.name = formName;
+                if (pageSettings.slug && String(pageSettings.slug).trim()) payload.slug = String(pageSettings.slug).trim();
+                // If there are option keys, merge them into payload.options (no existing options on create)
+                if (pageSettings.options) payload.options = pageSettings.options;
+                // Include custom_css from the editor form into options so it persists in the options JSON column
+                if (!payload.options) payload.options = {};
+                if (data.custom_css) payload.options.custom_css = data.custom_css;
+
+                router.post(route('pages.store'), payload, {
+                    onSuccess: (page) => {
+                        console.log('Successfully stored page id');
+                        try { delete (window as any).__PAGE_SETTINGS?.[settingsKey]; } catch(e){}
+                        try {
+                            const returned = (page as any)?.props?.page ?? (page as any)?.props?.page?.data ?? null;
+                            if (returned) {
+                                // sync form state with returned values
+                                setData('id', returned.id ?? data.id);
+                                setData('name', returned.name ?? data.name);
+                                setData('content', typeof returned.content === 'string' ? returned.content : JSON.stringify(returned.content ?? {}));
+                                setData('custom_css', returned.custom_css ?? data.custom_css ?? '');
+                                // Ensure the URL reflects the editor for the created page (stay in editor)
+                                try {
+                                    if (returned.id) {
+                                        // Navigate to the editor URL for the newly created page and replace history so back-button goes where user expects
+                                        router.get(route('pages.edit', returned.id), {}, { replace: true });
+                                    }
+                                } catch (e) {
+                                    // ignore routing errors
+                                }
+                                // show toast on success
+                                try { showToast('Saved'); } catch (e) {}
+                            }
+                            // Server returned Inertia payload; rely on that to update props instead of forcing a reload.
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+                });
+            } catch (e) {
+                // Fallback to the simpler payload if reading window fails
+                router.post(route('pages.store'), {name: page_name, content: newContent}, {
+                    onSuccess: () => { console.log('Successfully stored page id'); try { showToast('Saved'); } catch(e){} }
+                });
+            }
+         } else {
+            // Include settings from the settings panel (if present) in the update payload
+            try {
+                const globalSettings = (window as any).__PAGE_SETTINGS || {};
+                const settingsKey = page_id || 'unsaved';
+                const pageSettings = globalSettings[settingsKey] || {};
+                // Build payload but avoid sending an empty `name` which could overwrite existing name with a default
+                const payload: any = { content: newContent };
+                const settingsName = pageSettings.name && String(pageSettings.name).trim() ? String(pageSettings.name).trim() : null;
+                const formName = page_name && String(page_name).trim() ? String(page_name).trim() : null;
+                if (settingsName) payload.name = settingsName;
+                else if (formName) payload.name = formName;
+                if (pageSettings.slug && String(pageSettings.slug).trim()) payload.slug = String(pageSettings.slug).trim();
+                 // Merge existing options with the settings panel options so partial updates don't clobber other keys
+                 const existingOptions = (page && (page.options ?? page.data?.options)) || {};
+                 if (pageSettings.options) {
+                     payload.options = { ...(existingOptions || {}), ...(pageSettings.options || {}) };
+                 }
+                 // Ensure editor-level custom_css is preserved into options (editor form holds the authoritative custom_css)
+                 if (!payload.options) payload.options = { ...(existingOptions || {}) };
+                 if (data.custom_css) payload.options.custom_css = data.custom_css;
+
+                // Debug: show payload in console to help diagnose name issues
+                try { console.debug('PageEditor.save - update payload ->', payload); } catch (e) {}
+
+                router.put(route('pages.update', page_id), payload, {
+                    onSuccess: (page) => {
+                        console.log('Successfully stored page id');
+                        try { delete (window as any).__PAGE_SETTINGS?.[settingsKey]; } catch(e){}
+                        try {
+                            const returned = (page as any)?.props?.page ?? (page as any)?.props?.page?.data ?? null;
+                            if (returned) {
+                                setData('id', returned.id ?? data.id);
+                                setData('name', returned.name ?? data.name);
+                                setData('content', typeof returned.content === 'string' ? returned.content : JSON.stringify(returned.content ?? {}));
+                                setData('custom_css', returned.custom_css ?? data.custom_css ?? '');
+                            }
+                            // show toast on successful update
+                            try { showToast('Saved'); } catch (e) {}
+                         } catch (e) {
+                             // ignore
+                         }
+                     }
+                 });
+            } catch (e) {
+                router.put(route('pages.update', page_id), {name: page_name, content: newContent}, {
+                    onSuccess: () => { console.log('Successfully stored page id'); try { showToast('Saved'); } catch(e){} }
+                });
+            }
+         }
 
 
 
-
-        console.log(page_id);
-        console.log(newContent);
-    }
+         console.log(page_id);
+         console.log(newContent);
+     }
 
     // Expose debug helpers on window so they are available from the console and not flagged as unused
     try { (window as any).__debugEcho = debugEcho; } catch (e) { /* ignore in non-browser environments */ }
@@ -546,7 +660,6 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                      {processing ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Page'}
                  </button>
                  <a href={route('pages.index')} className="text-sm text-gray-600">Cancel</a>
-                 {message && <span className="text-sm text-green-600">{message}</span>}
              </div>
          </div>
      );
@@ -608,27 +721,11 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                 {/* Hidden form field so Inertia has the latest content if user navigates away using other flows */}
                 {/* Add a name so html-form based tools (and some integrations) will pick this up if needed */}
                 <input type="hidden" name="content" value={data.content} />
-                <input type="hidden" name="custom_css" value={data.custom_css} />
 
-                {/* New: small UI for editing custom CSS. Kept minimal and accessible. */}
-                <div className="mt-4 bg-gray-50 border rounded p-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-sm font-medium">Custom CSS (applies to this page)</h2>
-                        <button type="button" className="text-xs text-gray-600" onClick={() => setData('custom_css', '')}>Clear</button>
-                    </div>
-                    <textarea
-                        aria-label="Custom CSS for this page"
-                        value={data.custom_css}
-                        onChange={e => setData('custom_css', e.target.value)}
-                        placeholder={"/* Your custom CSS goes here. Declarations will be flagged as important to ensure they override other rules. */"}
-                        className="w-full font-mono text-sm p-2 border rounded h-40"
-                    />
-                    <div className="mt-2 text-xs text-gray-500">CSS is injected into the editor DOM so it will override other rules. Declarations are automatically appended with <code>!important</code>.</div>
-                </div>
+                {/* Snackbar for success messages */}
+                {/* Removed Snackbar and Alert imports and their usage since toasts will use the global app snackbar in DashboardLayout. */}
 
              </div>
         </DashboardLayout>
      );
  }
-
- // ...existing code...

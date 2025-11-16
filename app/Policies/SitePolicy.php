@@ -2,11 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\Instance;
+use App\Models\Site;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class InstancePolicy
+class SitePolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -20,9 +20,9 @@ class InstancePolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Instance $instance): bool
+    public function view(User $user, Site $site): bool
     {
-        $orgId = $instance->organization_id;
+        $orgId = $site->organization_id;
         if (!$orgId) return false;
 
         return $user->organizations()->where('id', $orgId)->exists();
@@ -40,9 +40,9 @@ class InstancePolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Instance $instance): bool
+    public function update(User $user, Site $site): bool
     {
-        $orgId = $instance->organization_id;
+        $orgId = $site->organization_id;
         if (!$orgId) return false;
 
         return $user->organizations()->where('id', $orgId)->exists();
@@ -51,9 +51,9 @@ class InstancePolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Instance $instance): bool
+    public function delete(User $user, Site $site): bool
     {
-        $orgId = $instance->organization_id;
+        $orgId = $site->organization_id;
         if (!$orgId) return false;
 
         return $user->organizations()->where('id', $orgId)->exists();
@@ -62,16 +62,16 @@ class InstancePolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Instance $instance): bool
+    public function restore(User $user, Site $site): bool
     {
-        return $this->delete($user, $instance);
+        return $this->delete($user, $site);
     }
 
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Instance $instance): bool
+    public function forceDelete(User $user, Site $site): bool
     {
-        return $this->delete($user, $instance);
+        return $this->delete($user, $site);
     }
 }

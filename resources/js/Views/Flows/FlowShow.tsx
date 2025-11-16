@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import PrimaryButton from "@/Components/PrimaryButton";
 import RenderField from "@/Views/Flows/RenderField";
 import SubmitStep from "./SubmitStep";
+import {Link} from "@inertiajs/react";
+import {WarningIcon} from "@phosphor-icons/react";
+import Tooltip from "@/Components/Tooltip";
 
 export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, isEditorEnabled, selectedFieldId }: { flow: any, flow_id: number, pageOverrides?: any, onSelectField?: any, isEditorEnabled?: boolean, selectedFieldId?: any }) {
 
@@ -165,12 +168,21 @@ export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, 
     // have been declared so hooks are invoked consistently on every render.
     if (!flowState || (Array.isArray(flowState) && flowState.length === 0)) {
         if (flow) {
-            // We received a `flow` prop but couldn't normalize it into steps. Show a small debug panel.
+            // We received a `flow` prop but couldn't normalize it into steps. Show a user-friendly message.
             return (
-                <div className={"mb-5 p-4 border bg-yellow-50"}>
-                    <h1>Flow present but contains no steps</h1>
-                    <p>The incoming `flow` prop was provided but could not be parsed into steps by the component's normalization logic. Inspect the raw value below to help diagnose the server shape.</p>
-                    <pre style={{whiteSpace: 'pre-wrap', maxHeight: 300, overflow: 'auto'}}>{JSON.stringify(flow, null, 2)}</pre>
+                <div className={"mb-5 p-4 border rounded bg-yellow-50"}>
+                    <h2 className="text-lg font-semibold text-yellow-800">This interactive flow is currently unavailable</h2>
+                    <p className="mt-2 text-sm text-gray-700">We're sorry — this flow exists but couldn't be displayed. It may have been temporarily removed, unpublished, or is in an unsupported format.</p>
+                    <p className="mt-2 text-sm text-gray-600">If you believe this is an error, please contact support or try reloading the page.</p>
+                    <div className="mt-3">
+                        <button
+                            type="button"
+                            onClick={() => { try { window.location.reload(); } catch (e) { /* ignore */ } }}
+                            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded"
+                        >
+                            Reload page
+                        </button>
+                    </div>
                 </div>
             );
         }
@@ -185,30 +197,31 @@ export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, 
 
 
     return (
-        <div className={"mb-5"}>
+        <>
             {/*Show a list of steps*/}
-            <ul>
+            <ul className={"flow_top_menu"}>
+                <li>Steps:</li>
                 {flowState.map((step: any, i: number) => {
                     const sid = getStepId(step, i);
                     return (
-                    <li key={sid} className={"mb-2"}>
-                        <button
-                            className={`p-2 border rounded ${sid === activeStep ? "bg-blue-500 text-white" : "bg-white text-black"}`}
-                            onClick={() => setActiveStep(sid)}
-                        >
-                            Step ID: {sid} (Type: {step.type})
-                        </button>
+                    <li key={sid}>
+                        <Tooltip content={`Step ID: ${sid} (Type: ${step.type})`}>
+                            <button
+                                className={`${sid === activeStep ? "active_step" : ""}`}
+                                onClick={() => setActiveStep(sid)}
+
+                            >
+                                {i + 1}
+                            </button>
+                        </Tooltip>
+
                     </li>
                 )})}
             </ul>
 
-            <h1>Test Flow Show</h1>
-
 
             {currentStep ? (
-                <div key={getStepId(currentStep)} className={"mb-5 p-4 border"}>
-                    <h2>Step ID: {currentStep.id ?? currentStep.step_id ?? currentStep.field_id ?? 'unknown'}</h2>
-                    <p>Type: {currentStep.type}</p>
+                <div key={getStepId(currentStep)} className={`flow_step_container ${currentStep.id ?? 'unknown_step'} type_${currentStep.type || 'unknown_type'}`}>
                     {currentStep.type === 'RawHtml' ? (
                         <div dangerouslySetInnerHTML={{ __html: currentStep.html || '' }} />
                     ) : (<div>
@@ -237,6 +250,6 @@ export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, 
             ) : (
                 <div>No active step selected.</div>
             )}
-        </div>
+        </>
     );
 }

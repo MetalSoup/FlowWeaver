@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import ColorInput from '@/Views/Pages/Components/ColorInput';
 
 // @ts-ignore
 export default memo(({ data, isConnectable }) => {
@@ -15,12 +16,9 @@ export default memo(({ data, isConnectable }) => {
             <div>
                 Custom Color Picker Node: <strong>{data.color}</strong>
             </div>
-            <input
-                className="nodrag"
-                type="color"
-                onChange={data.onChange}
-                defaultValue={data.color}
-            />
+            <div className="nodrag">
+                <ColorInput value={data.color} onChange={data.onChange} />
+            </div>
             <Handle
                 type="source"
                 position={Position.Right}

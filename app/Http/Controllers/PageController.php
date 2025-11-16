@@ -8,6 +8,7 @@ use App\Models\Flow;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class PageController extends Controller
@@ -22,14 +23,14 @@ class PageController extends Controller
 
     public function index(Request $request)
     {
-        // Resolve selected instance id from the authenticated user's preferences.
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        // Resolve selected site id from the authenticated user's preferences.
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
 
-        // If no instance is selected, return an empty paginator (avoids accidental cross-instance data leakage).
-        if (!$selectedInstanceId) {
+        // If no site is selected, return an empty paginator (avoids accidental cross-site data leakage).
+        if (!$selectedSiteId) {
             $empty = Page::whereRaw('0 = 1')->paginate(10);
             return inertia('Pages/PageIndex', [
                 'pages' => $empty,
@@ -37,7 +38,7 @@ class PageController extends Controller
         }
 
         // Build base query
-        $query = Page::where('instance_id', $selectedInstanceId);
+        $query = Page::where('site_id', $selectedSiteId);
 
         // Optional search (q)
         $q = $request->input('q');
@@ -72,14 +73,14 @@ class PageController extends Controller
 
     public function store(PageRequest $request)
     {
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
 
-        // If no instance is selected, send the user to instance selection (always Inertia)
-        if (!$selectedInstanceId) {
-            return redirect()->route('instances.select');
+        // If no site is selected, send the user to site selection (always Inertia)
+        if (!$selectedSiteId) {
+            return redirect()->route('sites.select');
         }
 
         // Debug: log entire parsed request and raw body/headers for diagnosis
@@ -115,7 +116,8 @@ class PageController extends Controller
         }
 
         $data = $request->validated();
-        $data['instance_id'] = $selectedInstanceId;
+
+        $data['site_id'] = $selectedSiteId;
 
         // Ensure content is preserved even when validation omits it (nullable)
         $data['content'] = $rawContent;
@@ -127,11 +129,11 @@ class PageController extends Controller
         $data['user_id'] = auth()->id();
 
         // Ensure a valid non-empty name is present — generate a unique default if not
-        $this->ensurePageName($data, $selectedInstanceId);
+        $this->ensurePageName($data, $selectedSiteId);
 
         Log::info($data);
 
-        // create using the merged data (including instance_id and name)
+        // create using the merged data (including site_id and name)
         $page = Page::create($data);
 
         // Defensive persistence: ensure content was saved (some request parsing edge cases
@@ -146,9 +148,10 @@ class PageController extends Controller
         // If the request came from an Inertia client, return the edit page payload (200) so the client
         // can replace the response without a forced 409/location full reload. For non-Inertia requests
         // keep the normal redirect.
-        if ($this->isInertiaRequest($request)) {
+        // Treat requests from Inertia, XHR, or JSON-capable clients as Inertia-like so the client receives a 200 payload
+        if ($request->header('X-Inertia') || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->ajax() || $request->wantsJson() || $request->expectsJson()) {
             // prepare flows and forms similar to edit()
-            $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
+            $flows = Flow::where('site_id', $selectedSiteId)->select('id', 'name', 'sequence')->get();
             $forms = [];
             foreach ($flows as $flowModel) {
                 $flow_id = $flowModel->id;
@@ -169,22 +172,35 @@ class PageController extends Controller
                 })->values()->toArray();
             }
 
-            return inertia('Pages/PageEditor', [
+
+            return Redirect::route('pages.edit', $page->id);/*, [
                 'page' => new PageResource($page),
                 'forms' => $forms,
                 'flows' => $flows,
-            ]);
+            ])->toResponse($request);*/
         }
 
         // Non-Inertia fallback: regular redirect
         return redirect()->route('pages.edit', $page->id);
     }
 
+
+    /*Seperate function to show page based on slug*/
+
+    public function showPage($slug)
+    {
+        $page = Page::where('slug', $slug)->firstOrFail();
+        return inertia('Pages/PageShow', [
+            'page' => $page
+        ]);
+
+    }
+
     public function show(Page $page)
     {
         //dd($page);
         $page_content = $page->content;
-        // replace all instances of the string '[ki-path:1]' with 'ki-path-1'
+        // replace all sites of the string '[ki-path:1]' with 'ki-path-1'
         //$page_content = str_replace('[ki-path:1]', 'ki-path-1', $page_content);
         //dd($page_content);
 
@@ -196,13 +212,13 @@ class PageController extends Controller
 /*    public function edit(Page $page)
     {
 
-        $selectedInstanceId = session('selected_instance');
-        if($page->instance_id != $selectedInstanceId){
+        $selectedSiteId = session('selected_site');
+        if($page->site_id != $selectedSiteId){
             abort(403);
         }
 
         // we need to also send a list of all the flows, and all the fields
-        $flows = Flow::where('instance_id',$selectedInstanceId)->select("id","name")->get();
+        $flows = Flow::where('site_id',$selectedSiteId)->select("id","name")->get();
         //I don't need fields because I can get them through inertia middleware in the component. Should I do the same for flows?
 
 
@@ -239,15 +255,15 @@ class PageController extends Controller
     // Show the editor for creating a new page
     public function create()
     {
-        $selectedInstanceId = null;
-        if (auth()->user() && method_exists(auth()->user(), 'selectedInstance') && auth()->user()->selectedInstance()) {
-            $selectedInstanceId = auth()->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if (auth()->user() && method_exists(auth()->user(), 'selectedSite') && auth()->user()->selectedSite()) {
+            $selectedSiteId = auth()->user()->selectedSite()->id;
         }
-        if (!$selectedInstanceId) {
-            return redirect()->route('instances.select');
+        if (!$selectedSiteId) {
+            return redirect()->route('sites.select');
         }
 
-        $flows = Flow::where('instance_id', $selectedInstanceId)->select("id", "name")->get();
+        $flows = Flow::where('site_id', $selectedSiteId)->select("id", "name")->get();
 
         // Simple empty forms structure for create view
         $forms = [];
@@ -263,16 +279,16 @@ class PageController extends Controller
     // New editor route for the Craft.js editor (explicit)
     public function edit(Page $page)
     {
-        $selectedInstanceId = null;
-        if (auth()->user() && method_exists(auth()->user(), 'selectedInstance') && auth()->user()->selectedInstance()) {
-            $selectedInstanceId = auth()->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if (auth()->user() && method_exists(auth()->user(), 'selectedSite') && auth()->user()->selectedSite()) {
+            $selectedSiteId = auth()->user()->selectedSite()->id;
         }
-        if ($page->instance_id != $selectedInstanceId) {
+        if ($page->site_id != $selectedSiteId) {
             abort(403);
         }
 
         // load id, name and sequence so we can safely access sequence without extra queries
-        $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
+        $flows = Flow::where('site_id', $selectedSiteId)->select('id', 'name', 'sequence')->get();
 
         // prepare forms array by iterating actual Flow models
         $forms = [];
@@ -306,8 +322,8 @@ class PageController extends Controller
 
 /*    public function update(PageRequest $request, Page $page)
     {
-        $selectedInstanceId = session('selected_instance');
-        if($page->instance_id != $selectedInstanceId){
+        $selectedSiteId = session('selected_site');
+        if($page->site_id != $selectedSiteId){
             abort(403);
         }
         $page->update($request->validated());
@@ -317,31 +333,76 @@ class PageController extends Controller
     public function update(PageRequest $request, Page $page)
     {
 
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
-        if ($page->instance_id != $selectedInstanceId) {
+        if ($page->site_id != $selectedSiteId) {
             abort(403);
         }
 
 
+
         $data = $request->validated();
+
+        // Defensive: move any top-level custom_css into options so we don't attempt to write a non-existent column
+        if (array_key_exists('custom_css', $data)) {
+            $data['options'] = is_array($data['options'] ?? null) ? $data['options'] : [];
+            $data['options']['custom_css'] = $data['custom_css'];
+            unset($data['custom_css']);
+        }
+
+        // Debug incoming options payload for diagnosis
+        try {
+            Log::debug('PageController::update - incoming validated data keys: ' . json_encode(array_keys($data)));
+            if (isset($data['options'])) {
+                Log::debug('PageController::update - incoming options payload: ' . json_encode($data['options']));
+            }
+        } catch (\Throwable $e) {
+            Log::debug('PageController::update - logging failed: ' . $e->getMessage());
+        }
+
+        // Merge incoming options with existing options to avoid clobbering unrelated option keys
+        if (isset($data['options']) && is_array($data['options'])) {
+            $existing = is_array($page->options) ? $page->options : (is_null($page->options) ? [] : (array) $page->options);
+            $data['options'] = array_merge($existing, $data['options']);
+            try {
+                Log::debug('PageController::update - merged options: ' . json_encode($data['options']));
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
 
         // Save the content explicitly (validated may not include content if empty/null)
         //$data['content'] = $request->input('content', '');
 
-        // Ensure a valid non-empty name is present — generate a unique default if not
-        $this->ensurePageName($data, $selectedInstanceId);
+        // If the client sent an explicit empty name, treat it as "no change" on update
+        if (array_key_exists('name', $data) && trim((string) ($data['name'] ?? '')) === '') {
+            unset($data['name']);
+            Log::debug('PageController::update - client sent empty name, preserving existing');
+        }
 
-        $page->update($data);
+        // Ensure a valid non-empty name is present — generate a unique default if not (create path or when omitted)
+        $this->ensurePageName($data, $selectedSiteId);
+
+        // Use fill + save + refresh to ensure casts are applied and DB reflects the changes
+        $page->fill($data);
+        $page->save();
+        $page->refresh();
+        try {
+            Log::debug('PageController::update - saved page attributes: ' . json_encode($page->getAttributes()));
+            Log::debug('PageController::update - saved page.options (casted): ' . json_encode($page->options));
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
 
         // If the request came from an Inertia client, return the edit page payload (200) so the client
         // can replace the response without a forced 409/location full reload. For non-Inertia requests
         // keep the normal redirect.
-        if ($this->isInertiaRequest($request)) {
+        // Treat requests from Inertia, XHR, or JSON-capable clients as Inertia-like so the client receives a 200 payload
+        if ($request->header('X-Inertia') || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->ajax() || $request->wantsJson() || $request->expectsJson()) {
             // prepare flows and forms similar to edit()
-            $flows = Flow::where('instance_id', $selectedInstanceId)->select('id', 'name', 'sequence')->get();
+            $flows = Flow::where('site_id', $selectedSiteId)->select('id', 'name', 'sequence')->get();
             $forms = [];
             foreach ($flows as $flowModel) {
                 $flow_id = $flowModel->id;
@@ -363,19 +424,13 @@ class PageController extends Controller
             }
             //dd("inertia update");
 
-            //should return redirect back with the updated page
-            return redirect()->back()->with([
+            // Return the editor payload (same shape as `store`) so Inertia clients receive updated props
+            return redirect()->route('pages.edit', $page->id);
+            /*return Inertia::render('Pages/PageEditor', [
                 'page' => new PageResource($page),
                 'forms' => $forms,
                 'flows' => $flows,
-                'status' => 'Page updated successfully!'
-            ]);
-
-           /* return inertia('Pages/Editor', [
-                'page' => new PageResource($page),
-                'forms' => $forms,
-                'flows' => $flows,
-            ]);*/
+            ])->toResponse($request);*/
         }
 
         // Non-Inertia fallback: regular redirect
@@ -384,11 +439,11 @@ class PageController extends Controller
 
     public function destroy(Request $request, Page $page)
     {
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
-        if ($page->instance_id != $selectedInstanceId) {
+        if ($page->site_id != $selectedSiteId) {
             abort(403);
         }
         $page->delete();
@@ -398,10 +453,10 @@ class PageController extends Controller
     }
 
     /**
-     * Ensure $data contains a non-empty 'name' — generate a unique one within the instance when missing.
+     * Ensure $data contains a non-empty 'name' — generate a unique one within the site when missing.
      * Modifies $data by reference.
      */
-    protected function ensurePageName(array &$data, $selectedInstanceId)
+    protected function ensurePageName(array &$data, $selectedSiteId)
     {
         if (!empty(trim((string) ($data['name'] ?? '')))) {
             // name is present and non-empty
@@ -413,7 +468,7 @@ class PageController extends Controller
         do {
             $n++;
             $name = $n === 1 ? $base : $base . ' #' . $n;
-        } while (Page::where('instance_id', $selectedInstanceId)->where('name', $name)->exists());
+        } while (Page::where('site_id', $selectedSiteId)->where('name', $name)->exists());
 
         $data['name'] = $name;
     }

@@ -12,7 +12,7 @@ class Field extends Model
     protected $fillable = [
         'name',
         'label',
-        'instance_id',
+        'site_id',
         'type',
         'options',
         'description'
@@ -22,9 +22,9 @@ class Field extends Model
         'options' => 'collection',
     ];
 
-    public function instance() : BelongsTo
+    public function site() : BelongsTo
     {
-        return $this->belongsTo(Instance::class);
+        return $this->belongsTo(Site::class);
     }
 
 }

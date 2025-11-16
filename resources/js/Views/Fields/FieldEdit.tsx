@@ -15,7 +15,7 @@ export default function EditField({auth, field}: {auth:any,field:any})
     "description": "Testing",
     "type": "checkbox",
     "status": "active",
-    "instance_id": 1,
+    "site_id": 1,
     "created_at": "2025-10-25T07:10:17.000000Z",
     "updated_at": "2025-11-01T13:56:01.000000Z",
     "options": {

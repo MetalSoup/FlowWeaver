@@ -1,10 +1,10 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
-// using `any` for the instance prop to keep the editor flexible
+// using `any` for the site prop to keep the editor flexible
 import { Head, router } from "@inertiajs/react";
 import {useState} from "react";
-export default function InstanceEdit({auth, instance}: { auth: any, instance: any }) {
-    const [name, setName] = useState(instance.name ? instance.name : "");
-    const [description, setDescription] = useState(instance.description ? instance.description : "");
+export default function SiteEdit({auth, site}: { auth: any, site: any }) {
+    const [name, setName] = useState(site.name ? site.name : "");
+    const [description, setDescription] = useState(site.description ? site.description : "");
     const onChangeName = (event: any) => {
         setName(event.target.value);
     }
@@ -13,27 +13,27 @@ export default function InstanceEdit({auth, instance}: { auth: any, instance: an
     }
 
     const onSave = () => {
-        // if new instance (no id) create, otherwise update
-        if (!instance.id) {
-            router.post(route('instances.store'), { name, description });
+        // if new site (no id) create, otherwise update
+        if (!site.id) {
+            router.post(route('sites.store'), { name, description });
         } else {
-            router.put(route('instances.update', instance.id), { name, description });
+            router.put(route('sites.update', site.id), { name, description });
         }
     }
 
     const onSelect = () => {
-        // Post the instance id to the selection endpoint to set session('selected_instance')
-        if (instance.id) {
-            router.post(route('instances.storeSelection'), { instance_id: instance.id });
+        // Post the site id to the selection endpoint to set session('selected_site')
+        if (site.id) {
+            router.post(route('sites.storeSelection'), { site_id: site.id });
         }
     }
 
     return (
         <DashboardLayout
             user={auth.user}
-            header={<h1>Edit Instance - {name || 'New Instance'}</h1>}
+            header={<h1>Edit Site - {name || 'New Site'}</h1>}
         >
-            <Head title={"Edit Instance - " + (name || 'New Instance')}/>
+            <Head title={"Edit Site - " + (name || 'New Site')}/>
             <div className={"flex flex-col md:flex-row h-full"}>
 
                 <div className={"w-full h-full bg-gray-100 dark:bg-gray-800"}>
@@ -50,8 +50,8 @@ export default function InstanceEdit({auth, instance}: { auth: any, instance: an
 
                         <div className={"mt-4"}>
                             <button onClick={onSave} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded">Save</button>
-                            {instance.id && (
-                                <button onClick={onSelect} className="ml-3 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Select this instance</button>
+                            {site.id && (
+                                <button onClick={onSelect} className="ml-3 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Select this site</button>
                             )}
                         </div>
 

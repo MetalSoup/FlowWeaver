@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Field;
-use App\Models\Instance;
+use App\Models\Site;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -14,9 +14,9 @@ class FieldSeeder extends Seeder
      */
     public function run(): void
     {
-        // Chunk instances to avoid loading all into memory
-        Instance::chunk(100, function ($instances) {
-            foreach ($instances as $instance) {
+        // Chunk sites to avoid loading all into memory
+        Site::chunk(100, function ($sites) {
+            foreach ($sites as $site) {
                 $count = rand(10, 200);
 
                 // Create in smaller batches to avoid huge single queries
@@ -26,10 +26,10 @@ class FieldSeeder extends Seeder
                 while ($remaining > 0) {
                     $cur = min($batchSize, $remaining);
 
-                    // generate array of attributes with instance_id set
-                    $attrs = Field::factory()->count($cur)->make()->map(function ($f) use ($instance) {
+                    // generate array of attributes with site_id set
+                    $attrs = Field::factory()->count($cur)->make()->map(function ($f) use ($site) {
                         $arr = $f->toArray();
-                        $arr['instance_id'] = $instance->id;
+                        $arr['site_id'] = $site->id;
 
                         // Ensure options is stored as JSON string for DB, but keep null when absent
                         if (array_key_exists('options', $arr)) {

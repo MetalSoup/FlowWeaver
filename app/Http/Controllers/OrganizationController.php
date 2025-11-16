@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
-use App\Models\Instance;
+use App\Models\Site;
 use App\Models\Organization;
 use App\Http\Resources\OrganizationResource;
 use Illuminate\Http\Request;
@@ -42,7 +42,7 @@ class OrganizationController extends Controller
 
     public function storeSelection(Request $request)
     {
-        // $instance = Instance::find($request);
+
 
         //dd($request);
         $request->validate(['organization_id' => 'required|exists:organizations,id']);
@@ -61,11 +61,11 @@ class OrganizationController extends Controller
             }
 
             $prefs['selected_organization_id'] = $organizationId;
-            // When organization changes we must clear any previously selected instance
-            // since instances are scoped to organizations. This forces the frontend to
-            // prompt the user to re-select an instance that belongs to the new org.
-            if (array_key_exists('selected_instance_id', $prefs)) {
-                unset($prefs['selected_instance_id']);
+            // When organization changes we must clear any previously selected site
+            // since sites are scoped to organizations. This forces the frontend to
+            // prompt the user to re-select a site that belongs to the new org.
+            if (array_key_exists('selected_site_id', $prefs)) {
+                unset($prefs['selected_site_id']);
             }
             $user->preferences = $prefs;
             $user->save();
@@ -117,9 +117,9 @@ class OrganizationController extends Controller
                 $prefs = is_array($decoded) ? $decoded : [];
             }
             $prefs['selected_organization_id'] = $organization->id;
-            // Clear any selected_instance when a new organization is created and selected
-            if (array_key_exists('selected_instance_id', $prefs)) {
-                unset($prefs['selected_instance_id']);
+            // Clear any selected_site when a new organization is created and selected
+            if (array_key_exists('selected_site_id', $prefs)) {
+                unset($prefs['selected_site_id']);
             }
             $user->preferences = $prefs;
             $user->save();
@@ -128,7 +128,7 @@ class OrganizationController extends Controller
         return redirect()->route('organizations.select');
     }
 
-    public function update(UpdateOrganizationRequest $request, Instance $instance)
+    public function update(UpdateOrganizationRequest $request, Site $site)
     {
         //
     }

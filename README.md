@@ -2,7 +2,7 @@ Seeders:
 
 - php artisan db:seed --class=Database\Seeders\LargeUsersSeeder
 - php artisan db:seed --class=Database\Seeders\LargeOrganizationsSeeder
-- php artisan db:seed --class=Database\Seeders\InstanceSeeder
+- php artisan db:seed --class=Database\Seeders\SiteSeeder
 - php artisan db:seed --class=Database\Seeders\FieldSeeder
 
 ## todo:
@@ -25,7 +25,7 @@ Seeders:
 - Optimize flow execution performance for complex workflows.
 
 ### General Improvements:
-- Change "Instance" to "Site" throughout the application for better clarity.
+- ~~Change "Instance" to "Site" throughout the application for better clarity.~~
 - Add a way to track changes made to workflows, such as a version history or changelog.
 - Implement user roles and permissions to control access to different parts of the application.
 - Improve the UI/UX of the workflow editor for better usability.

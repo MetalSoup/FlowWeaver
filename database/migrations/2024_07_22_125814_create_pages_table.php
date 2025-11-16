@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('slug')->nullable();
             $table->json('content')->nullable();
-            $table->foreignId('instance_id');
+            $table->foreignId('site_id');
             $table->foreignId('user_id');
             $table->softDeletes();
             $table->timestamps();

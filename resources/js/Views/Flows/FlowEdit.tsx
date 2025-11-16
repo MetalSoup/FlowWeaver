@@ -1,6 +1,7 @@
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, router} from '@inertiajs/react';
 import {useEffect, useCallback, useState, useRef} from 'react';
+import { showAppToast } from '@/utils/toast';
 import {
     addEdge,
     Background,
@@ -46,15 +47,15 @@ const nodeTypes = {
 };
 
 
-function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, selected_instance?: number | null }) {
+function FlowEditor({auth, flow, selected_site}: { auth: any, flow: any, selected_site?: number | null }) {
 
-    // If there's no selected instance in the session/shared props, send the user to select one.
+    // If there's no selected site in the session/shared props, send the user to select one.
     useEffect(() => {
-        if (!selected_instance) {
-            // navigate to instance selection page
-            router.get(route('instances.select'));
+        if (!selected_site) {
+            // navigate to site selection page
+            router.get(route('sites.select'));
         }
-    }, [selected_instance]);
+    }, [selected_site]);
 
     const sequence = flow.data.sequence;
     //load the Entry node if the flow is empty
@@ -120,22 +121,16 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
         [screenToFlowPosition],
     );
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance<any, any> | null>(null);
-    // toast state + timer ref (shows Saved/Copied/Pasted/etc.)
-    const [toastMsg, setToastMsg] = useState<string | null>(null);
-    const toastTimerRef = useRef<number | null>(null);
-    const showToast = useCallback((msg: string, duration = 1500) => {
-        setToastMsg(msg);
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = window.setTimeout(() => setToastMsg(null), duration);
+    // Use module-level toast helper
+    const showToast = useCallback((msg: string, _duration = 1500) => {
+        try { showAppToast(msg); } catch (e) { /* ignore */ }
     }, []);
-    // cleanup toast timer
-    useEffect(() => () => { if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current); }, []);
-     const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
-     const onChangeName = (newName:any) => {
-         setFlowName(newName);
-         flow.data.name = newName;
+    const [flowName, setFlowName] = useState(flow.data.name ? flow.data.name : "Untitled Flow");
+    const onChangeName = (newName:any) => {
+        setFlowName(newName);
+        flow.data.name = newName;
 
-     }
+    }
     // Copy/paste clipboard (stores nodes+edges of last copy). Persist to localStorage and OS clipboard when possible.
     const clipboardRef = useRef<{nodes: any[]; edges: any[], createdAt?: number} | null>(null);
     const pasteCountRef = useRef(0);
@@ -338,22 +333,22 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
         const thisFlow = rfInstance.toObject();
         // if it's a new flow, create it, otherwise update it
         if (!flow.data.id) {
-            router.post(route('flows.store'), {name: flowName, sequence: thisFlow, instance_id: selected_instance}, {
+            router.post(route('flows.store'), {name: flowName, sequence: thisFlow, site_id: selected_site}, {
                 onSuccess: () => {
                     showToast('Saved', 3000);
                 }
             });
         } else {
-            router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: thisFlow, instance_id: selected_instance}, {
+            router.put(route('flows.update', flow.data.id), {name: flow.data.name, sequence: thisFlow, site_id: selected_site}, {
                 onSuccess: () => {
                     showToast('Saved', 3000);
                 }
             });
         }
-    }, [rfInstance, flow, flowName, selected_instance, showToast]);
+    }, [rfInstance, flow, flowName, selected_site, showToast]);
 
-    const handleInit: OnInit<any, any> = (instance: ReactFlowInstance<any, any>) => {
-        setRfInstance(instance);
+    const handleInit: OnInit<any, any> = (site: ReactFlowInstance<any, any>) => {
+        setRfInstance(site);
     };
 
 
@@ -444,12 +439,7 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
 
                     >
 
-                        {/* Saved toast */}
-                        {toastMsg && (
-                            <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
-                                {toastMsg}
-                            </div>
-                        )}
+                        {/* Toasts are shown via the global app snackbar (DashboardLayout) */}
 
                         <Panel position="top-right" >
                             <PrimaryButton onClick={onSave}>Save</PrimaryButton>
@@ -483,8 +473,8 @@ function FlowEditor({auth, flow, selected_instance}: { auth: any, flow: any, sel
 }
 
 
-export default ({auth, flow, selected_instance}: { auth: any, flow: any, selected_instance?: number | null }) => (
+export default ({auth, flow, selected_site}: { auth: any, flow: any, selected_site?: number | null }) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} flow={flow} selected_instance={selected_instance} />
+        <FlowEditor auth={auth} flow={flow} selected_site={selected_site} />
     </ReactFlowProvider>
 )

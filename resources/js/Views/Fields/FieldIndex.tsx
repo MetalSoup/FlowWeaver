@@ -100,22 +100,22 @@ const renderTypeIcon = (t: string | undefined | null) => {
 }
 
 export default function Fields({ auth, fields }:{auth:any,fields:any}) {
-    // Support either a plain array or a paginator object with .data (match InstanceIndex)
+    // Support either a plain array or a paginator object with .data (match SiteIndex)
     const isPaginator = !Array.isArray(fields) && !!fields;
     const allRows = Array.isArray(fields) ? fields : (fields?.data ?? []);
     const pages = isPaginator ? fields : undefined;
-    // pagesForTable will be synthesized later (after instanceRows is known) if needed.
+    // pagesForTable will be synthesized later (after siteRows is known) if needed.
     let pagesForTable: any = pages;
 
-    // Split default vs instance fields
+    // Split default vs site fields
     const defaultRows = allRows.filter((r: any) => r.is_default);
-    const instanceRows = allRows.filter((r: any) => !r.is_default);
+    const siteRows = allRows.filter((r: any) => !r.is_default);
 
-    // If the data was a plain array, synthesize pagination meta for instanceRows only
+    // If the data was a plain array, synthesize pagination meta for siteRows only
     if (!pages) {
         const pageSize = 15;
         if (Array.isArray(fields)) {
-            const total = instanceRows.length;
+            const total = siteRows.length;
             const last = Math.max(1, Math.ceil(total / pageSize));
             if (last > 1) {
                 const base = typeof window !== 'undefined' ? window.location.pathname : route('fields.index');
@@ -140,8 +140,8 @@ export default function Fields({ auth, fields }:{auth:any,fields:any}) {
     // collapsed state for default fields section (collapsed by default)
     const [defaultsCollapsed, setDefaultsCollapsed] = useState<boolean>(true);
 
-    // Columns for instance fields (editable)
-    const columnsInstance = [
+    // Columns for site fields (editable)
+    const columnsSite = [
         { key: 'id', label: 'ID', className: 'w-16' },
         // Swap: show Label before Name
         { key: 'label', label: 'Label', sortable: true },
@@ -222,21 +222,21 @@ export default function Fields({ auth, fields }:{auth:any,fields:any}) {
                     )}
                 </div>
 
-                {/* Instance-specific fields section */}
+                {/* Site-specific fields section */}
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-lg font-medium">Instance fields</h2>
+                        <h2 className="text-lg font-medium">Site fields</h2>
                     </div>
                     <IndexTable
-                        rows={instanceRows}
-                        columns={columnsInstance}
+                        rows={siteRows}
+                        columns={columnsSite}
                         pages={pagesForTable}
                         searchEnabled={true}
                         searchPlaceholder="Search fields..."
                         baseRoute="fields.index"
                         queryParam="q"
                         debounceMs={300}
-                        noResultsMessage="No instance fields found."
+                        noResultsMessage="No site fields found."
                     />
                 </div>
                  </div>

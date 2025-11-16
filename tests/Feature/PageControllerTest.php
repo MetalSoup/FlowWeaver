@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Instance;
+use App\Models\Site;
 use App\Models\Page;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +23,7 @@ class PageControllerTest extends TestCase
     public function test_store_returns_inertia_location_and_creates_page()
     {
         $user = User::factory()->create();
-        $instance = Instance::factory()->create();
+        $instance = Site::factory()->create();
 
         $response = $this->actingAs($user)
             ->withHeader('X-Inertia', 'true')
@@ -47,7 +47,7 @@ class PageControllerTest extends TestCase
     public function test_update_returns_inertia_location()
     {
         $user = User::factory()->create();
-        $instance = Instance::factory()->create();
+        $instance = Site::factory()->create();
 
         $page = Page::factory()->create([
             'instance_id' => $instance->id,
@@ -72,7 +72,7 @@ class PageControllerTest extends TestCase
     public function test_destroy_returns_inertia_location()
     {
         $user = User::factory()->create();
-        $instance = Instance::factory()->create();
+        $instance = Site::factory()->create();
 
         $page = Page::factory()->create([
             'instance_id' => $instance->id,

@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\DefaultFields;
 use App\Models\Field;
-use App\Models\Instance;
+use App\Models\Site;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -38,11 +38,11 @@ class HandleInertiaRequests extends Middleware
         $user_preferences = $request->user() ? $request->user()->preferences : [];
 
 
-        // Resolve selected instance and organization IDs exclusively from user preferences.
+        // Resolve selected site and organization IDs exclusively from user preferences.
         $selectedId = null;
         $selectedOrgId = null;
-        if ($user_preferences && isset($user_preferences['selected_instance_id'])) {
-            $selectedId = $user_preferences['selected_instance_id'];
+        if ($user_preferences && isset($user_preferences['selected_site_id'])) {
+            $selectedId = $user_preferences['selected_site_id'];
         }
         if ($user_preferences && isset($user_preferences['selected_organization_id'])) {
             $selectedOrgId = $user_preferences['selected_organization_id'];
@@ -85,10 +85,10 @@ class HandleInertiaRequests extends Middleware
              ],
 // prepend default fields to 'fields' prop
 
-            // fields depend on the resolved selected instance id
+            // fields depend on the resolved selected site id
             'fields' => fn() => $this->getAdditionalFields($selectedId),
-            // expose selected instance as an object with id and name, or null
-            'selected_instance' => fn() => $selectedId ? optional(Instance::where('id', $selectedId)->select('id',
+            // expose selected site as an object with id and name, or null
+            'selected_site' => fn() => $selectedId ? optional(Site::where('id', $selectedId)->select('id',
                 'name')->first())->toArray() : null,
             // expose selected organization as an object with id and name, or null
             'selected_organization' => fn() => $selectedOrgId ? optional(Organization::where('id',
@@ -102,11 +102,11 @@ class HandleInertiaRequests extends Middleware
          ];
     }
 
-    protected function getAdditionalFields($instanceId = null): array
+    protected function getAdditionalFields($siteId = null): array
     {
 
         $default_fields = DefaultFields::getFields()->toArray();
-        $fields = array_merge($default_fields, Field::where('instance_id', $instanceId)->get()->toArray());
+        $fields = array_merge($default_fields, Field::where('site_id', $siteId)->get()->toArray());
         return $fields;
     }
 }

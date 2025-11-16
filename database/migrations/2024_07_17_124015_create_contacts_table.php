@@ -29,7 +29,7 @@ return new class extends Migration
             $table->json('custom_fields')->nullable();
             $table->string('status')->default('active');
             $table->string('source')->nullable();
-            $table->foreignId('instance_id')->constrained();
+            $table->foreignId('site_id')->constrained();
             $table->timestamps();
         });
     }

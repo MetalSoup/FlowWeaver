@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use App\Models\Instance;
-use App\Policies\InstancePolicy;
+use App\Models\Site;
+use App\Policies\SitePolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -15,8 +15,8 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // Register the Instance policy
-        Instance::class => InstancePolicy::class,
+        // Register the Site policy
+        Site::class => SitePolicy::class,
     ];
 
     /**

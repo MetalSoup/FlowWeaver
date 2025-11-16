@@ -104,6 +104,40 @@ h2
 }
 
 
+.flow_top_menu
+{
+    display:none;
+}
+
+.component-selected > div >  .flow_top_menu
+{
+    display:flex;
+    position: absolute;
+    z-index: 4;
+}
+
+
+.component-selected > div >  .flow_top_menu li
+{
+    background:white;
+}
+
+
+.component-selected > div >  .flow_top_menu li button{
+    display: flex;
+    padding: 0 15px;
+    border: 1px solid var(--kd-green);
+    background:#96DE8322;
+    align-items: center;
+    justify-content: center;
+    min-width:15px;
+}
+
+.component-selected > div > .flow_top_menu li button.active_step
+{
+    background: var(--kd-green);
+    color:white;
+}
 
 
 

@@ -13,16 +13,16 @@ use Inertia\Inertia;
 
 class FlowController extends Controller
 {
-    protected function resolveSelectedInstanceId()
+    protected function resolveSelectedSiteId()
     {
         $selectedId = null;
         $user = auth()->user();
-        if ($user && method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
-            $selectedId = $user->selectedInstance()->id;
+        if ($user && method_exists($user, 'selectedSite') && $user->selectedSite()) {
+            $selectedId = $user->selectedSite()->id;
         }
 
         if (!$selectedId) {
-            return Redirect::route('instances.select')->with('error', 'Please select an instance before creating a flow.');
+            return Redirect::route('sites.select')->with('error', 'Please select an site before creating a flow.');
         }
 
         return $selectedId;
@@ -30,8 +30,8 @@ class FlowController extends Controller
 
     public function index()
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        $flows = Flow::where('instance_id', $selectedInstanceId)->get();
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        $flows = Flow::where('site_id', $selectedSiteId)->get();
 
         return inertia('Flows/FlowIndex', [
             'flows' => FlowResource::collection($flows),
@@ -40,20 +40,20 @@ class FlowController extends Controller
 
     public function create()
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        $selectedSiteId = $this->resolveSelectedSiteId();
         return inertia('Flows/FlowEdit', [
-            'flow' => new FlowResource(new Flow(['instance_id' => $selectedInstanceId])),
+            'flow' => new FlowResource(new Flow(['site_id' => $selectedSiteId])),
         ]);
     }
 
     public function store(FlowRequest $request)
     {
 
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
+        $selectedSiteId = $this->resolveSelectedSiteId();
 
 
         $data = $request->validated();
-        $data['instance_id'] = (int) $selectedInstanceId;
+        $data['site_id'] = (int) $selectedSiteId;
 
         $flow = Flow::create($data);
 
@@ -63,13 +63,13 @@ class FlowController extends Controller
     public function update(FlowRequest $request, Flow $flow)
     {
 
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        if ($flow->instance_id != $selectedInstanceId) {
-            return Redirect::route('instances.select')->with('error', 'You do not have permission to edit this Flow.');
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        if ($flow->site_id != $selectedSiteId) {
+            return Redirect::route('sites.select')->with('error', 'You do not have permission to edit this Flow.');
         }
 
         $data = $request->validated();
-        $data['instance_id'] = (int) $selectedInstanceId;
+        $data['site_id'] = (int) $selectedSiteId;
 
 
         $flow->update($data);
@@ -92,8 +92,8 @@ class FlowController extends Controller
 
     public function load(Flow $flow)
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        if ($flow->instance_id != $selectedInstanceId) {
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        if ($flow->site_id != $selectedSiteId) {
             abort(403);
         }
 
@@ -128,8 +128,8 @@ class FlowController extends Controller
 
     public function edit(Flow $flow)
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        if ($flow->instance_id != $selectedInstanceId) {
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        if ($flow->site_id != $selectedSiteId) {
             abort(403);
         }
 
@@ -142,8 +142,8 @@ class FlowController extends Controller
 
     public function destroy(Flow $flow)
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        if ($flow->instance_id != $selectedInstanceId) {
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        if ($flow->site_id != $selectedSiteId) {
             abort(403);
         }
         $flow->delete();
@@ -153,8 +153,8 @@ class FlowController extends Controller
 
     public function compile(Flow $flow)
     {
-        $selectedInstanceId = $this->resolveSelectedInstanceId();
-        /*        if($flow->instance_id != $selectedInstanceId){
+        $selectedSiteId = $this->resolveSelectedSiteId();
+        /*        if($flow->site_id != $selectedSiteId){
                     abort(403);
                 }*/
 

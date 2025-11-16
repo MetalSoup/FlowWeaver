@@ -22,8 +22,8 @@ class StoreFieldRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Instance is stored in session
-        $instanceId = $this->session()->get('selected_instance');
+        // Site is stored in session
+        $siteId = $this->session()->get('selected_site');
 
         return [
             'name' => [
@@ -32,9 +32,9 @@ class StoreFieldRequest extends FormRequest
                 'max:255',
                 // start with a letter, then letters, numbers, underscore or hyphen
                 'regex:/^[A-Za-z][A-Za-z0-9_-]*$/',
-                // unique per instance
-                Rule::unique('fields')->where(function ($query) use ($instanceId) {
-                    return $query->where('instance_id', $instanceId);
+                // unique per site
+                Rule::unique('fields')->where(function ($query) use ($siteId) {
+                    return $query->where('site_id', $siteId);
                 }),
                 // must not collide with predefined default fields
                 function ($attribute, $value, $fail) {
@@ -48,7 +48,7 @@ class StoreFieldRequest extends FormRequest
             ],
             'label' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'max:255'],
-            'instance_id' => ['nullable'],
+            'site_id' => ['nullable'],
             'options' => ['nullable', 'array'],
         ];
     }

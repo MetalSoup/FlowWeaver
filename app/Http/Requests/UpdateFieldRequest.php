@@ -22,7 +22,7 @@ class UpdateFieldRequest extends FormRequest
      */
     public function rules(): array
     {
-        $instanceId = $this->session()->get('selected_instance');
+        $siteId = $this->session()->get('selected_site');
         // If route model binding provided a field, get its id for ignoring uniqueness
         $fieldId = $this->route('field') ? $this->route('field')->id : null;
 
@@ -32,8 +32,8 @@ class UpdateFieldRequest extends FormRequest
                 'string',
                 'max:255',
                 'regex:/^[A-Za-z][A-Za-z0-9_-]*$/',
-                Rule::unique('fields')->ignore($fieldId)->where(function ($query) use ($instanceId) {
-                    return $query->where('instance_id', $instanceId);
+                Rule::unique('fields')->ignore($fieldId)->where(function ($query) use ($siteId) {
+                    return $query->where('site_id', $siteId);
                 }),
                 function ($attribute, $value, $fail) {
                     if (method_exists(\App\DefaultFields::class, 'getFields')) {

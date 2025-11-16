@@ -92,7 +92,7 @@ export default function RenderField({field, formValues = {}, setFormValues, page
     const containerBase = "mb-2 p-2 rounded";
     const editorCursor = isEditorEnabled ? ' cursor-pointer' : '';
     const hoverStyle = isEditorEnabled ? ' hover:border-blue-400 hover:shadow-sm' : '';
-    const selectedStyle = isSelected ? ' border-2 border-blue-500 bg-blue-50' : ' border border-transparent';
+    const selectedStyle = isEditorEnabled && isSelected ? ' border-2 border-blue-500 bg-blue-50' : ' border border-transparent';
     // add group/relative to support hover overlay
     const containerClass = `group relative ${containerBase}${editorCursor}${hoverStyle}${selectedStyle} ${mergedContainerClass}`.trim();
 
@@ -108,12 +108,16 @@ export default function RenderField({field, formValues = {}, setFormValues, page
     if (cBw) containerStyle.borderWidth = cBw;
     const cBc = overrides.containerBorderColor ?? defaults.containerBorderColor;
     if (cBc) containerStyle.borderColor = cBc;
+    const cBs = overrides.containerBorderStyle ?? defaults.containerBorderStyle;
+    if (cBs) containerStyle.borderStyle = cBs;
     const cPad = overrides.containerPadding ?? defaults.containerPadding;
     if (cPad) containerStyle.padding = cPad;
     const cMar = overrides.containerMargin ?? defaults.containerMargin;
     if (cMar) containerStyle.margin = cMar;
     const cShadow = overrides.containerBoxShadow ?? defaults.containerBoxShadow;
     if (cShadow) containerStyle.boxShadow = cShadow;
+    const cBradius = overrides.containerBorderRadius ?? defaults.containerBorderRadius;
+    if (cBradius) containerStyle.borderRadius = cBradius;
 
     // label style
     const lColor = overrides.labelColor ?? defaults.labelColor;

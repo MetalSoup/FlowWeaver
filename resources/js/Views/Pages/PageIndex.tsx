@@ -1,10 +1,11 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import {Head, Link, router} from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import DangerButton from '@/Components/DangerButton';
 import PrimaryButton from "@/Components/PrimaryButton";
 import IndexTable from '@/Components/IndexTable';
+import { showAppToast } from '@/utils/toast';
 
 export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pages?: any }) {
     const rows = pages?.data ?? [];
@@ -12,14 +13,8 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
     const [confirming, setConfirming] = useState(false);
     const [selectedPage, setSelectedPage] = useState<any | null>(null);
 
-    const [toastMsg, setToastMsg] = useState<string | null>(null);
-    const toastTimerRef = useRef<number | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-        };
-    }, []);
+    // Use module toast helper
+    const showToast = (msg: string) => { try { showAppToast(msg); } catch(e) {} };
 
     const openConfirm = (page: any) => {
         setSelectedPage(page);
@@ -37,16 +32,12 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
 
         router.delete(route('pages.destroy', selectedPage.id), {
             onSuccess: () => {
-                setToastMsg('Page deleted');
+                showToast('Page deleted');
                 // reload the current list to reflect deletion
                 router.reload();
-                if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-                toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 2500);
             },
             onError: () => {
-                setToastMsg('Failed to delete page');
-                if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-                toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 2500);
+                showToast('Failed to delete page');
             },
         });
 
@@ -96,12 +87,7 @@ export default function PagesIndex({ auth, pages = {data: []} }: { auth: any; pa
                     </div>
                 </Modal>
 
-                {/* small toast */}
-                {toastMsg && (
-                    <div className="fixed right-4 bottom-4 bg-gray-900 text-white px-4 py-2 rounded shadow">
-                        {toastMsg}
-                    </div>
-                )}
+                {/* Toasts are shown via the global app snackbar */}
             </div>
         </DashboardLayout>
     );

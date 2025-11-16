@@ -19,12 +19,12 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
   return (
     <Accordion>
       <AccordionSummary>
-        <div className="px-6 w-full">
+        <div className="w-full">
           <Grid container direction="row" alignItems="center" spacing={3}>
             <Grid>
-              <h5 className="text-sm text-light-gray-1 text-left font-medium text-dark-gray">
+              <h4 className="">
                 {title}
-              </h5>
+              </h4>
             </Grid>
             {summary && props ? (
               <Grid size={{ xs: 8 }}>
@@ -41,7 +41,7 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
           </Grid>
         </div>
       </AccordionSummary>
-      <AccordionDetails style={{ padding: '0px 24px 20px' }}>
+      <AccordionDetails>
         <Grid container spacing={1}>
           {children}
         </Grid>

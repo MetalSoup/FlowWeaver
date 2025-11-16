@@ -25,8 +25,8 @@ export default function AuthenticatedLayout({ user, header, children }: PropsWit
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Dashboard
                                 </NavLink>
-                                <NavLink href={route('instances.index')} active={route().current('instances.index')}>
-                                    Instances
+                                <NavLink href={route('sites.index')} active={route().current('sites.index')}>
+                                    Sites
                                 </NavLink>
                             </div>
                         </div>

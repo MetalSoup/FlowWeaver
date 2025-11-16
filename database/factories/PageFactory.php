@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Instance;
+use App\Models\Site;
 use App\Models\Page;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,7 +21,7 @@ class PageFactory extends Factory
             // content must be valid JSON for the JSON column
             'content' => json_encode(['ROOT' => ['type' => 'CraftContainer', 'props' => []]]),
 
-            'instance_id' => Instance::factory(),
+            'site_id' => Site::factory(),
             'user_id' => User::factory(),
         ];
     }

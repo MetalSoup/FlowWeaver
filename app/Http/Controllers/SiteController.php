@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Instance;
-use App\Http\Requests\StoreInstanceRequest;
-use App\Http\Requests\UpdateInstanceRequest;
-use App\Http\Resources\InstanceResource;
+use App\Models\Site;
+use App\Http\Requests\StoreSiteRequest;
+use App\Http\Requests\UpdateSiteRequest;
+use App\Http\Resources\SiteResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -13,7 +13,7 @@ use Inertia\Inertia;
 /**
  * @method mixed authorize(string $ability, array|mixed $arguments = [])
  */
-class InstanceController extends Controller
+class SiteController extends Controller
 {
 
     public function select()
@@ -36,43 +36,43 @@ class InstanceController extends Controller
             return redirect()->route('organizations.create');
         }
 
-        // If we have a selected organization (and the user belongs to it), show instances for that org.
+        // If we have a selected organization (and the user belongs to it), show sites for that org.
         if ($selectedOrgId && in_array($selectedOrgId, $userOrgIds, true)) {
-            $instances = Instance::where('organization_id', $selectedOrgId)->get();
+            $sites = Site::where('organization_id', $selectedOrgId)->get();
         } else {
-            // Show instances across all organizations the user belongs to
-            $instances = Instance::whereIn('organization_id', $userOrgIds)->get();
+            // Show sites across all organizations the user belongs to
+            $sites = Site::whereIn('organization_id', $userOrgIds)->get();
         }
 
-        // If there are no instances at all for the user's organizations, redirect to create.
-        if ($instances->isEmpty()) {
-            $hasAny = Instance::whereIn('organization_id', $userOrgIds)->exists();
+        // If there are no sites at all for the user's organizations, redirect to create.
+        if ($sites->isEmpty()) {
+            $hasAny = Site::whereIn('organization_id', $userOrgIds)->exists();
             if (!$hasAny) {
-                return redirect()->route('instances.create');
+                return redirect()->route('sites.create');
             }
-            // otherwise $instances is already an empty collection; continue and render select with empty list
+            // otherwise $sites is already an empty collection; continue and render select with empty list
         }
 
-        // Use InstanceResource for consistent formatting
-        $instances = InstanceResource::collection($instances);
+        // Use SiteResource for consistent formatting
+        $sites = SiteResource::collection($sites);
 
-        return inertia('Instances/InstanceIndex', [
-            'instances' => $instances,
+        return inertia('Sites/SiteIndex', [
+            'sites' => $sites,
         ]);
-        //return view('instances.select', compact('instances'));
+        //return view('sites.select', compact('sites'));
     }
 
     public function storeSelection(Request $request)
     {
-       // $instance = Instance::find($request);
+       // $site = Site::find($request);
 
         //dd($request);
-        $request->validate(['instance_id' => 'required|exists:instances,id']);
-        $instanceId = $request->instance_id;
+        $request->validate(['site_id' => 'required|exists:sites,id']);
+        $siteId = $request->site_id;
 
         // Persist selection into the user's `preferences` JSON column.
-        // We no longer use the legacy `selected_instance` session key or the
-        // `selected_instance_id` column on the users table.
+        // We no longer use the legacy `selected_site` session key or the
+        // `selected_site_id` column on the users table.
         if ($request->user()) {
             $user = $request->user();
 
@@ -82,7 +82,7 @@ class InstanceController extends Controller
                 $prefs = is_array($decoded) ? $decoded : [];
             }
 
-            $prefs['selected_instance_id'] = $instanceId;
+            $prefs['selected_site_id'] = $siteId;
             $user->preferences = $prefs;
             $user->save();
         }
@@ -95,7 +95,7 @@ class InstanceController extends Controller
      */
     public function index(Request $request)
     {
-        // Show instances belonging to organizations the user is a member of
+        // Show sites belonging to organizations the user is a member of
         $user = auth()->user();
         if (!$user) {
             abort(403);
@@ -104,7 +104,7 @@ class InstanceController extends Controller
         $orgIds = $user->organizations()->pluck('id')->toArray();
 
         // Build base query
-        $query = Instance::whereIn('organization_id', $orgIds);
+        $query = Site::whereIn('organization_id', $orgIds);
 
         // Optional search (q)
         $q = $request->input('q');
@@ -126,14 +126,14 @@ class InstanceController extends Controller
         }
 
         // Paginate results (default 15 per page) and preserve query string for appends
-        $instances = $query->paginate(15)->appends($request->only(['q', 'sort', 'direction']));
+        $sites = $query->paginate(15)->appends($request->only(['q', 'sort', 'direction']));
 
-        // Transform paginator items with InstanceResource (keeps paginator meta intact)
-        $raw = $instances->getCollection() ?? collect();
-        $instances->setCollection(collect(InstanceResource::collection($raw)->resolve()));
+        // Transform paginator items with SiteResource (keeps paginator meta intact)
+        $raw = $sites->getCollection() ?? collect();
+        $sites->setCollection(collect(SiteResource::collection($raw)->resolve()));
 
-        return Inertia::render('Instances/InstanceIndex', [
-            'instances' => $instances,
+        return Inertia::render('Sites/SiteIndex', [
+            'sites' => $sites,
         ]);
     }
 
@@ -149,11 +149,11 @@ class InstanceController extends Controller
         $organizations = $user->organizations()->get();
         //dd($organizations);
         if ($organizations->isEmpty()) {
-            abort(403, 'You must belong to an organization to create an instance.');
+            abort(403, 'You must belong to an organization to create an site.');
         }
 
-        return Inertia::render('Instances/InstanceEdit', [
-            'instance' => new Instance,
+        return Inertia::render('Sites/SiteEdit', [
+            'site' => new Site,
             'organizations' => $organizations,
         ]);
     }
@@ -161,7 +161,7 @@ class InstanceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreInstanceRequest $request)
+    public function store(StoreSiteRequest $request)
     {
 
         $user = auth()->user();
@@ -181,15 +181,15 @@ class InstanceController extends Controller
 
 
 
-        // validated and authorized by StoreInstanceRequest
+        // validated and authorized by StoreSiteRequest
         $data = $request->validated();
         // Ensure status has a value (DB migration requires it). Default to 'active'.
         $data['status'] = $request->input('status', $data['status'] ?? 'active');
         $data['organization_id'] = $selectedOrganizationId;
 
-        // enforce that the organization belongs to the user (StoreInstanceRequest already checks this)
-        $instance = Instance::create($data);
-        // Only auto-select the newly created instance if no instance is currently selected in preferences.
+        // enforce that the organization belongs to the user (StoreSiteRequest already checks this)
+        $site = Site::create($data);
+        // Only auto-select the newly created site if no site is currently selected in preferences.
         $currentSelected = null;
         if ($request->user()) {
             $user = $request->user();
@@ -198,7 +198,7 @@ class InstanceController extends Controller
                 $decoded = json_decode($prefs, true);
                 $prefs = is_array($decoded) ? $decoded : [];
             }
-            $currentSelected = $prefs['selected_instance_id'] ?? null;
+            $currentSelected = $prefs['selected_site_id'] ?? null;
         }
 
         if (!$currentSelected && $request->user()) {
@@ -208,61 +208,61 @@ class InstanceController extends Controller
                 $decoded = json_decode($prefs, true);
                 $prefs = is_array($decoded) ? $decoded : [];
             }
-            $prefs['selected_instance_id'] = $instance->id;
+            $prefs['selected_site_id'] = $site->id;
             $user->preferences = $prefs;
             $user->save();
         }
 
-        return redirect()->route('instances.edit', $instance->id);
+        return redirect()->route('sites.edit', $site->id);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Instance $instance)
+    public function show(Site $site)
     {
         // authorize view
-        $this->authorize('view', $instance);
+        $this->authorize('view', $site);
 
-        return Inertia::render('Instances/InstanceIndex', [
-            'instance' => $instance,
+        return Inertia::render('Sites/SiteIndex', [
+            'site' => $site,
         ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Instance $instance)
+    public function edit(Site $site)
     {
         // authorize
-        $this->authorize('update', $instance);
+        $this->authorize('update', $site);
 
-        return Inertia::render('Instances/InstanceEdit', [
-            'instance' => $instance,
+        return Inertia::render('Sites/SiteEdit', [
+            'site' => $site,
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateInstanceRequest $request, Instance $instance)
+    public function update(UpdateSiteRequest $request, Site $site)
     {
-        // The UpdateInstanceRequest will authorize that the user belongs to the instance's organization.
-        $instance->update($request->validated());
+        // The UpdateSiteRequest will authorize that the user belongs to the site's organization.
+        $site->update($request->validated());
 
-        return redirect()->route('instances.edit', $instance->id)->with('success', 'Instance updated.');
+        return redirect()->route('sites.edit', $site->id)->with('success', 'Site updated.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Instance $instance)
+    public function destroy(Site $site)
     {
         // authorize
-        $this->authorize('delete', $instance);
+        $this->authorize('delete', $site);
 
-        $instance->delete();
+        $site->delete();
 
-        return redirect()->route('instances.index')->with('success', 'Instance deleted.');
+        return redirect()->route('sites.index')->with('success', 'Site deleted.');
     }
 }

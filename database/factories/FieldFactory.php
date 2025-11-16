@@ -50,7 +50,7 @@ class FieldFactory extends Factory
         return [
             'name' => $uniqueName,
             'label' => ucfirst($this->faker->words($this->faker->numberBetween(1, 3), true)),
-            // don't set instance_id here so seeder can assign it explicitly
+            // don't set site_id here so seeder can assign it explicitly
             'type' => $type,
             'options' => $options,
             'description' => $this->faker->optional()->sentence(),

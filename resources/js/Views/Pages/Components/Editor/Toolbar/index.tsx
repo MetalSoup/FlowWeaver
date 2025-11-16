@@ -18,11 +18,11 @@ export const Toolbar = () => {
   });
 
   return (
-    <div className="py-1 h-full">
+    <div className="h-full">
       {active && related.toolbar && React.createElement(related.toolbar)}
       {!active && (
         <div
-          className="px-5 py-2 flex flex-col items-center h-full justify-center text-center"
+          className=""
           style={{
             color: 'rgba(0, 0, 0, 0.5607843137254902)',
             fontSize: '11px',

@@ -61,7 +61,7 @@ export default function Flow({ flowID }: { flowID: number | null }) {
         loadingRef.current = true;
         console.debug('Flow: fetching get_flow for', flowID);
 
-        // Fetch compiled flow via the JSON `get_flow` endpoint so multiple Flow instances
+        // Fetch compiled flow via the JSON `get_flow` endpoint so multiple Flow Instances
         // can load independently without stomping shared flash.
         (async () => {
             try {

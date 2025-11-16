@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Instance;
+use App\Models\Site;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -28,7 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         // migrated into `preferences` JSON
         'preferences',
-        // note: selected_instance_id and selected_organization_id were removed in favor of `preferences`
+        // note: selected_site_id and selected_organization_id were removed in favor of `preferences`
      ];
 
     /**
@@ -62,17 +62,17 @@ class User extends Authenticatable implements MustVerifyEmail
 
 
     /**
-     * Convenience helpers to fetch the related Instance/Organization models from `preferences`.
-     * Note: these return model instances (or null), not Eloquent relation objects.
+     * Convenience helpers to fetch the related Site/Organization models from `preferences`.
+     * Note: these return model sites (or null), not Eloquent relation objects.
      */
-    public function selectedInstance()
+    public function selectedSite()
     {
         $prefs = $this->preferences ?? null;
         if (is_string($prefs)) {
             $prefs = json_decode($prefs, true);
         }
-        $id = is_array($prefs) && array_key_exists('selected_instance_id', $prefs) ? $prefs['selected_instance_id'] : null;
-        return $id ? Instance::find($id) : null;
+        $id = is_array($prefs) && array_key_exists('selected_site_id', $prefs) ? $prefs['selected_site_id'] : null;
+        return $id ? Site::find($id) : null;
     }
 
     public function selectedOrganization()

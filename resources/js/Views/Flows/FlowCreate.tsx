@@ -15,14 +15,14 @@ import {useCallback, useState, useEffect} from "react";
 import FlowSideBar from "@/Views/Flows/FlowSideBar";
 
 
-function FlowEditor({ auth, selected_instance } : { auth: any, selected_instance?: number | null }) {
+function FlowEditor({ auth, selected_site } : { auth: any, selected_site?: number | null }) {
 
-    // If there's no selected instance, send the user to select one.
+    // If there's no selected site, send the user to select one.
     useEffect(() => {
-        if (!selected_instance) {
-            router.get(route('instances.select'));
+        if (!selected_site) {
+            router.get(route('sites.select'));
         }
-    }, [selected_instance]);
+    }, [selected_site]);
 
    // console.log(initialFlow);
 
@@ -87,31 +87,31 @@ function FlowEditor({ auth, selected_instance } : { auth: any, selected_instance
         },
         [screenToFlowPosition],
     );
-    const [rfInstance, setRfInstance] = useState<any | null>(null);
+    const [rfSite, setRfSite] = useState<any | null>(null);
     const onSave = useCallback(() => {
 
-        if (rfInstance) {
+        if (rfSite) {
             // @ts-ignore
-            const thisFlow = rfInstance.toObject();
+            const thisFlow = rfSite.toObject();
             let sequence = JSON.stringify(thisFlow);
 
-            // use FlowController update to save the sequence; attach selected instance
-            // If no instance is selected, redirect to selection instead of posting a null instance
-            if (!selected_instance) {
-                router.get(route('instances.select'));
+            // use FlowController update to save the sequence; attach selected site
+            // If no site is selected, redirect to selection instead of posting a null site
+            if (!selected_site) {
+                router.get(route('sites.select'));
                 return;
             }
 
-            router.post(route('flows.store'), {name: "new_flow", sequence: sequence, instance_id: selected_instance});
+            router.post(route('flows.store'), {name: "new_flow", sequence: sequence, site_id: selected_site});
 
 
 
         }
-    }, [rfInstance]);
+    }, [rfSite]);
 
-    // initialize react-flow instance into state (typed any to avoid TS mismatch with setState signature)
-    const handleInit = (instance: any) => {
-        setRfInstance(instance);
+    // initialize react-flow site into state (typed any to avoid TS mismatch with setState signature)
+    const handleInit = (site: any) => {
+        setRfSite(site);
     };
 
 
@@ -167,8 +167,8 @@ function FlowEditor({ auth, selected_instance } : { auth: any, selected_instance
 }
 
 
-export default ({ auth, selected_instance } : { auth: any, selected_instance?: number | null }) => (
+export default ({ auth, selected_site } : { auth: any, selected_site?: number | null }) => (
     <ReactFlowProvider>
-        <FlowEditor auth={auth} selected_instance={selected_instance} />
+        <FlowEditor auth={auth} selected_site={selected_site} />
     </ReactFlowProvider>
 )

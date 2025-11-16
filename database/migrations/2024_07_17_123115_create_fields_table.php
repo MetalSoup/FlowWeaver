@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('type');
             $table->string('status')->default('active');
-            $table->foreignId('instance_id')->constrained();
+            $table->foreignId('site_id')->constrained();
             $table->timestamps();
         });
     }

@@ -1,12 +1,12 @@
 // SpacingControl: UI for Top/Right/Bottom/Left numeric inputs with unit selector and link/unlink toggle.
 // value prop is a CSS spacing string like "8px" or "10px 0 10px 0"; onChange returns same format.
 import {useEffect, useState} from "react";
-import {LinkBreakIcon, LinkSimpleIcon} from "@phosphor-icons/react";
+import {CaretDownIcon, LinkBreakIcon, LinkSimpleIcon} from "@phosphor-icons/react";
 
-export function SpacingControl({ value = '', onChange }: { value?: string, onChange: (v: string)=>void }) {
+export function SpacingControl({value = '', onChange, title = ''}: { value?: string, onChange: (v: string) => void , title?: string }) {
     // parse value into parts and unit
     const parse = (val: string) => {
-        if (!val || typeof val !== 'string') return { parts: ['','','',''], unit: 'px' };
+        if (!val || typeof val !== 'string') return {parts: ['', '', '', ''], unit: 'px'};
         const toks = val.trim().split(/\s+/);
         // extract unit from first token
         const match = toks[0].match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
@@ -16,11 +16,11 @@ export function SpacingControl({ value = '', onChange }: { value?: string, onCha
             const m = t.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
             return m ? m[1] : '';
         });
-        if (nums.length === 1) return { parts: [nums[0], nums[0], nums[0], nums[0]], unit };
-        if (nums.length === 2) return { parts: [nums[0], nums[1], nums[0], nums[1]], unit };
-        if (nums.length === 3) return { parts: [nums[0], nums[1], nums[2], nums[1]], unit };
-        if (nums.length >= 4) return { parts: [nums[0], nums[1], nums[2], nums[3]], unit };
-        return { parts: ['','','',''], unit };
+        if (nums.length === 1) return {parts: [nums[0], nums[0], nums[0], nums[0]], unit};
+        if (nums.length === 2) return {parts: [nums[0], nums[1], nums[0], nums[1]], unit};
+        if (nums.length === 3) return {parts: [nums[0], nums[1], nums[2], nums[1]], unit};
+        if (nums.length >= 4) return {parts: [nums[0], nums[1], nums[2], nums[3]], unit};
+        return {parts: ['', '', '', ''], unit};
     };
 
     const [linked, setLinked] = useState(true);
@@ -53,34 +53,115 @@ export function SpacingControl({ value = '', onChange }: { value?: string, onCha
         }
     };
 
-    const onTop = (v: string) => { setTop(v); if (linked) { setRight(v); setBottom(v); setLeft(v); notify(v, v, v, v, unit); } else { notify(v, right, bottom, left, unit); } };
-    const onRight = (v: string) => { setRight(v); if (linked) { setTop(v); setBottom(v); setLeft(v); notify(v, v, v, v, unit);} else { notify(top, v, bottom, left, unit); } };
-    const onBottom = (v: string) => { setBottom(v); if (linked) { setTop(v); setRight(v); setLeft(v); notify(v, v, v, v, unit);} else { notify(top, right, v, left, unit); } };
-    const onLeft = (v: string) => { setLeft(v); if (linked) { setTop(v); setRight(v); setBottom(v); notify(v, v, v, v, unit);} else { notify(top, right, bottom, v, unit); } };
-    const onUnit = (u: string) => { setUnit(u); notify(top, right, bottom, left, u); };
-    const toggleLink = () => { const next = !linked; setLinked(next); if (next) { // apply top to all
-        setRight(top); setBottom(top); setLeft(top); notify(top, top, top, top, unit);
-    } };
+    const onTop = (v: string) => {
+        setTop(v);
+        if (linked) {
+            setRight(v);
+            setBottom(v);
+            setLeft(v);
+            notify(v, v, v, v, unit);
+        } else {
+            notify(v, right, bottom, left, unit);
+        }
+    };
+    const onRight = (v: string) => {
+        setRight(v);
+        if (linked) {
+            setTop(v);
+            setBottom(v);
+            setLeft(v);
+            notify(v, v, v, v, unit);
+        } else {
+            notify(top, v, bottom, left, unit);
+        }
+    };
+    const onBottom = (v: string) => {
+        setBottom(v);
+        if (linked) {
+            setTop(v);
+            setRight(v);
+            setLeft(v);
+            notify(v, v, v, v, unit);
+        } else {
+            notify(top, right, v, left, unit);
+        }
+    };
+    const onLeft = (v: string) => {
+        setLeft(v);
+        if (linked) {
+            setTop(v);
+            setRight(v);
+            setBottom(v);
+            notify(v, v, v, v, unit);
+        } else {
+            notify(top, right, bottom, v, unit);
+        }
+    };
+    const onUnit = (u: string) => {
+        setUnit(u);
+        notify(top, right, bottom, left, u);
+    };
+    const toggleLink = () => {
+        const next = !linked;
+        setLinked(next);
+        if (next) { // apply top to all
+            setRight(top);
+            setBottom(top);
+            setLeft(top);
+            notify(top, top, top, top, unit);
+        }
+    };
 
     return (
+        <div className={"flex flex-col space-y-2"}>
+            <div className={"flex flex-row justify-between"}>
+            {title}
+            <div className={"flex self-end flex-row items-center"}>
 
-        <div className="grid grid-cols-6 gap-2 items-center border border-red-600">
-            <div className="col-span-4 grid grid-cols-4 gap-2">
-                <input type="number" step="1" className="border rounded p-2 text-sm" value={top} onChange={(e)=>onTop(e.target.value)} placeholder="Top" />
-                <input type="number" step="1" className="border rounded p-2 text-sm" value={right} onChange={(e)=>onRight(e.target.value)} placeholder="Right" />
-                <input type="number" step="1" className="border rounded p-2 text-sm" value={bottom} onChange={(e)=>onBottom(e.target.value)} placeholder="Bottom" />
-                <input type="number" step="1" className="border rounded p-2 text-sm" value={left} onChange={(e)=>onLeft(e.target.value)} placeholder="Left" />
-            </div>
-            <div className="flex items-center space-x-2">
-                <button type="button" onClick={toggleLink} className={`p-2 border rounded ${linked ? 'bg-gray-100' : ''}`} title={linked ? 'Linked' : 'Unlinked'}>
-                    {linked ? <LinkSimpleIcon size={16} weight="bold" /> : <LinkBreakIcon size={16} weight="bold" />}
-                </button>
-                <select value={unit} onChange={(e)=>onUnit(e.target.value)} className="border rounded p-1 text-sm">
+                <select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm border-none bg-none">
                     <option value="px">px</option>
                     <option value="rem">rem</option>
                     <option value="em">em</option>
                     <option value="%">%</option>
                 </select>
+                <CaretDownIcon size={10} weight={"bold"} className={"-ml-3"}/>
+            </div>
+            </div>
+
+            <div className="flex items-start ">
+
+                <div className="grid grid-cols-4 ">
+                    <div className={"text-center"}>
+                        <input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={top}
+                               onChange={(e) => onTop(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Top</div>
+                    </div>
+                    <div className={"text-center"}>
+
+                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={right}
+                               onChange={(e) => onRight(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Right</div>
+                    </div>
+                    <div className={"text-center"}>
+                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={bottom}
+                               onChange={(e) => onBottom(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Bottom</div>
+                    </div>
+                    <div className={"text-center"}>
+                        <input type="number" step="1" className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={left}
+                               onChange={(e) => onLeft(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Left</div>
+                    </div>
+
+                </div>
+                <div>
+                    <button type="button" onClick={toggleLink}
+                            className={`p-[6px] border  ${linked ? 'bg-gray-100' : ''}`}
+                            title={linked ? 'Linked' : 'Unlinked'}>
+                        {linked ? <LinkSimpleIcon size={16} weight="bold"/> : <LinkBreakIcon size={16} weight="bold"/>}
+                    </button>
+                </div>
+
             </div>
         </div>
     );

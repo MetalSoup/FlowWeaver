@@ -14,13 +14,21 @@ class Page extends Model
     protected $fillable = [
         'name',
         'content',
-        'instance_id',
+        'site_id',
         'user_id',
+        'slug',
+        'options',
     ];
 
-    public function instance(): BelongsTo
+    protected $casts = [
+        'options' => 'array',
+    ];
+
+
+
+    public function site(): BelongsTo
     {
-        return $this->belongsTo(Instance::class);
+        return $this->belongsTo(Site::class);
     }
 
     public function user(): BelongsTo

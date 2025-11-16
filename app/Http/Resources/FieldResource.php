@@ -16,7 +16,7 @@ class FieldResource extends JsonResource
             'name' => $this->name,
             'type' => $this->type,
             'label' => $this->label,
-            'instance_id' => $this->instance_id,
+            'site_id' => $this->site_id,
             'options' => $this->options,
             'created_at' => (new Carbon($this->created_at))->format('Y-m-d H:i:s'),
             'updated_at' => (new Carbon($this->updated_at))->format('Y-m-d H:i:s'),

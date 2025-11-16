@@ -2,13 +2,13 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Instance;
+use App\Models\Site;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Instance */
-class InstanceResource extends JsonResource
+/** @mixin Site */
+class SiteResource extends JsonResource
 {
     public function toArray(Request $request): array
     {

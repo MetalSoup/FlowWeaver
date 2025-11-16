@@ -50,12 +50,12 @@ class RegisteredUserController extends Controller
 
         // Ensure any previously stored "intended" URL (from before registration/login)
         // is cleared so subsequent calls to redirect()->intended() do not send the
-        // newly-logged-in user to some protected URL like instances.create.
+        // newly-logged-in user to some protected URL like sites.create.
         session()->forget('url.intended');
         session()->forget('_previous');
 
         // Automatically create a personal organization for the new user, select it,
-        // and redirect to the instance creation page.
+        // and redirect to the site creation page.
         if (! $user->organizations()->exists()) {
             $orgName = $user->name . "'s Organization";
             $organization = Organization::create(['name' => $orgName]);
@@ -69,15 +69,15 @@ class RegisteredUserController extends Controller
                 $prefs = is_array($decoded) ? $decoded : [];
             }
             $prefs['selected_organization_id'] = $organization->id;
-            // clear any selected instance
-            if (array_key_exists('selected_instance_id', $prefs)) {
-                unset($prefs['selected_instance_id']);
+            // clear any selected site
+            if (array_key_exists('selected_site_id', $prefs)) {
+                unset($prefs['selected_site_id']);
             }
             $user->preferences = $prefs;
             $user->save();
 
-            // Now redirect the user to create an instance for their organization
-            return redirect()->route('instances.create');
+            // Now redirect the user to create a site for their organization
+            return redirect()->route('sites.create');
         }
 
         return redirect()->route('dashboard');

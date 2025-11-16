@@ -58,7 +58,7 @@ export const Viewport: React.FC<{
       <div
         className={cx(['flex h-full overflow-hidden flex-row w-full relative'])}
       >
-        <Toolbox />
+
         <div className="page-container flex flex-1 h-full flex-col">
 
           <div

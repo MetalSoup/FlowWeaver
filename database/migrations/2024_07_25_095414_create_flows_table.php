@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('flows', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('instance_id');
+            $table->foreignId('site_id');
             $table->json('sequence')->nullable();
             $table->softDeletes();
             $table->timestamps();

@@ -19,11 +19,11 @@ import {
 export default function DashboardSideMenu(props: {
     user: User | undefined,
     name: string,
-    selectedInstance?: { id: number; name: string } | null,
+    selectedSite?: { id: number; name: string } | null,
     onClick: () => void,
     showingNavigationDropdown: boolean
 }) {
-    const { user, name, selectedInstance } = props;
+    const { user, name, selectedSite } = props;
 
     const { props: pageProps } = usePage();
     const selectedOrganization = (pageProps as any).selected_organization;
@@ -230,7 +230,7 @@ export default function DashboardSideMenu(props: {
             </ul>
 
 
-            {/*{ href: route("instances.index"), label: "Instances", icon: (
+            {/*{ href: route("sites.index"), label: "Sites", icon: (
                 <Cube size={25}/>
             ) },*/}
 
@@ -251,7 +251,7 @@ export default function DashboardSideMenu(props: {
                                     {(!collapsed) && (
                                         <div className={`${textTertiary} text-xs mt-1`}>
                                             <div>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
-                                            <div>{selectedInstance ? (selectedInstance.name ?? '') : ''}</div>
+                                            <div>{selectedSite ? (selectedSite.name ?? '') : ''}</div>
                                         </div>
 
                                     )}
@@ -262,7 +262,7 @@ export default function DashboardSideMenu(props: {
                         </Dropdown.Trigger>
                         <Dropdown.Content>
                             <Dropdown.Link href={route("organizations.index")} className="px-2 py-1 text-gray-500 flex items-center gap-3"><span className={`flex-shrink-0 `}><BuildingOfficeIcon size={25} /></span><span>Organizations</span></Dropdown.Link>
-                            <Dropdown.Link href={route("instances.index")} className={"px-2 py-1 text-gray-500 flex items-center gap-3"}><span className={`flex-shrink-0 `}><CubeIcon size={25}/></span><span>Instances</span></Dropdown.Link>
+                            <Dropdown.Link href={route("sites.index")} className={"px-2 py-1 text-gray-500 flex items-center gap-3"}><span className={`flex-shrink-0 `}><CubeIcon size={25}/></span><span>Sites</span></Dropdown.Link>
 
                             <div className="border-t my-2" />
                             <Dropdown.Link href={route("profile.edit")} className={"flex items-center gap-3"}><IdentificationCardIcon size={25}/> Profile</Dropdown.Link>

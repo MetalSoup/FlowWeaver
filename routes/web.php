@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\FlowController;
-use App\Http\Controllers\InstanceController;
+use App\Http\Controllers\SiteController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubmissionController;
-use App\Http\Middleware\CheckInstanceSelectedMiddleware;
+use App\Http\Middleware\CheckSiteSelectedMiddleware;
 use App\Http\Middleware\SelectOrganizationMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -40,19 +40,19 @@ Route::any('/test_post', function(){
 Route::post('/submissions', [SubmissionController::class, 'store'])->name('submissions.store');
 Route::put('/submissions/{submission}', [SubmissionController::class, 'update'])->name('submissions.update');
 
-// ensure dashboard root requires both instance and organization selection
+// ensure dashboard root requires both site and organization selection
 Route::get('/dashboard', function () {
     // Calculate submission counts for the last 30 days, grouped by day and scoped to the
-    // selected instance/organization if available on the authenticated user. This provides
+    // selected site/organization if available on the authenticated user. This provides
     // data to the frontend dashboard for charts/stats.
     $user = auth()->user();
 
     // Prefer persisted preferences on the user; preferences is the single source of truth.
-    $selectedInstanceId = null;
+    $selectedSiteId = null;
     $selectedOrganizationId = null;
     if ($user) {
-        if (method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
-            $selectedInstanceId = $user->selectedInstance()->id;
+        if (method_exists($user, 'selectedSite') && $user->selectedSite()) {
+            $selectedSiteId = $user->selectedSite()->id;
         }
         if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
             $selectedOrganizationId = $user->selectedOrganization()->id;
@@ -61,10 +61,10 @@ Route::get('/dashboard', function () {
 
     $query = \App\Models\Submission::query();
 
-    // If the app associates submissions with instances or organizations, scope accordingly.
+    // If the app associates submissions with sites or organizations, scope accordingly.
     // We'll guard these checks so the dashboard still works if the relationship columns don't exist.
-    if ($selectedInstanceId && \Schema::hasColumn('submissions', 'instance_id')) {
-        $query->where('instance_id', $selectedInstanceId);
+    if ($selectedSiteId && \Schema::hasColumn('submissions', 'site_id')) {
+        $query->where('site_id', $selectedSiteId);
     }
     if ($selectedOrganizationId && \Schema::hasColumn('submissions', 'organization_id')) {
         $query->where('organization_id', $selectedOrganizationId);
@@ -91,7 +91,7 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard', [
         'submissionStats' => $days,
     ]);
-})->middleware(['auth', 'verified', CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard');
+})->middleware(['auth', 'verified', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard');
 
 //these routes should be in /dashboard/
 
@@ -99,10 +99,10 @@ Route::get('/flow/load/{flow}', [FlowController::class, 'load'])->name('flow.loa
 Route::get('/flow/{flow}/{startNode?}', [FlowController::class, 'show'])->name('flow.show');
 
 
-Route::middleware(['auth', CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class])->group(function () {
+Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->group(function () {
     Route::prefix('dashboard')->group(function () {
-        // Ensure models being accessed belong to the user's selected instance
-        Route::middleware([\App\Http\Middleware\EnsureModelBelongsToSelectedInstance::class])->group(function () {
+        // Ensure models being accessed belong to the user's selected site
+        Route::middleware([\App\Http\Middleware\EnsureModelBelongsToSelectedSite::class])->group(function () {
 
             // The dashboard resources remain inside the group that already applies both selection middlewares
             Route::resource('/pages', PageController::class);
@@ -119,16 +119,16 @@ Route::middleware(['auth', CheckInstanceSelectedMiddleware::class, SelectOrganiz
         Route::post('/preferences', [\App\Http\Controllers\PreferencesController::class, 'update'])->name('preferences.update');
 
         // Organizations select routes should be reachable without the selection middlewares
-        Route::get('/organizations/select', [OrganizationController::class, 'select'])->name('organizations.select')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
-        Route::get('/organizations/edit', [OrganizationController::class, 'edit'])->name('organizations.edit')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
-        Route::post('/organizations/select', [OrganizationController::class, 'storeSelection'])->name('organizations.storeSelection')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
-        Route::resource('/organizations', OrganizationController::class)->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::get('/organizations/select', [OrganizationController::class, 'select'])->name('organizations.select')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::get('/organizations/edit', [OrganizationController::class, 'edit'])->name('organizations.edit')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::post('/organizations/select', [OrganizationController::class, 'storeSelection'])->name('organizations.storeSelection')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::resource('/organizations', OrganizationController::class)->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
 
 
-        // Instance selection and management should be reachable without the selection middlewares
-        Route::get('/instances/select', [InstanceController::class, 'select'])->name('instances.select')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
-        Route::post('/instances/select', [InstanceController::class, 'storeSelection'])->name('instances.storeSelection')->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
-        Route::resource('/instances', InstanceController::class)->withoutMiddleware([CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        // Site selection and management should be reachable without the selection middlewares
+        Route::get('/sites/select', [SiteController::class, 'select'])->name('sites.select')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::post('/sites/select', [SiteController::class, 'storeSelection'])->name('sites.storeSelection')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+        Route::resource('/sites', SiteController::class)->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
 
 
 
@@ -150,11 +150,11 @@ route::get('get_flow/{flow}', [FlowController::class, 'getFlow'])->name('get_flo
 Route::get('/dashboard/stats', function () {
     $user = auth()->user();
 
-    $selectedInstanceId = null;
+    $selectedSiteId = null;
     $selectedOrganizationId = null;
     if ($user) {
-        if (method_exists($user, 'selectedInstance') && $user->selectedInstance()) {
-            $selectedInstanceId = $user->selectedInstance()->id;
+        if (method_exists($user, 'selectedSite') && $user->selectedSite()) {
+            $selectedSiteId = $user->selectedSite()->id;
         }
         if (method_exists($user, 'selectedOrganization') && $user->selectedOrganization()) {
             $selectedOrganizationId = $user->selectedOrganization()->id;
@@ -163,8 +163,8 @@ Route::get('/dashboard/stats', function () {
 
     $query = \App\Models\Submission::query();
 
-    if ($selectedInstanceId && \Schema::hasColumn('submissions', 'instance_id')) {
-        $query->where('instance_id', $selectedInstanceId);
+    if ($selectedSiteId && \Schema::hasColumn('submissions', 'site_id')) {
+        $query->where('site_id', $selectedSiteId);
     }
     if ($selectedOrganizationId && \Schema::hasColumn('submissions', 'organization_id')) {
         $query->where('organization_id', $selectedOrganizationId);
@@ -188,6 +188,10 @@ Route::get('/dashboard/stats', function () {
     }
 
     return response()->json(['submissionStats' => $days]);
-})->middleware(['auth', 'verified', CheckInstanceSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard.stats');
+})->middleware(['auth', 'verified', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard.stats');
 
 require __DIR__.'/auth.php';
+Route::get('/{slug}', [PageController::class, 'showPage'])->name('page.show');
+
+
+

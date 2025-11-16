@@ -9,8 +9,10 @@ class PageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['nullable'],
+            'name' => ['nullable', 'string'],
             'content' => ['nullable'],
+            'slug' => ['nullable', 'string'],
+            'options' => ['nullable', 'array'],
         ];
     }
 

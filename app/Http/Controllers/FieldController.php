@@ -19,10 +19,10 @@ class FieldController extends Controller
      */
     public function index(Request $request)
     {
-        // Resolve selected instance id from the authenticated user's preferences.
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        // Resolve selected site id from the authenticated user's preferences.
+        $selectedSite = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
 
         // Always include the application's default fields (read-only, displayed without edit links)
@@ -32,7 +32,7 @@ class FieldController extends Controller
                 'name' => $f['name'] ?? '',
                 'label' => $f['label'] ?? ($f['name'] ?? ''),
                 'type' => $f['type'] ?? '',
-                'instance_id' => null,
+                'site_id' => null,
                 'options' => null,
                 'created_at' => '',
                 'updated_at' => '',
@@ -40,15 +40,15 @@ class FieldController extends Controller
             ];
         })->toArray();
 
-        if (!$selectedInstanceId) {
-            // no instance selected - show only default fields (read-only)
+        if (!$selectedSiteId) {
+            // no site selected - show only default fields (read-only)
             return Inertia::render('Fields/FieldIndex', [
                 'fields' => $defaultFields,
             ]);
         }
 
-        // Base query scoped to selected instance
-        $query = Field::where('instance_id', $selectedInstanceId);
+        // Base query scoped to selected site
+        $query = Field::where('site_id', $selectedSiteId);
 
         // Optional search (q) - search by name or type
         $q = $request->input('q');
@@ -76,7 +76,7 @@ class FieldController extends Controller
         // Transform items with FieldResource while keeping paginator meta
         $raw = $fields->getCollection() ?? collect();
         // Add an `is_default` flag to DB fields (false) and merge default fields so the UI
-        // can render defaults (read-only) alongside instance fields.
+        // can render defaults (read-only) alongside site fields.
         $dbFields = collect(FieldResource::collection($raw)->resolve())->map(function ($row) {
             $row['is_default'] = false;
             return $row;
@@ -97,12 +97,12 @@ class FieldController extends Controller
      */
     public function create()
     {
-        $selectedInstanceId = null;
-        if (auth()->user() && method_exists(auth()->user(), 'selectedInstance') && auth()->user()->selectedInstance()) {
-            $selectedInstanceId = auth()->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if (auth()->user() && method_exists(auth()->user(), 'selectedSite') && auth()->user()->selectedSite()) {
+            $selectedSiteId = auth()->user()->selectedSite()->id;
         }
         return inertia('Fields/FieldCreate', [
-            'field' => new FieldResource(new Field(['instance_id' => $selectedInstanceId])),
+            'field' => new FieldResource(new Field(['site_id' => $selectedSiteId])),
         ]);
     }
 
@@ -112,14 +112,14 @@ class FieldController extends Controller
     public function store(StoreFieldRequest $request)
     {
         Log::info('store field');
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
 
         // validated data comes from the StoreFieldRequest
         $validated = $request->validated();
-        $validated['instance_id'] = $selectedInstanceId;
+        $validated['site_id'] = $selectedSiteId;
 
         Field::create($validated);
 
@@ -152,13 +152,13 @@ class FieldController extends Controller
     public function update(UpdateFieldRequest $request, Field $field)
     {
         //
-        $selectedInstanceId = null;
-        if ($request->user() && method_exists($request->user(), 'selectedInstance') && $request->user()->selectedInstance()) {
-            $selectedInstanceId = $request->user()->selectedInstance()->id;
+        $selectedSiteId = null;
+        if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
+            $selectedSiteId = $request->user()->selectedSite()->id;
         }
         $validated = $request->validated();
 
-        $validated['instance_id'] = $selectedInstanceId;
+        $validated['site_id'] = $selectedSiteId;
         if ($field) $field->update($validated);
         else $field = Field::create($validated);
         return Redirect::route('fields.edit', ['field' => $field->id])->with('success', 'Field updated successfully.');
