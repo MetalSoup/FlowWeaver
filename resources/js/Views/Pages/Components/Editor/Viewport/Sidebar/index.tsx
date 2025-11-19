@@ -1,6 +1,6 @@
 import { useEditor } from '@craftjs/core';
 import { Layers } from '@craftjs/layers';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { styled } from 'styled-components';
 import {GearIcon, PenIcon, PlusIcon, StackIcon} from '@phosphor-icons/react';
 import { Toolbox } from '../Toolbox'
@@ -21,10 +21,75 @@ export const SidebarDiv = styled.div<{ $enabled: boolean }>`
 
 export const Sidebar = () => {
   const [layersVisible, setLayerVisible] = useState(true);
-  const [toolbarVisible, setToolbarVisible] = useState(true);
-  const { enabled } = useEditor((state) => ({
+  const [toolbarVisible] = useState(true);
+  const { enabled, selectedIds, query } = useEditor((state) => ({
     enabled: state.options.enabled,
+    selectedIds: Array.from((state.events.selected as any) || []),
   }));
+
+  const activeTab = (selectedIds && selectedIds.length > 0) ? 1 : 0;
+  const forceActiveToken = activeTab === 1 ? selectedIds.join('|') : undefined;
+
+  const selectionHeader = useMemo(() => {
+    try {
+      if (!selectedIds || selectedIds.length === 0) return null;
+      if (selectedIds.length > 1) {
+        return (
+          <div className="px-3 py-2 border-b bg-gray-50 text-xs text-gray-700">
+            {selectedIds.length} components selected
+          </div>
+        );
+      }
+      const id: string = selectedIds[0];
+      let resolvedType: string | null = null;
+      let displayName: string | null = null;
+      try {
+        const node = query.node(id).get();
+        const typeRaw: any = node?.data?.type;
+        // prefer resolvedName if present (from Craft serialization)
+        if (typeRaw && typeof typeRaw === 'object' && 'resolvedName' in typeRaw) {
+          resolvedType = String((typeRaw as any).resolvedName);
+        }
+        // prefer custom.displayName if set by component
+        if (!displayName) {
+          const customName = node?.data?.custom?.displayName;
+          if (customName) displayName = String(customName);
+        }
+        // fallback to craft.displayName or React component displayName
+        if (!resolvedType && typeRaw && typeof typeRaw === 'function') {
+          const craftName = (typeRaw as any)?.craft?.displayName ?? (typeRaw as any)?.displayName;
+          if (craftName) resolvedType = String(craftName);
+        }
+        // as a last resort, if type is a plain string
+        if (!resolvedType && typeof typeRaw === 'string') {
+          resolvedType = typeRaw;
+        }
+        // final display name fallback
+        if (!displayName) displayName = resolvedType || (id === 'ROOT' ? 'Root' : 'Component');
+      } catch (e) {}
+
+      const typeLabel = (() => {
+        // only show type label when it's a short, clean string different from displayName
+        if (!resolvedType) return null;
+        if (displayName && resolvedType.toLowerCase() === displayName.toLowerCase()) return null;
+        const str = String(resolvedType).trim();
+        if (!str) return null;
+        // avoid function bodies or arrow function strings
+        if (/function\s|=>|\{/.test(str) || str.length > 60) return null;
+        return str;
+      })();
+
+      return (
+        <div className="px-3 py-2 border-b bg-gray-50 text-xs text-gray-700">
+          <span className="font-semibold">{displayName || 'Component'}</span>
+          {typeLabel ? <span className="ml-1">· {typeLabel}</span> : null}
+          <span className="ml-2 text-gray-500">id: {id}</span>
+        </div>
+      );
+    } catch (e) {
+      return null;
+    }
+  }, [selectedIds, query]);
 
   return (
     <SidebarDiv $enabled={enabled} className="sidebar h-screen transition bg-black w-2 text-black">
@@ -40,9 +105,8 @@ export const Sidebar = () => {
                     label: (<Tooltip content={"Customize"}><PenIcon size={16} className="inline mb-0.5 mr-1"/></Tooltip>),
                     content: (
                         <div className="flex flex-col h-full">
-
+                            {selectionHeader}
                             <Toolbar />
-
                         </div>
                     )
                 },
@@ -53,8 +117,8 @@ export const Sidebar = () => {
                     )
                 },
             ]}
-
-
+            activeTab={activeTab}
+            forceActiveToken={forceActiveToken}
         />
         <SidebarItem
             icon={StackIcon}

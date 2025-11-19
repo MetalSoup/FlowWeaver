@@ -33,10 +33,18 @@
 .component-selected {
     @apply relative;
 }
-.component-selected::after {
+
+.component-highlight::after {
     content: ' ';
     @apply border-primary border border-dashed w-full h-full absolute left-0 top-0 pointer-events-none block;
+
 }
+
+.component-selected::after {
+    content: ' ';
+    @apply border-primary border w-full h-full absolute left-0 top-0 pointer-events-none block;
+}
+
 
 .transition {
     transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -116,40 +124,48 @@ h2
     z-index: 4;
 }
 
-
-.component-selected > div >  .flow_top_menu li
+/* When moved into the hover portal, show and style the menu inline within the portal */
+.flow_top_menu_portal > .flow_top_menu,
+.flow_top_menu_portal .flow_top_menu
 {
-    background:white;
+    display:flex !important;
+    position: static !important;
+    z-index: 9999 !important;
+
+    align-items: center;
+    border-left: 1px solid white;
+    border-right: 1px solid white;
+    padding-left: 8px;
 }
 
+.flow_top_menu_portal .flow_top_menu li
+{
+    padding:0;
 
-.component-selected > div >  .flow_top_menu li button{
+}
+
+.flow_top_menu_portal .flow_top_menu li button{
     display: flex;
-    padding: 0 15px;
-    border: 1px solid var(--kd-green);
-    background:#96DE8322;
+    padding: 0 10px;
+    border-left: solid 1px white;
+
+
     align-items: center;
     justify-content: center;
-    min-width:15px;
+    min-width: 15px;
+    height: 28px;
+
+    font-size: 12px;
 }
 
-.component-selected > div > .flow_top_menu li button.active_step
+.flow_top_menu_portal .flow_top_menu li button.active_step
 {
-    background: var(--kd-green);
-    color:white;
+    background: #003687FF;
+    color: white;
 }
 
-
-
-
-
-
-
-
-
-
-
-
+/* ensure small spacing for the portal container */
+.flow_top_menu_portal{ display:flex; align-items:center; }
 
 .handle_icon svg {
     display: block;

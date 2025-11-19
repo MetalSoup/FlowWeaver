@@ -96,7 +96,7 @@ export const Flow  = ({
         if (!selId) return;
         if (loadingRef.current) return; // already fetching
 
-        console.log('Selected flow changed:', selectedFlow);
+        // selected flow changed (logging suppressed)
         loadingRef.current = true;
 
         // Fetch the compiled flow via the JSON endpoint `get_flow` so multiple
@@ -151,7 +151,7 @@ export const Flow  = ({
                     remote = deepFind(json.props);
                 }
                 if (remote) {
-                    console.debug('Flow selector: extracted compiled flow', remote);
+                    // extracted compiled flow (logging suppressed)
                     SetThisFlow(remote);
                 } else {
                     console.warn('Flow selector: could not find compiled flow in get_flow response', json);
@@ -167,7 +167,7 @@ export const Flow  = ({
 
 
   return (
-    <div
+    <div className={"relative"}
       ref={(dom) => {
         // attach craft connect+drag to the outer wrapper so node can be selected/dragged
         if (dom) connect(drag(dom));

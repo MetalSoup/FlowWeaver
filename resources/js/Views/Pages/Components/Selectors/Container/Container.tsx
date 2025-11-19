@@ -72,6 +72,11 @@ export const Container = (props: Partial<ContainerProps>) => {
     radius,
     children,
   } = props;
+
+  // Determine if the container has no meaningful children.
+  // React.Children.count returns 0 for null/undefined/false and for arrays containing only those.
+  const isEmpty = React.Children.count(children) === 0;
+
   return (
     <Resizer
       propKey={{ width: 'width', height: 'height' }}
@@ -89,9 +94,19 @@ export const Container = (props: Partial<ContainerProps>) => {
             : `0px 3px 100px ${shadow}px rgba(0, 0, 0, 0.13)`,
         borderRadius: `${radius}px`,
         flex: fillSpace === 'yes' ? 1 : 'unset',
+        // If empty, give a visual placeholder instead of removing the container
+        ...(isEmpty
+          ? { minHeight: '20px', border: '1px dashed #ccc' }
+          : {}),
       }}
     >
-      {children}
+      {children && React.Children.count(children) > 0 ? (
+        children
+      ) : (
+        <div className="w-full h-full border-2 border-dashed border-gray-300 rounded p-4 text-sm text-gray-500 flex items-center justify-center pointer-events-none select-none">
+          Empty container
+        </div>
+      )}
     </Resizer>
   );
 };
@@ -100,7 +115,7 @@ Container.craft = {
   displayName: 'Container',
   props: defaultProps,
   rules: {
-    canDrag: () => true,
+    canMoveIn: () => true,
   },
   related: {
     toolbar: ContainerSettings,

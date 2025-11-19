@@ -29,7 +29,7 @@ export default function SubmitStep(
             preserveState: true,
 
             onSuccess: (page: any) => {
-                console.log('Submission create success', page);
+                // submission create success (logging suppressed)
                 const submission_id = page?.props?.flash?.submission_id ?? null;
                 const flow = page?.props?.flash?.flow ?? null;
                 const nextStep = page?.props?.flash?.data?.nextStep ?? null;
@@ -114,7 +114,7 @@ export default function SubmitStep(
             }
 
             setSubmissionId(submission_id);
-            console.log("Submission saved successfully with ID:", submission_id);
+            // submission saved successfully (logging suppressed)
 
             // Choose next step: prefer server hint, fallback to client-computed nextKey
             const chosenNext = serverNext ?? nextKey ?? null;
@@ -183,7 +183,7 @@ export default function SubmitStep(
             };
 
             const sidParam = extractId(submissionId);
-            console.log(sidParam);
+            // sidParam computed (logging suppressed)
 
 
             router.put(route('submissions.update', sidParam), payload, postOptions);

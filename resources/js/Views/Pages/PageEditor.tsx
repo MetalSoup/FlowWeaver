@@ -32,7 +32,7 @@ export const debugEcho = async (payload: any) => {
             body: JSON.stringify(payload),
         });
         const json = await resp.json();
-        console.debug('debugEcho response ->', json);
+        // removed noisy debug log
         return json;
     } catch (e) {
         console.error('debugEcho failed', e);
@@ -75,7 +75,7 @@ export const sendFormViaFetch = async (url: string, payload: any, method: 'post'
     };
 
     const finalUrl = normalizeUrl(url);
-    console.debug('sendFormViaFetch: finalUrl ->', finalUrl);
+    // removed noisy debug log
 
     const resp = await fetch(finalUrl, {
         method: 'POST',
@@ -239,8 +239,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
     useEffect(() => {
         if (isEditing && !initialPageId) {
             console.warn('Editor: editing mode but no page id found on `page` prop. This usually means the server did not include `id` at top-level.');
-            console.debug('Editor: `page` prop shape ->', page);
-            console.debug('Editor: current form data.id ->', (data as any)?.id);
+            // removed debug logs about page prop shape to reduce console noise
         }
     }, [isEditing, initialPageId]);
 
@@ -251,6 +250,173 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
     const showToast = (msg: string) => {
         try { showAppToast(msg); } catch (e) { /* ignore */ }
     };
+
+    // Keep track of the last-applied page settings so we only update DOM when values change
+    const pageSettingsLastRef = useRef<string | null>(null);
+
+    // Inject header/footer CSS and JS from Page Settings (window.__PAGE_SETTINGS)
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+
+        const headerCssId = 'page-settings-header-css';
+        const footerCssId = 'page-settings-footer-css';
+        const headerJsId = 'page-settings-header-js';
+        const footerJsId = 'page-settings-footer-js';
+
+        const makeImportant = (raw: string, scopePrefix: string | null = null) => {
+            try {
+                // Normalize prefix (no trailing spaces) but keep a spaced variant for prefixing
+                const prefixRaw = scopePrefix ? String(scopePrefix).trim() : '';
+                const prefixWithSpace = prefixRaw ? `${prefixRaw} ` : '';
+                return raw.replace(/([^\{]+)\{([^}]+)}/g, (m, selector, body) => {
+                    // Normalize and optionally scope selectors
+                    const selectors = String(selector).split(',').map(s => s.trim()).filter(Boolean).map(s => {
+                        // don't scope at-rules
+                        if (s.startsWith('@')) return s;
+                        // replace `body` and `:root` with the scope so global rules target the preview
+                        if (prefixRaw) {
+                            if (/\bbody\b/.test(s)) return s.replace(/\bbody\b/g, prefixRaw);
+                            if (/\:root\b/.test(s)) return s.replace(/\:root\b/g, prefixRaw);
+                            // otherwise prefix selector (add space between prefix and original selector)
+                            return `${prefixWithSpace}${s}`;
+                        }
+                        return s;
+                    }).join(', ');
+
+                    const decls = body.split(';').map(d => d.trim()).filter(Boolean);
+                    const newDecls = decls.map(d => {
+                        if (!d.includes(':') || d.startsWith('/*') || /!important\s*$/.test(d)) return d + ';';
+                        return d + ' !important;';
+                    }).join(' ');
+                    return `${selectors}{${newDecls}}`;
+                });
+            } catch (e) {
+                return raw;
+            }
+        };
+
+        const applyStyle = (id: string, css?: string, toHead = true) => {
+            const existing = document.getElementById(id) as HTMLStyleElement | null;
+            if (!css) {
+                if (existing) try { existing.remove(); } catch (e) {}
+                return;
+            }
+            const processed = makeImportant(css);
+            if (existing) {
+                existing.textContent = processed;
+                return;
+            }
+            const el = document.createElement('style');
+            el.id = id;
+            el.textContent = processed;
+            try {
+                const previewContainer = document.querySelector('.preview-frame') as HTMLElement | null;
+                if (previewContainer) {
+                    // Append into preview wrapper so rules are next to preview markup and easier to scope/override
+                    previewContainer.appendChild(el);
+                } else if (toHead) {
+                    document.head.appendChild(el);
+                } else {
+                    document.body.appendChild(el);
+                }
+            } catch (e) {}
+        };
+
+        // NOTE: JS execution disabled in editor preview for safety. We still store the script text
+        // non-executed in a <script type="text/plain"> with a data attribute so it can be inspected
+        // or executed later in a controlled way if desired. Script insertion is debounced so it
+        // only occurs after the user stops typing for `scriptDebounceMs` ms.
+        const scriptDebounceRef = { current: null as number | null } as { current: number | null };
+        const scriptDebounceMs = 700;
+
+        const applyScript = (id: string, js?: string, toHead = true) => {
+            // Remove existing non-executable script element if present
+            const existing = document.getElementById(id) as HTMLElement | null;
+            if (!js) {
+                if (existing) try { existing.remove(); } catch (e) {}
+                return;
+            }
+
+            // Create a non-executable script tag that stores the user's JS in a data attribute.
+            // We prefix with a comment to avoid accidental execution if someone changes type.
+            const el = document.createElement('script');
+            el.id = id;
+            el.type = 'text/plain'; // non-executable by browser
+            try { el.setAttribute('data-js', js); } catch (e) {}
+            const display = `/* script disabled in preview */\n${js}`;
+            try { el.appendChild(document.createTextNode(display)); } catch (e) { el.textContent = display; }
+
+            try {
+                const previewContainer = document.querySelector('.preview-frame') as HTMLElement | null;
+                if (previewContainer) {
+                    previewContainer.appendChild(el);
+                    try { console.debug('[PageEditor] inserted non-executable script in preview', { id }); } catch (e) {}
+                } else if (toHead) {
+                    document.head.appendChild(el);
+                    try { console.debug('[PageEditor] inserted non-executable script in head', { id }); } catch (e) {}
+                } else {
+                    document.body.appendChild(el);
+                    try { console.debug('[PageEditor] inserted non-executable script in body', { id }); } catch (e) {}
+                }
+            } catch (e) {
+                // ignore insertion errors
+            }
+        };
+
+        // Helper to debounce script insertion. `headerJs` and `footerJs` will be scheduled
+        // to be (re)inserted after scriptDebounceMs milliseconds without further changes.
+        const scheduleScripts = (hJs?: string, fJs?: string) => {
+            try { if (scriptDebounceRef.current) window.clearTimeout(scriptDebounceRef.current); } catch (e) {}
+            scriptDebounceRef.current = window.setTimeout(() => {
+                try {
+                    applyScript(headerJsId, hJs, true);
+                    applyScript(footerJsId, fJs, false);
+                } catch (e) {
+                    // ignore
+                }
+            }, scriptDebounceMs) as unknown as number;
+        };
+
+        const applyForCurrentPage = () => {
+            try {
+                const pageKey = (page?.id ?? page?.data?.id ?? (data as any)?.id) ?? 'unsaved';
+                const globalSettings = (typeof window !== 'undefined' && (window as any).__PAGE_SETTINGS) ? (window as any).__PAGE_SETTINGS : {};
+                const pageSettings = globalSettings[pageKey] || {};
+                const serialized = JSON.stringify(pageSettings || {});
+                if (serialized === pageSettingsLastRef.current) return;
+                pageSettingsLastRef.current = serialized;
+
+                // Debug: show what settings the editor is about to apply
+                try { console.debug('[PageEditor] applyForCurrentPage', { pageKey, pageSettings }); } catch (e) {}
+
+                const headerCss = pageSettings.options?.header_css ?? pageSettings.header_css ?? undefined;
+                const footerCss = pageSettings.options?.footer_css ?? pageSettings.footer_css ?? undefined;
+                const headerJs = pageSettings.options?.header_js ?? pageSettings.header_js ?? undefined;
+                const footerJs = pageSettings.options?.footer_js ?? pageSettings.footer_js ?? undefined;
+
+                // Scope CSS to the editor preview so it doesn't affect editor chrome
+                applyStyle(headerCssId, headerCss ? makeImportant(headerCss, '.preview-frame') : undefined, true);
+                applyStyle(footerCssId, footerCss ? makeImportant(footerCss, '.preview-frame') : undefined, false);
+                // Do NOT execute user JS in preview for safety — insert non-executable scripts (debounced)
+                scheduleScripts(headerJs, footerJs);
+             } catch (e) {
+                 // ignore errors
+             }
+         };
+
+        // initial apply
+        applyForCurrentPage();
+
+        const interval = setInterval(applyForCurrentPage, 400);
+        try { window.addEventListener('page-settings-updated', applyForCurrentPage as EventListener); } catch (e) {}
+
+        return () => {
+            clearInterval(interval);
+            try { window.removeEventListener('page-settings-updated', applyForCurrentPage as EventListener); } catch (e) {}
+            try { document.getElementById(headerCssId)?.remove(); document.getElementById(footerCssId)?.remove(); document.getElementById(headerJsId)?.remove(); document.getElementById(footerJsId)?.remove(); } catch (e) {}
+            try { if (scriptDebounceRef.current) window.clearTimeout(scriptDebounceRef.current); } catch (e) {}
+        };
+    }, [page, (data as any)?.id]);
 
     // Helper to detect if stored content is serialized craft JSON
     const isSerialized = (() => {
@@ -337,7 +503,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
                 router.post(route('pages.store'), payload, {
                     onSuccess: (page) => {
-                        console.log('Successfully stored page id');
+                        // removed noisy console.log
                         try { delete (window as any).__PAGE_SETTINGS?.[settingsKey]; } catch(e){}
                         try {
                             const returned = (page as any)?.props?.page ?? (page as any)?.props?.page?.data ?? null;
@@ -368,7 +534,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
             } catch (e) {
                 // Fallback to the simpler payload if reading window fails
                 router.post(route('pages.store'), {name: page_name, content: newContent}, {
-                    onSuccess: () => { console.log('Successfully stored page id'); try { showToast('Saved'); } catch(e){} }
+                    onSuccess: () => { /* success (logging suppressed) */ try { showToast('Saved'); } catch(e){} }
                 });
             }
          } else {
@@ -394,11 +560,11 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                  if (data.custom_css) payload.options.custom_css = data.custom_css;
 
                 // Debug: show payload in console to help diagnose name issues
-                try { console.debug('PageEditor.save - update payload ->', payload); } catch (e) {}
+                // suppressed debug log for update payload
 
                 router.put(route('pages.update', page_id), payload, {
                     onSuccess: (page) => {
-                        console.log('Successfully stored page id');
+                        // removed noisy console.log
                         try { delete (window as any).__PAGE_SETTINGS?.[settingsKey]; } catch(e){}
                         try {
                             const returned = (page as any)?.props?.page ?? (page as any)?.props?.page?.data ?? null;
@@ -417,15 +583,14 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                  });
             } catch (e) {
                 router.put(route('pages.update', page_id), {name: page_name, content: newContent}, {
-                    onSuccess: () => { console.log('Successfully stored page id'); try { showToast('Saved'); } catch(e){} }
+                    onSuccess: () => { /* success (logging suppressed) */ try { showToast('Saved'); } catch(e){} }
                 });
             }
          }
 
 
 
-         console.log(page_id);
-         console.log(newContent);
+         // removed development console logs for page content
      }
 
     // Expose debug helpers on window so they are available from the console and not flagged as unused
@@ -508,15 +673,10 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
             // Debug info about the parsed payload to help trace load problems
             try {
                 // eslint-disable-next-line no-console
-                console.debug('EditorInitializer: parsed content shape', {
-                    isString: typeof pageContent === 'string',
-                    hasNodes: !!(parsed && (parsed as any).nodes),
-                    hasState: !!(parsed && (parsed as any).state),
-                    hasRoot: !!(parsed && ((parsed as any).root || (parsed as any).rootNode)),
-                });
-            } catch (e) {
-                // ignore logging failures
-            }
+                // suppressed parsed content debug log to reduce console noise
+         } catch (e) {
+             // ignore logging failures
+         }
 
             // actions.deserialize may not be mounted immediately; retry until available (up to ~5s)
             let attempts = 0;
@@ -530,23 +690,23 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         // Normalize various shapes (state wrapper, nodes map, node-map) into the shape craft expects
                         const toDeserialize = normalizeSerialized(parsed);
                         // eslint-disable-next-line no-console
-                        console.debug('EditorInitializer: calling actions.deserialize with normalized shape', { toDeserialize });
-                        deserializer(toDeserialize);
+                        // suppressed deserialize debug logs
+                         deserializer(toDeserialize);
 
                         // eslint-disable-next-line no-console
-                        console.debug('EditorInitializer: deserialize completed');
+                        // suppressed deserialize debug logs
 
-                        // Keep the Inertia form in sync with loaded content (stringify if object)
-                        try {
-                            setData('content', typeof pageContent === 'string' ? pageContent : JSON.stringify(parsed));
-                        } catch (e) {
-                            // ignore setData failures — better to still let the editor load
-                        }
-                    } catch (e) {
-                        // swallow deserialize errors but log for debugging
-                        // eslint-disable-next-line no-console
-                        console.error('EditorInitializer.deserialize failed', e);
-                    }
+                         // Keep the Inertia form in sync with loaded content (stringify if object)
+                         try {
+                             setData('content', typeof pageContent === 'string' ? pageContent : JSON.stringify(parsed));
+                         } catch (e) {
+                             // ignore setData failures — better to still let the editor load
+                         }
+                     } catch (e) {
+                         // swallow deserialize errors but log for debugging
+                         // eslint-disable-next-line no-console
+                         console.error('EditorInitializer.deserialize failed', e);
+                     }
                     clearInterval(timer);
                 } else if (attempts >= maxAttempts) {
                     clearInterval(timer);
@@ -558,6 +718,44 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
         return null;
     };
+
+    // SelectedLogger: logs selection changes whenever selected nodes change
+    const SelectedLogger: React.FC = () => {
+        const { selected, query } = useEditor((state, query) => ({
+            selected: state.events.selected
+        }));
+        React.useEffect(() => {
+            try {
+                const selectedIds: string[] = Array.isArray(selected) ? selected : Array.from((selected as Set<string>) || []);
+                if (!selectedIds || selectedIds.length === 0) {
+                    // selection cleared (logging suppressed)
+                     return;
+                 }
+                 const info = selectedIds.map(id => {
+                     try {
+                         const node = query.node(id).get();
+                         const typeRaw: any = node?.data?.type;
+                         let typeName: string | null = null;
+                         if (typeRaw && typeof typeRaw === 'object' && 'resolvedName' in typeRaw) typeName = String((typeRaw as any).resolvedName);
+                         if (!typeName && node?.data?.custom?.displayName) typeName = String(node.data.custom.displayName);
+                         if (!typeName && typeof typeRaw === 'function') {
+                             const craftName = (typeRaw as any)?.craft?.displayName ?? (typeRaw as any)?.displayName;
+                             if (craftName) typeName = String(craftName);
+                         }
+                         if (!typeName && typeof typeRaw === 'string') typeName = typeRaw;
+                         const displayName = node?.data?.custom?.displayName || typeName || id;
+                         return { id, displayName, type: typeName };
+                     } catch (e) {
+                         return { id };
+                     }
+                 });
+                // selected components logging suppressed
+             } catch (e) {
+                 // ignore logging errors
+             }
+         }, [selected, query]);
+         return null;
+     };
 
     // Build a simple header with Save/Cancel
     const header = (
@@ -656,13 +854,24 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                         <DesktopIcon className="w-5 h-5" />
                     </button>
                 </div>
-                 <button onClick={save} disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
-                     {processing ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Page'}
-                 </button>
-                 <a href={route('pages.index')} className="text-sm text-gray-600">Cancel</a>
-             </div>
-         </div>
-     );
+                 {(() => {
+                     // determine page key for global validation status
+                     let pageKey: any = getPageId() ?? 'unsaved';
+                     let globalStatus: any = (typeof window !== 'undefined' && (window as any).__PAGE_SETTINGS_VALID) ? (window as any).__PAGE_SETTINGS_VALID[pageKey] : null;
+                     const slugChecking = globalStatus ? !!globalStatus.slugChecking : false;
+                     const slugValid = globalStatus ? !!globalStatus.slugValid : true; // assume true when no status
+                     const disableSave = processing || slugChecking || !slugValid;
+
+                     return (
+                         <button onClick={save} disabled={disableSave} className={`bg-blue-600 text-white px-4 py-2 rounded ${disableSave ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                             {processing ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Page'}
+                         </button>
+                     );
+                 })()}
+                  <a href={route('pages.index')} className="text-sm text-gray-600">Cancel</a>
+              </div>
+          </div>
+      );
 
     // Resolver for craft components
     const resolver = {
@@ -712,7 +921,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                  <CraftEditor resolver={resolver} onRender={RenderNode}>
                      {/* initializer must be rendered inside the editor so useEditor works */}
                      <EditorInitializer pageContent={page?.content} />
-
+                     <SelectedLogger />
                      <Viewport viewportSize={viewportSize}>
                          {initialChildren}
                      </Viewport>

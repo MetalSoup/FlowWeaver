@@ -31,6 +31,7 @@ import FormNode from "@/Views/Flows/Nodes/FormNode";
 import EntryNode from "@/Views/Flows/Nodes/EntryNode";
 import {LegendPanel} from "@/Views/Flows/EditorComponents/LegendPanel";
 import PrimaryButton from "@/Components/PrimaryButton";
+import ConsoleLogNode from "@/Views/Flows/Nodes/ConsoleLogNode";
 
 
 const nodeTypes = {
@@ -41,7 +42,8 @@ const nodeTypes = {
     GetVariable: GetVariableNode,
     RawHtml: RawHtmlNode,
     Form: FormNode,
-    Entry: EntryNode
+    Entry: EntryNode,
+    ConsoleLog: ConsoleLogNode
 
 
 };
@@ -381,7 +383,7 @@ function FlowEditor({auth, flow, selected_site}: { auth: any, flow: any, selecte
             return connection.sourceHandle?.toLowerCase().includes('next') || false;
         } else if (connection.targetHandle?.includes('override')) {
             // must come from a 'value' source
-            if (!connection.sourceHandle?.includes('value')) return false;
+            if (!connection.sourceHandle?.includes('value') && !connection.sourceHandle?.includes('-mapping') && !connection.sourceHandle?.includes('response')) return false;
             // parse types from source/target handles using the ::delimiter
             const src = parseHandle(connection.sourceHandle);
             const tgt = parseHandle(connection.targetHandle);

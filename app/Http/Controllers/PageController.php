@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PageController extends Controller
 {
@@ -130,6 +132,11 @@ class PageController extends Controller
 
         // Ensure a valid non-empty name is present — generate a unique default if not
         $this->ensurePageName($data, $selectedSiteId);
+
+        // Validate slug server-side (format/reserved/unique) when provided
+        if (!empty($data['slug'])) {
+            $this->validateSlugForSite($data['slug'], $selectedSiteId);
+        }
 
         Log::info($data);
 
@@ -342,8 +349,12 @@ class PageController extends Controller
         }
 
 
-
         $data = $request->validated();
+
+        // Validate slug server-side (format/reserved/unique) when provided
+        if (array_key_exists('slug', $data) && !empty($data['slug'])) {
+            $this->validateSlugForSite($data['slug'], $selectedSiteId, $page->id);
+        }
 
         // Defensive: move any top-level custom_css into options so we don't attempt to write a non-existent column
         if (array_key_exists('custom_css', $data)) {
@@ -471,5 +482,45 @@ class PageController extends Controller
         } while (Page::where('site_id', $selectedSiteId)->where('name', $name)->exists());
 
         $data['name'] = $name;
+    }
+
+    /**
+     * Validate a candidate slug for format, reserved conflicts, and uniqueness within a site.
+     * Throws a ValidationException on failure.
+     */
+    protected function validateSlugForSite(string $slug, $siteId = null, $excludePageId = null)
+    {
+        // normalize similar to client and ValidateSlugRequest
+        $candidate = strtolower(trim($slug));
+        $candidate = preg_replace('/\s+/', '-', $candidate);
+        $candidate = preg_replace('/[^a-z0-9\-_]+/', '-', $candidate);
+        $candidate = preg_replace('/-+/', '-', $candidate);
+        $candidate = preg_replace('/_+/', '_', $candidate);
+        $candidate = preg_replace('/(^[-_]+|[-_]+$)/', '', $candidate);
+
+        // format check: allow lowercase letters, numbers, hyphens and underscores
+        if (!preg_match('/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/', $candidate)) {
+            throw ValidationException::withMessages(['slug' => 'Slug may only contain lowercase letters, numbers, hyphens and underscores, and cannot start or end with a separator.']);
+        }
+
+        // reserved list (kept conservative)
+        $reserved = config('slugs.reserved', []);
+
+        if (in_array($candidate, $reserved, true)) {
+            throw ValidationException::withMessages(['slug' => 'This slug is reserved and cannot be used.']);
+        }
+
+        // uniqueness within site (fallback to global when no site provided)
+        $query = Page::query();
+        if ($siteId) $query->where('site_id', $siteId);
+        $query->where('slug', $candidate);
+        if ($excludePageId) $query->where('id', '!=', $excludePageId);
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages(['slug' => 'This slug is already used for this site.']);
+        }
+
+        // all good
+        return true;
     }
 }

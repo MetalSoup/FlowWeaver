@@ -10,7 +10,7 @@ interface TabPanelProps {
 }
 
 function CustomTabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
+    const {children, value, index, ...other} = props;
 
     return (
         <div
@@ -32,25 +32,30 @@ function a11yProps(index: number) {
     };
 }
 
-export default function TabSection({tabs}: {tabs: {label: React.ReactNode, content: React.ReactNode}[]}) {
-    const [value, setValue] = React.useState(0);
+export default function TabSection({tabs, activeTab=0, forceActiveToken}: { tabs: { label: React.ReactNode, content: React.ReactNode }[], activeTab?: number, forceActiveToken?: any }) {
+    const [value, setValue] = React.useState(activeTab);
+
+    React.useEffect(() => {
+        // Sync internal value with prop when it changes, or when a force token indicates we should re-apply
+        if (typeof activeTab === 'number') {
+            if (value !== activeTab || (forceActiveToken != null && activeTab === 1)) {
+                setValue(activeTab);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, forceActiveToken]);
 
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         setValue(newValue);
     };
 
     return (
-        <Box sx={{ width: '100%' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{width: '100%'}}>
+            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs">
-                {tabs.map((tab, index) => (
-                    <Tab label={tab.label} key={index} {...a11yProps(index)} />
-                ))}
-                {/*<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-                    <Tab label="Item One" {...a11yProps(0)} />
-                    <Tab label="Item Two" {...a11yProps(1)} />
-                    <Tab label="Item Three" {...a11yProps(2)} />
-                </Tabs>*/}
+                    {tabs.map((tab, index) => (
+                        <Tab label={tab.label} key={index} {...a11yProps(index)} />
+                    ))}
                 </Tabs>
             </Box>
             {tabs.map((tab, index) => (
@@ -58,15 +63,7 @@ export default function TabSection({tabs}: {tabs: {label: React.ReactNode, conte
                     {tab.content}
                 </CustomTabPanel>
             ))}
-{/*            <CustomTabPanel value={value} index={0}>
-                Item One
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={1}>
-                Item Two
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={2}>
-                Item Three
-            </CustomTabPanel>*/}
+
         </Box>
     );
 }

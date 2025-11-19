@@ -7,6 +7,14 @@ Seeders:
 
 ## todo:
 
+### Critical High Priority:
+- Add the option make radio buttons toggle switches when it makes sense (e.g., for boolean fields).
+- Add the ability to change submit buttons settings (e.g., text, style).
+- Add the ability to change field labels and input styles.
+- Make sure validation works correctly for all field types.
+- Make sure label alignment works for all field types.
+- 
+
 ### Node Improvements:
 - ~~GetVariable  should have a list of fields or the option to create a field.~~
 - ~~SetVariable should have the option to choose an existing field to update or a custom variable name (from GetVariable).~~

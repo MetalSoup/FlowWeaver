@@ -7,6 +7,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubmissionController;
+use App\Http\Controllers\Api\SlugValidationController;
 use App\Http\Middleware\CheckSiteSelectedMiddleware;
 use App\Http\Middleware\SelectOrganizationMiddleware;
 use Illuminate\Foundation\Application;
@@ -109,6 +110,9 @@ Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizatio
             Route::resource('/flows', FlowController::class);
             Route::resource('/fields', FieldController::class);
 
+            // Actions logs viewer
+            Route::get('/actions', [\App\Http\Controllers\Dashboard\ActionController::class, 'index'])->name('dashboard.actions.index');
+            Route::get('/actions/{action}', [\App\Http\Controllers\Dashboard\ActionController::class, 'show'])->name('dashboard.actions.show');
         });
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -185,13 +189,16 @@ Route::get('/dashboard/stats', function () {
     for ($i = 29; $i >= 0; $i--) {
         $d = now()->subDays($i)->toDateString();
         $days[$d] = $stats[$d] ?? 0;
+
     }
 
     return response()->json(['submissionStats' => $days]);
 })->middleware(['auth', 'verified', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard.stats');
 
+// Simple AJAX API for validating page slugs (used by the editor)
+Route::post('/api/slug/validate', [SlugValidationController::class, 'validateSlug'])->middleware(['auth'])->name('api.slug.validate');
+
 require __DIR__.'/auth.php';
+
 Route::get('/{slug}', [PageController::class, 'showPage'])->name('page.show');
-
-
 

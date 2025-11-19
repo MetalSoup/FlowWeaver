@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { usePage } from '@inertiajs/react';
+import React, { useEffect, useState, useRef } from 'react';
+import { usePage, router } from '@inertiajs/react';
+import slugify from '../../../../../utils/slugify';
+import debounce from 'debounce';
 
 export default function PageSettings() {
   // Load current page props from Inertia page (when editing)
-  const { props }: any = usePage();
+  const pageContext: any = usePage();
+  const props: any = pageContext.props;
+  const inertiaComponent: string = pageContext.component;
   // Normalize various Inertia shapes: server may send `page` as the model, or as { data: {...} }, or as a Resource wrapper.
   const rawPage = props?.page ?? null;
   const page = rawPage?.data ?? rawPage ?? rawPage?.resource ?? null;
@@ -21,6 +25,8 @@ export default function PageSettings() {
 
   const [name, setName] = useState<string>(initialName);
   const [slug, setSlug] = useState<string>(initialSlug);
+  const slugInputRef = useRef<HTMLInputElement | null>(null);
+  const isComposingRef = useRef<boolean>(false);
   const [title, setTitle] = useState<string>(initialTitle);
   const [keywords, setKeywords] = useState<string>(initialKeywords);
   const [meta, setMeta] = useState<string>(initialMeta);
@@ -30,33 +36,130 @@ export default function PageSettings() {
   const [footerCss, setFooterCss] = useState<string>(initialFooterCSS);
   // Track which fields the user has modified so we only send those (prevents accidental overwrites)
   const [modified, setModified] = useState<Record<string, boolean>>({});
+  const prevPageRef = useRef<any>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugChecking, setSlugChecking] = useState<boolean>(false);
+  const [slugValid, setSlugValid] = useState<boolean>(!!initialSlug);
 
   // Keep local state in sync when page prop changes
   useEffect(() => {
-    setName(initialName);
-    setSlug(initialSlug);
-    setTitle(initialTitle);
-    setKeywords(initialKeywords);
-    setMeta(initialMeta);
-    setHeaderJs(initialHeaderJS);
-    setFooterJs(initialFooterJS);
-    setHeaderCss(initialHeaderCSS);
-    setFooterCss(initialFooterCSS);
-    // reset modified flags when the page prop changes (e.g. after a successful save)
-    setModified({});
+    // Only overwrite fields that the user hasn't modified locally. This prevents the
+    // slug from being reset by an Inertia validation response while the user is typing.
+    if (!modified['name']) setName(initialName);
+    if (!modified['slug']) setSlug(initialSlug);
+    if (!modified['title']) setTitle(initialTitle);
+    if (!modified['keywords']) setKeywords(initialKeywords);
+    if (!modified['meta']) setMeta(initialMeta);
+    if (!modified['header_js']) setHeaderJs(initialHeaderJS);
+    if (!modified['footer_js']) setFooterJs(initialFooterJS);
+    if (!modified['header_css']) setHeaderCss(initialHeaderCSS);
+    if (!modified['footer_css']) setFooterCss(initialFooterCSS);
+
+    // Detect whether the incoming page props actually changed compared to the last
+    // known props (so we only clear modified flags on a real save/refresh).
+    const prev = prevPageRef.current;
+    const curr = props?.page ?? null;
+    let propsChanged = false;
+    try {
+      propsChanged = JSON.stringify(prev) !== JSON.stringify(curr);
+    } catch (e) {
+      propsChanged = prev !== curr;
+    }
+
+    if (propsChanged) {
+      // Clear modified only when props differ (indicates a server-side save/refresh)
+      setModified({});
+    }
+
+    // update prev ref for next comparison
+    prevPageRef.current = curr;
+
+    setSlugError(null);
+    setSlugValid(!!initialSlug);
+    setSlugChecking(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props?.page]);
+
+  // Debounced server validation
+  const validateSlugServer = debounce((candidate: string) => {
+    if (!candidate) {
+      setSlugError('Slug cannot be empty');
+      setSlugValid(false);
+      setSlugChecking(false);
+      return;
+    }
+    // quick client-side format check (match backend regex)
+    if (!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(candidate)) {
+      setSlugError('Only lowercase letters, numbers, hyphens and underscores are allowed (no leading/trailing separator).');
+      setSlugValid(false);
+      setSlugChecking(false);
+      return;
+    }
+
+    // call server via Inertia to take advantage of Inertia validation handling
+    const body: any = { slug: candidate, _component: inertiaComponent, _pageProps: props };
+    if (props?.site?.id) body.site_id = props.site.id;
+    if (page?.id ?? page?.data?.id) body.page_id = (page?.id ?? page?.data?.id);
+
+    router.post('/api/slug/validate', body, {
+      preserveState: true,
+      preserveScroll: true,
+      onSuccess: (res: any) => {
+        // When server returns 200 with {valid:true}
+        if (res && res.props === undefined) {
+          // direct JSON response (non-Inertia) will come through as the response body; Inertia returns props for 200-page renders
+          try {
+            // Inertia may not populate res.body; assume valid if no error thrown
+            setSlugError(null);
+            setSlugValid(true);
+          } catch (e) {
+            setSlugError('Slug validation failed');
+            setSlugValid(false);
+          }
+        } else {
+          // fallback
+          setSlugError(null);
+          setSlugValid(true);
+        }
+        setSlugChecking(false);
+      },
+      onError: (errors: any) => {
+        // Laravel returns validation errors keyed by field
+        const message = errors?.slug ?? (Array.isArray(errors?.message) ? errors.message.join(', ') : errors?.message) ?? 'Slug validation failed';
+        setSlugError(message);
+        setSlugValid(false);
+        setSlugChecking(false);
+      }
+    });
+  }, 400);
+
+  // when slug changes, sanitize and kick off validation
+  useEffect(() => {
+    // Compute the normalized candidate for validation, but do NOT overwrite the
+    // user's current input (they may be typing leading/trailing separators). Use
+    // `slugify` to produce the canonical value for validation only.
+    const candidate = slugify(slug);
+    setSlugChecking(true);
+    setSlugValid(false);
+    setSlugError(null);
+    validateSlugServer(candidate);
+    // cleanup on unmount
+    return () => { validateSlugServer.clear(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   // Whenever settings change, write them to a global so the main Save button can pick them up
   useEffect(() => {
     try {
       (window as any).__PAGE_SETTINGS = (window as any).__PAGE_SETTINGS || {};
+      (window as any).__PAGE_SETTINGS_VALID = (window as any).__PAGE_SETTINGS_VALID || {};
       const key = page?.id ?? page?.data?.id ?? 'unsaved';
       const entry: any = {};
 
       // top-level fields
       if (modified['name']) entry.name = name;
-      if (modified['slug']) entry.slug = slug;
+      // only write slug when validated
+      if (modified['slug'] && slugValid) entry.slug = slug;
 
       // options: include only modified option fields
       const opts: Record<string, any> = {};
@@ -74,13 +177,28 @@ export default function PageSettings() {
       if (Object.keys(entry).length) {
         (window as any).__PAGE_SETTINGS[key] = { ...(window as any).__PAGE_SETTINGS[key] || {}, ...entry };
       }
-    } catch (e) {
-      // ignore failures writing to window
-    }
-  }, [name, slug, title, keywords, meta, headerJs, footerJs, headerCss, footerCss, page, modified]);
+
+      // write a lightweight validation status so the global editor can disable save when necessary
+      (window as any).__PAGE_SETTINGS_VALID[key] = {
+        slugValid: slugValid,
+        slugChecking: slugChecking,
+      };
+      try { console.debug('[PageSettings] wrote', { key, entry, pageSettings: (window as any).__PAGE_SETTINGS[key] }); } catch(e){}
+       // Dispatch a global event so the editor (or any listener) can react immediately
+       try {
+         if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+           window.dispatchEvent(new CustomEvent('page-settings-updated', { detail: { pageKey: key } }));
+         }
+       } catch (e) {
+         // ignore
+       }
+     } catch (e) {
+       // ignore failures writing to window
+     }
+   }, [name, slug, title, keywords, meta, headerJs, footerJs, headerCss, footerCss, page, modified, slugValid]);
 
 
-  return (
+   return (
     <div className="p-3 space-y-3">
       <h3 className="font-semibold">Page Settings</h3>
 
@@ -91,7 +209,112 @@ export default function PageSettings() {
 
       <div>
         <label className="block text-sm text-gray-600">Slug</label>
-        <input className="w-full border rounded px-2 py-1" value={slug} onChange={e => { setSlug(e.target.value); setModified(m => ({ ...m, slug: true })); }} />
+        <input
+          ref={slugInputRef}
+          className={`w-full border rounded px-2 py-1 ${slugError ? 'border-red-500' : ''}`}
+          value={slug}
+          onChange={e => {
+            const raw = (e.target as HTMLInputElement).value;
+            // If we're in composition (IME), don't sanitize yet — preserve intermediate input
+            if (isComposingRef.current) {
+              setSlug(raw);
+              setModified(m => ({ ...m, slug: true }));
+              return;
+            }
+            // Replace any whitespace with a single hyphen immediately and lowercase.
+            const selStart = (e.target as HTMLInputElement).selectionStart ?? raw.length;
+            const left = raw.slice(0, selStart);
+            const sanitizedLeft = left.replace(/\s+/g, '-').toLowerCase();
+            const sanitized = raw.replace(/\s+/g, '-').toLowerCase();
+            setSlug(sanitized);
+            setModified(m => ({ ...m, slug: true }));
+            // restore caret to the mapped position on next tick
+            setTimeout(() => {
+              try {
+                if (slugInputRef.current) {
+                  const newPos = Math.min(sanitizedLeft.length, sanitized.length);
+                  slugInputRef.current.setSelectionRange(newPos, newPos);
+                }
+              } catch (err) {
+                // ignore
+              }
+            }, 0);
+          }}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={(e) => {
+            isComposingRef.current = false;
+            // After composition ends, sanitize the final composed value
+            const input = e.target as HTMLInputElement;
+            const raw = input.value;
+            const selStart = input.selectionStart ?? raw.length;
+            const left = raw.slice(0, selStart);
+            const sanitizedLeft = left.replace(/\s+/g, '-').toLowerCase();
+            const sanitized = raw.replace(/\s+/g, '-').toLowerCase();
+            setSlug(sanitized);
+            setModified(m => ({ ...m, slug: true }));
+            setTimeout(() => {
+              try {
+                if (slugInputRef.current) {
+                  const newPos = Math.min(sanitizedLeft.length, sanitized.length);
+                  slugInputRef.current.setSelectionRange(newPos, newPos);
+                }
+              } catch (err) {
+                // ignore
+              }
+            }, 0);
+          }}
+          onBeforeInput={(e: any) => {
+            // Intercept space insertions and replace them with a hyphen while not composing.
+            if (isComposingRef.current) return;
+            try {
+              const ne = e.nativeEvent as InputEvent;
+              const inputType = ne?.inputType;
+              const data = ne?.data;
+              if (inputType === 'insertText' && data === ' ') {
+                e.preventDefault();
+                const input = slugInputRef.current as HTMLInputElement | null;
+                if (!input) return;
+                const raw = input.value;
+                const selStart = input.selectionStart ?? raw.length;
+                const selEnd = input.selectionEnd ?? selStart;
+                const before = raw.slice(0, selStart);
+                const after = raw.slice(selEnd);
+                const newRaw = before + '-' + after;
+                const sanitized = newRaw.replace(/\s+/g, '-').toLowerCase();
+                setSlug(sanitized);
+                setModified(m => ({ ...m, slug: true }));
+                setTimeout(() => {
+                  try { input.setSelectionRange(before.length + 1, before.length + 1); } catch (err) {}
+                }, 0);
+              }
+            } catch (err) {
+              // ignore
+            }
+          }}
+          onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => {
+            e.preventDefault();
+            const clipboard = e.clipboardData?.getData('text') ?? '';
+            const input = slugInputRef.current as HTMLInputElement | null;
+            if (!input) return;
+            const raw = slug;
+            const selStart = input.selectionStart ?? raw.length;
+            const selEnd = input.selectionEnd ?? selStart;
+            // sanitize pasted content: convert spaces to dashes and lowercase
+            const pasted = clipboard.replace(/\s+/g, '-').toLowerCase();
+            const before = raw.slice(0, selStart);
+            const after = raw.slice(selEnd);
+            const newValue = (before + pasted + after);
+            setSlug(newValue);
+            setModified(m => ({ ...m, slug: true }));
+            // place caret after pasted content
+            setTimeout(() => {
+              try { input.setSelectionRange(before.length + pasted.length, before.length + pasted.length); } catch (err) {}
+            }, 0);
+          }}
+        />
+        <div className="text-xs mt-1">
+          {slugChecking ? <span className="text-gray-500">Checking...</span> : slugError ? <span className="text-red-600">{slugError}</span> : slugValid ? <span className="text-green-600">Slug looks good</span> : <span className="text-gray-500">Allowed: lowercase letters, numbers, hyphens and underscores.</span>}
+        </div>
       </div>
 
       <div>

@@ -45,7 +45,7 @@ export default function BranchNode({data}: { data: any }) {
                     <div className="flex-none w-14">
                         <NodeStartHandle
                             id={"previous"} nodeID={nodeID}
-                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            onConnect={(params: any) => { /* onConnect (logging suppressed) */ }}
 
                         />
                     </div>
@@ -53,14 +53,14 @@ export default function BranchNode({data}: { data: any }) {
                     <div className="flex-1 text-right">
                         <NodeEndHandle
 
-                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            onConnect={(params: any) => { /* onConnect (logging suppressed) */ }}
                             id={"trueNext"}
                             nodeID={nodeID}>
                             True
                         </NodeEndHandle>
                         <NodeEndHandle
 
-                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            onConnect={(params: any) => { /* onConnect (logging suppressed) */ }}
                             id={"falseNext"}
                             nodeID={nodeID}>
                             False
@@ -72,7 +72,7 @@ export default function BranchNode({data}: { data: any }) {
 
                 <CheckBoxWithOverride
                     onChange={onChangeBool}
-                    onConnect={(params: any) => console.log('handle onConnect', params)}
+                    onConnect={(params: any) => { /* onConnect (logging suppressed) */ }}
                     id={"boolean"}
                     handleID={"boolean-override"}
                     isTrue={isTrue}

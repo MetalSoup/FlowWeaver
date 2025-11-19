@@ -43,6 +43,9 @@ export default ({className = ''}) => {
             <SideBarNodeButton onDragStart={onDragStart} nodeType={'RawHtml'}>
                 Output HTML
             </SideBarNodeButton>
+            <SideBarNodeButton onDragStart={onDragStart} nodeType={'ConsoleLog'}>
+                Console.log
+            </SideBarNodeButton>
 
         </aside>
     );

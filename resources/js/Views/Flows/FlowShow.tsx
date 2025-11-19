@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import PrimaryButton from "@/Components/PrimaryButton";
 import RenderField from "@/Views/Flows/RenderField";
 import SubmitStep from "./SubmitStep";
-import {Link} from "@inertiajs/react";
-import {WarningIcon} from "@phosphor-icons/react";
 import Tooltip from "@/Components/Tooltip";
 
 export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, isEditorEnabled, selectedFieldId }: { flow: any, flow_id: number, pageOverrides?: any, onSelectField?: any, isEditorEnabled?: boolean, selectedFieldId?: any }) {
@@ -135,9 +133,7 @@ export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, 
         };
 
         const normalized = normalize(flow);
-        // debug to help trace what's coming in — remove or guard behind env check if noisy
-        // eslint-disable-next-line no-console
-        console.debug('FlowShow: normalize incoming flow ->', { incoming: flow, normalizedCount: normalized.length });
+        // removed noisy debug log
         setFlowState(normalized);
 
         if (!normalized || normalized.length === 0) {

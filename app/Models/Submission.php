@@ -16,6 +16,7 @@ class Submission extends Model
         'email',
         'phone',
         'data',
+        'contact_id',
     ];
 
     // Cast data column to array (JSON)
@@ -24,4 +25,36 @@ class Submission extends Model
         'email' => 'string',
         'phone' => 'string',
     ];
+
+    /**
+     * Submission belongs to an optional Contact
+     */
+    public function contact()
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
+    /**
+     * Return normalized email or null
+     */
+    public function normalizedEmail(): ?string
+    {
+        if (empty($this->email)) {
+            return null;
+        }
+
+        return strtolower(trim($this->email));
+    }
+
+    /**
+     * Return normalized phone or null
+     */
+    public function normalizedPhone(): ?string
+    {
+        if (empty($this->phone)) {
+            return null;
+        }
+
+        return trim($this->phone);
+    }
 }

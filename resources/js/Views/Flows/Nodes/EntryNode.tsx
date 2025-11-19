@@ -10,7 +10,7 @@ export default function EntryNode({data}: { data: any}) {
     // get current node id to include in handle ids
     const nodeID: string = data.id;
     data.isDeletable = false;
-    console.log();
+    // stray debug logging suppressed
     const {flowID}: any = usePage().props;
 
 
@@ -35,7 +35,7 @@ export default function EntryNode({data}: { data: any}) {
                     <div className="flex-1 text-right">
                         <NodeEndHandle
 
-                            onConnect={(params: any) => console.log('handle onConnect', params)}
+                            onConnect={(params: any) => { /* onConnect (logging suppressed) */ }}
                             id={"next"}
                             nodeID={nodeID}/>
 

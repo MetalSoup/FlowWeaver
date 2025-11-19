@@ -66,7 +66,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                     console.warn('ShowFlow: fetch get_flow returned status', res.status);
                 } else {
                     const json = await res.json();
-                    console.debug('ShowFlow: fetched flow json ->', json);
+                    // suppressed detailed debug log for fetched flow
                     // Try several common locations where the compiled flow may appear
                     const tryPaths = [
                         (p:any) => p?.flow,
@@ -101,7 +101,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                         remote = deepFind(json.props);
                     }
                     if (remote) {
-                        console.debug('ShowFlow: extracted compiled flow from fetch response', remote);
+                        // extracted compiled flow (logging suppressed)
                         setUseFlow(remote);
                         fetchedFlowIdRef.current = flow_id; // mark as fetched only on success
                     } else {
@@ -296,7 +296,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
             setSubmissionIds(prev => ({ ...(prev || {}), [currentStepKey]: true }));
             const idFromFlash = page?.props?.flash?.submission_id ?? returnedId ?? null;
 
-            console.log(nextPage);
+            // nextPage received (logging suppressed)
 
 
             if (idFromFlash) {
@@ -355,10 +355,10 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
                     preserveScroll: true,
                     preserveState: true,
                     onSuccess: (page: any) => {
-                        console.log(page)
-                        const submission_id = page.props.flash.submission_id ?? null;
-                        const form = page.props.flash.data.form ?? null;
-                        handleSuccess(page, submission_id, form);
+                        // submission page response (logging suppressed)
+                         const submission_id = page.props.flash.submission_id ?? null;
+                         const form = page.props.flash.data.form ?? null;
+                         handleSuccess(page, submission_id, form);
                     },
                     onError: (errors: any) => {
                         console.error('Submission create error (fallback)', errors);

@@ -45,7 +45,7 @@ export default function Flow({ flowID }: { flowID: number | null }) {
     const loadingRef = useRef(false);
 
     useEffect(() => {
-        console.debug('Flow.mount useEffect start', { flowID, initialExtract });
+        // Flow mount start (logging suppressed)
         if (!flowID) return;
         if (loadingRef.current) return;
 
@@ -53,13 +53,13 @@ export default function Flow({ flowID }: { flowID: number | null }) {
         // use it and skip fetching.
         const { flow: serverFlow, flow_id: serverFlowId } = extractFlowFromPageProps(pageProps);
         if (serverFlow && serverFlowId && Number(serverFlowId) === Number(flowID)) {
-            console.debug('Flow: using server-provided flow for', flowID);
+            // using server-provided flow
             setLoadedFlow(serverFlow);
             return;
         }
 
         loadingRef.current = true;
-        console.debug('Flow: fetching get_flow for', flowID);
+        // fetching flow data
 
         // Fetch compiled flow via the JSON `get_flow` endpoint so multiple Flow Instances
         // can load independently without stomping shared flash.
@@ -79,7 +79,7 @@ export default function Flow({ flowID }: { flowID: number | null }) {
                     return;
                 }
                 const json = await res.json();
-                console.debug('Flow: get_flow response', flowID, json);
+                // fetched get_flow response (logging suppressed)
                 // Try several common locations for the compiled flow
                 const flowFromJson = json?.flow ?? json?.props?.flow ?? json?.props?.page?.props?.flow ?? json?.props?.initialProps?.flow ?? null;
                 let flow = null;
@@ -105,9 +105,8 @@ export default function Flow({ flowID }: { flowID: number | null }) {
 
                 if (flow) {
                     setLoadedFlow(flow);
-                    console.debug('Flow: setLoadedFlow for', flowID, 'steps', Object.keys(flow || {}).length);
                 } else {
-                    console.debug('Flow: no flow found in get_flow response for', flowID);
+                    // no flow found in response
                 }
 
             } catch (err) {

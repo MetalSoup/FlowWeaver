@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { PencilSimpleIcon } from '@phosphor-icons/react';
 
 export default function RenderField({field, formValues = {}, setFormValues, pageOverrides = {}, onSelectField, isEditorEnabled = false, selectedFieldId}: any)  {
     const [validationError, setValidationError] = useState<string | null>(null);
@@ -140,19 +139,25 @@ export default function RenderField({field, formValues = {}, setFormValues, page
     // input base class - fall back to a reasonable default if nothing specified
     const inputBaseClass = `${mergedInputClass || 'w-full border rounded p-2'}`.trim();
 
-    const renderEditOverlay = () => {
-        if (!isEditorEnabled || typeof onSelectField !== 'function') return null;
-        return (
-            <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); try { onSelectField(fid); } catch (err) {} }}
-                className="absolute top-1 right-1 p-1 rounded bg-white border text-xs opacity-0 group-hover:opacity-100 transition shadow-sm hover:bg-blue-50"
-                title="Edit field"
-                aria-label="Edit field"
-            >
-                <PencilSimpleIcon size={16} weight="bold" />
-            </button>
-        );
+    // When the editor is enabled, clicking the field container should select the field.
+    // We avoid selecting when the user clicked an interactive control (input/select/textarea/button/a/label)
+    // so normal form interaction still works when not in editor mode. This mirrors how components
+    // are selected in the editor (click-to-select).
+    const handleContainerClick = (e: React.MouseEvent) => {
+        if (!isEditorEnabled || typeof onSelectField !== 'function') return;
+        try {
+            const tgt = (e.target as HTMLElement) || null;
+            // If the click originated on an interactive element, don't treat it as a select action.
+            if (tgt && typeof tgt.closest === 'function') {
+                const interactive = tgt.closest('input,select,textarea,button,a,label');
+                if (interactive) return;
+            }
+            e.stopPropagation();
+            // Call the onSelectField callback with the canonical field id
+            onSelectField(fid);
+        } catch (err) {
+            // ignore
+        }
     };
 
     switch (inputType) {
@@ -161,7 +166,6 @@ export default function RenderField({field, formValues = {}, setFormValues, page
             if (labelPosition === 'left') {
                 return (
                     <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
                         <div className="flex items-start">
                             <div className={`w-1/3 pr-3 pt-2 ${mergedLabelClass}`.trim()}>{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -173,18 +177,16 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                 );
             }
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                    {renderEditOverlay()}
-                    {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
-                    <textarea id={name} name={name} className={inputBaseClass} style={inputStyle} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} value={formValues[name] ?? ''} required={required} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
-                    {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
-                </div>
-            );
+                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                     {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
+                     <textarea id={name} name={name} className={inputBaseClass} style={inputStyle} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} value={formValues[name] ?? ''} required={required} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
+                     {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
+                 </div>
+             );
         case "select":
             if (labelPosition === 'left') {
                 return (
                     <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
                         <div className="flex items-center">
                             <div className="w-1/3 pr-3">{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -200,26 +202,24 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                 );
             }
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                    {renderEditOverlay()}
-                    {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
-                    <select id={name} name={name} className={inputBaseClass} value={formValues[name] ?? ''} required={required} onChange={(e) => updateField(name, e.target.value)}>
-                        <option value="">-- select --</option>
-                        {options.map((opt: any) => (
-                            <option key={opt.value} value={opt.value} dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}></option>
-                        ))}
-                    </select>
-                </div>
-            );
+                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                     {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
+                     <select id={name} name={name} className={inputBaseClass} value={formValues[name] ?? ''} required={required} onChange={(e) => updateField(name, e.target.value)}>
+                         <option value="">-- select --</option>
+                         {options.map((opt: any) => (
+                             <option key={opt.value} value={opt.value} dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}></option>
+                         ))}
+                     </select>
+                 </div>
+             );
         case "radio":
             // if displayMode === 'buttons', render as buttons
             if (displayMode === 'buttons') {
                 const current = formValues[name];
                 return (
                     <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
-                        <div className="block mb-1 font-medium" style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
-                        <div className="flex flex-wrap gap-2">
+                         <div className="block mb-1 font-medium" style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
+                         <div className="flex flex-wrap gap-2">
                             {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => (
                                 <button
                                     key={opt.value + idx}
@@ -229,18 +229,17 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                     dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}
                                 />
                             ))}
-                        </div>
-                    </div>
-                );
-            }
+                         </div>
+                     </div>
+                 );
+             }
 
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                    {renderEditOverlay()}
-                    {labelPosition !== 'inside' && labelPosition !== 'none' ? (
-                    <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
-                    ) : null}
-                    <div className="flex flex-col">
+                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                     {labelPosition !== 'inside' && labelPosition !== 'none' ? (
+                     <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
+                     ) : null}
+                     <div className="flex flex-col">
                         {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => (
                             <label key={opt.value + idx} className="inline-flex items-center space-x-2">
                                 <input type="radio" name={name} value={opt.value} checked={formValues[name] === opt.value} onChange={(e) => updateField(name, e.target.value)} required={required} />
@@ -263,7 +262,6 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                 };
                 return (
                     <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
                         <div className="block mb-1 font-medium">{labelToRender}{required ? ' *' : ''}</div>
                         <div className="flex flex-wrap gap-2">
                             {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => {
@@ -284,12 +282,11 @@ export default function RenderField({field, formValues = {}, setFormValues, page
             }
 
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                    {renderEditOverlay()}
-                    {labelPosition !== 'inside' && labelPosition !== 'none' ? (
-                    <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
-                    ) : null}
-                    <div className="flex flex-col">
+                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                     {labelPosition !== 'inside' && labelPosition !== 'none' ? (
+                     <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
+                     ) : null}
+                     <div className="flex flex-col">
                         {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => {
                             // Normalize current value to an array so we can support multiple selections.
                             const current = formValues[name];
@@ -308,7 +305,7 @@ export default function RenderField({field, formValues = {}, setFormValues, page
 
                             return (
                                 <label key={opt.value + idx} className="inline-flex items-center space-x-2">
-                                    <input type="checkbox" name={name} value={opt.value} checked={checked} onChange={toggle} required={required} />
+                                    <input type="checkbox" name={name} value={opt.value} checked={checked} onChange={() => toggle()} required={required} />
                                     <div dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}></div>
                                 </label>
                             );
@@ -321,9 +318,8 @@ export default function RenderField({field, formValues = {}, setFormValues, page
             // special-case 'html' field type: render raw HTML block
             if (inputType === 'html') {
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
-                        <div dangerouslySetInnerHTML={{ __html: field.html || '' }} />
+                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                         <div dangerouslySetInnerHTML={{ __html: field.html || '' }} />
                     </div>
                 );
             }
@@ -332,7 +328,6 @@ export default function RenderField({field, formValues = {}, setFormValues, page
             if (labelPosition === 'left') {
                 return (
                     <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                        {renderEditOverlay()}
                         <div className="flex items-center">
                             <div className="w-1/3 pr-3">{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -344,14 +339,13 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                 );
             }
 
-            return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
-                    {renderEditOverlay()}
-                    {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle} dangerouslySetInnerHTML={{ __html: labelToRender || '' }}></label>}
-                    <input id={name} name={name} type={htmlType} className={inputBaseClass} style={inputStyle} autoComplete="on" value={formValues[name] ?? ''} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} required={required} pattern={regex || undefined} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
-                    {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
-                </div>
-            );
-    }
+             return (
+                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                     {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle} dangerouslySetInnerHTML={{ __html: labelToRender || '' }}></label>}
+                     <input id={name} name={name} type={htmlType} className={inputBaseClass} style={inputStyle} autoComplete="on" value={formValues[name] ?? ''} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} required={required} pattern={regex || undefined} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
+                     {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
+                 </div>
+             );
+     }
 
-}
+ }
