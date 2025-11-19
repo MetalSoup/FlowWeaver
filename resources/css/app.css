@@ -19,7 +19,11 @@
     --kd-orange: #F2B12E;
     --kd-pink: #F04DB9;
 
-
+    /* Tab color tokens (light mode defaults) */
+    --tab-text: #374151;        /* gray-700 */
+    --tab-text-muted: #6B7280;  /* gray-500 */
+    --tab-indicator: #4F46E5;   /* indigo-600 */
+    --tab-bg: #ffffff;
 }
 
 .addButton
@@ -169,4 +173,12 @@ h2
 
 .handle_icon svg {
     display: block;
+}
+
+/* Dark mode overrides tied to html.dark (app toggles this class) */
+html.dark {
+    --tab-text: #E5E7EB;        /* gray-200 */
+    --tab-text-muted: #9CA3AF;  /* gray-400 */
+    --tab-indicator: #8B5CF6;   /* violet-500 */
+    --tab-bg: #0B1220; /* slightly off black to match app dark background */
 }

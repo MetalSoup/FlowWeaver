@@ -80,7 +80,7 @@ export const Sidebar = () => {
       })();
 
       return (
-        <div className="px-3 py-2 border-b bg-gray-50 text-xs text-gray-700">
+        <div className="px-3 py-2 border-b text-xs">
           <span className="font-semibold">{displayName || 'Component'}</span>
           {typeLabel ? <span className="ml-1">· {typeLabel}</span> : null}
           <span className="ml-2 text-gray-500">id: {id}</span>
@@ -92,7 +92,7 @@ export const Sidebar = () => {
   }, [selectedIds, query]);
 
   return (
-    <SidebarDiv $enabled={enabled} className="sidebar h-screen transition bg-black w-2 text-black">
+    <div  className="sidebar h-screen transition w-full ">
         <TabSection
             tabs={[
                 {
@@ -134,6 +134,6 @@ export const Sidebar = () => {
             </div>
         </SidebarItem>
 
-    </SidebarDiv>
+    </div>
   );
 };

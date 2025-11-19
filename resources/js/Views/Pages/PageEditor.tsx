@@ -19,6 +19,9 @@ import { EyeIcon, PencilSimpleIcon, DeviceMobileIcon, DeviceTabletIcon, DesktopI
 import { showAppToast } from '@/utils/toast';
 import {Head, router, useForm} from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import { DashboardSidebarOutlet } from '@/Layouts/DashboardSidebarOutlet';
+import { useDashboardSidebar } from '@/Layouts/DashboardSidebarContext';
+import { Sidebar } from './Components/Editor/Viewport/Sidebar';
 
 
 
@@ -98,6 +101,8 @@ try { (window as any).__sendFormViaFetch = sendFormViaFetch; } catch (e) { /* ig
 
 export default function PageEditor({ auth, page = null, forms: _forms = {}, flows: _flows = [] }: { auth: any; page?: any; forms?: any; flows?: any }) {
     const isEditing = !!page;
+    // dashboard sidebar context (safe try/catch so pages without provider won't crash)
+    const sidebarCtx = (() => { try { return useDashboardSidebar(); } catch (e) { return null; } })();
 
     // Derive an initial page id from common API shapes so we populate the form state correctly
     const initialPageId = page?.data?.id ?? page?.id ?? null;
@@ -245,6 +250,9 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
     // A ref that will be populated by EditorInitializer with the craftjs API (actions + query)
     const editorApiRef = useRef<any>(null);
+    // stable flag that indicates the Craft editor has initialized; used to avoid polling and
+    // prevent the Sidebar (which calls useEditor) from rendering before the Editor context is present.
+    const [editorReady, setEditorReady] = useState(false);
 
     // Use the exported showAppToast utility
     const showToast = (msg: string) => {
@@ -404,14 +412,13 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
              }
          };
 
-        // initial apply
+        // initial apply once; subsequent updates should be delivered via the
+        // `page-settings-updated` event to avoid frequent DOM mutations.
         applyForCurrentPage();
 
-        const interval = setInterval(applyForCurrentPage, 400);
         try { window.addEventListener('page-settings-updated', applyForCurrentPage as EventListener); } catch (e) {}
 
         return () => {
-            clearInterval(interval);
             try { window.removeEventListener('page-settings-updated', applyForCurrentPage as EventListener); } catch (e) {}
             try { document.getElementById(headerCssId)?.remove(); document.getElementById(footerCssId)?.remove(); document.getElementById(headerJsId)?.remove(); document.getElementById(footerJsId)?.remove(); } catch (e) {}
             try { if (scriptDebounceRef.current) window.clearTimeout(scriptDebounceRef.current); } catch (e) {}
@@ -481,6 +488,62 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
             newContent = data.content;
         }
 
+
+        // If the Page Settings include a slug, validate it server-side now (only on Save).
+        try {
+            const key = page_id || 'unsaved';
+            const globalSettings = (window as any).__PAGE_SETTINGS || {};
+            const entry = globalSettings[key] || {};
+            const candidateSlug = entry.slug;
+            if (candidateSlug) {
+                // notify listeners (PageSettings) that validation is starting
+                try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('slug-validation-request', { detail: { pageKey: key } })); } catch (e) {}
+
+                // build request body with site/page context if available
+                const body: any = { slug: candidateSlug };
+                try { if (typeof window !== 'undefined' && (window as any).__SITE_ID) body.site_id = (window as any).__SITE_ID; } catch (e) {}
+                try { if (page_id) body.page_id = page_id; } catch (e) {}
+
+                let valid = true;
+                let error: any = null;
+                try {
+                    const resp = await fetch('/api/slug/validate', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify(body),
+                    });
+                    const result = await resp.json().catch(() => null);
+                    if (!resp.ok) {
+                        valid = false;
+                        error = (result && (result.slug || result.message)) || `Server returned ${resp.status}`;
+                    } else {
+                        if (result && typeof result.valid !== 'undefined') {
+                            valid = !!result.valid;
+                            if (!valid) error = result.error || result.message || 'Slug validation failed';
+                        } else {
+                            // If server returned Inertia page props, treat as valid
+                            valid = true;
+                        }
+                    }
+                } catch (e) {
+                    valid = false;
+                    error = (e && (e.message || String(e))) || 'Slug validation failed';
+                }
+
+                // notify listeners of result
+                try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('slug-validation-result', { detail: { pageKey: key, valid, error } })); } catch (e) {}
+
+                if (!valid) {
+                    // abort save so user can fix slug; PageSettings will show the error
+                    try { showToast('Slug validation failed — fix the slug before saving'); } catch (e) {}
+                    return;
+                }
+            }
+        } catch (e) {
+            // non-fatal: continue with save if slug validation throws unexpectedly
+            try { console.error('slug validation check failed', e); } catch (e) {}
+        }
 
         if (!page_id) {
             // If there are page settings written by the settings panel, include them in the create payload
@@ -602,9 +665,12 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         // useEditor must be called inside the Craft editor context (this component is rendered inside <CraftEditor>)
         const { actions, query } = useEditor(() => ({}));
 
-        // expose API
+        // expose API and mark editor as ready when actions/query are available
         useEffect(() => {
             editorApiRef.current = { actions, query };
+            try { setEditorReady(true); } catch (e) {}
+            // Do not unset `editorReady` on cleanup. Keeping it `true` avoids flicker if
+            // Craft internals briefly change `actions`/`query` during initialization.
             return () => {
                 editorApiRef.current = null;
             };
@@ -757,6 +823,13 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
          return null;
      };
 
+    // Render the Sidebar only after the Craft editor has initialized (editorReady) so
+    // useEditor inside the Sidebar runs within the Editor context and doesn't throw.
+    const SidebarPortalWrapper: React.FC = () => {
+        if (!editorReady) return null;
+        return <Sidebar />;
+    };
+
     // Build a simple header with Save/Cancel
     const header = (
         <div className="flex items-center justify-between">
@@ -808,9 +881,13 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                                 const newVal = !editorEnabledState;
                                 setEditorEnabledState(newVal);
                                 editorApiRef.current?.actions?.setOptions((options: any) => (options.enabled = newVal));
-                            } catch (e) {
-                                // ignore
-                            }
+                                // hide the dashboard sidebar when in Preview mode
+                                try {
+                                    sidebarCtx?.setHidden(newVal);
+                                } catch (e) {}
+                             } catch (e) {
+                                 // ignore
+                             }
                         }}
                         className={"inline-flex items-center px-3 py-2 rounded " + (editorEnabledState ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700')}
                         title={editorEnabledState ? 'Switch to Edit' : 'Switch to Preview'}
@@ -925,6 +1002,14 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
                      <Viewport viewportSize={viewportSize}>
                          {initialChildren}
                      </Viewport>
+                     {/* Mount the editor Sidebar into the dashboard bottom area via portal outlet.
+                        Delay rendering the Sidebar until the craft editor has initialized to avoid
+                        `useEditor` being invoked before the Editor context exists. */}
+                    <DashboardSidebarOutlet>
+                        <div className="w-full">
+                            <SidebarPortalWrapper />
+                        </div>
+                    </DashboardSidebarOutlet>
                  </CraftEditor>
 
                 {/* Hidden form field so Inertia has the latest content if user navigates away using other flows */}

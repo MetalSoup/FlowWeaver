@@ -52,7 +52,27 @@ export default function TabSection({tabs, activeTab=0, forceActiveToken}: { tabs
     return (
         <Box sx={{width: '100%'}}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-                <Tabs value={value} onChange={handleChange} aria-label="basic tabs">
+                <Tabs
+                    value={value}
+                    onChange={handleChange}
+                    aria-label="basic tabs"
+                    sx={{
+                        backgroundColor: 'var(--tab-bg)',
+                        '& .MuiTab-root': {
+                            color: 'var(--tab-text-muted)',
+                            textTransform: 'none',
+                            minHeight: '40px',
+                        },
+                        '& .MuiTab-root.Mui-selected': {
+                            color: 'var(--tab-text)'
+                        },
+                        '& .MuiTabs-indicator': {
+                            backgroundColor: 'var(--tab-indicator)',
+                            height: 3,
+                            borderRadius: 3
+                        }
+                    }}
+                >
                     {tabs.map((tab, index) => (
                         <Tab label={tab.label} key={index} {...a11yProps(index)} />
                     ))}

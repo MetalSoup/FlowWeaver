@@ -31,6 +31,7 @@ import FormNode from "@/Views/Flows/Nodes/FormNode";
 import EntryNode from "@/Views/Flows/Nodes/EntryNode";
 import {LegendPanel} from "@/Views/Flows/EditorComponents/LegendPanel";
 import PrimaryButton from "@/Components/PrimaryButton";
+import { DashboardSidebarOutlet } from '@/Layouts/DashboardSidebarOutlet';
 import ConsoleLogNode from "@/Views/Flows/Nodes/ConsoleLogNode";
 
 
@@ -450,8 +451,12 @@ function FlowEditor({auth, flow, selected_site}: { auth: any, flow: any, selecte
                         </Panel>
                         <Panel position="top-left">
 
-                            <FlowSideBar
-                                className={"relative bg-sidebar p-3 sm:block shadow-xl dark:bg-gray-600/80"}/>
+                            {/* Flow sidebar moved into dashboard bottom outlet to unify UI */}
+                            <DashboardSidebarOutlet>
+                                <div className={"relative bg-sidebar p-3 sm:block shadow-xl dark:bg-gray-600/80"}>
+                                    <FlowSideBar />
+                                </div>
+                            </DashboardSidebarOutlet>
                         </Panel>
                         <Panel position={"top-center"}>
                             <EditableText value={flowName} onChange={onChangeName}

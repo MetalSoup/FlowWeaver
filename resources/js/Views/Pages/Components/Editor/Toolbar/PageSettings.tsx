@@ -1,13 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { usePage, router } from '@inertiajs/react';
-import slugify from '../../../../../utils/slugify';
-import debounce from 'debounce';
+import { usePage } from '@inertiajs/react';
 
 export default function PageSettings() {
   // Load current page props from Inertia page (when editing)
   const pageContext: any = usePage();
   const props: any = pageContext.props;
-  const inertiaComponent: string = pageContext.component;
   // Normalize various Inertia shapes: server may send `page` as the model, or as { data: {...} }, or as a Resource wrapper.
   const rawPage = props?.page ?? null;
   const page = rawPage?.data ?? rawPage ?? rawPage?.resource ?? null;
@@ -59,7 +56,7 @@ export default function PageSettings() {
     // known props (so we only clear modified flags on a real save/refresh).
     const prev = prevPageRef.current;
     const curr = props?.page ?? null;
-    let propsChanged = false;
+    let propsChanged: boolean;
     try {
       propsChanged = JSON.stringify(prev) !== JSON.stringify(curr);
     } catch (e) {
@@ -80,72 +77,13 @@ export default function PageSettings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props?.page]);
 
-  // Debounced server validation
-  const validateSlugServer = debounce((candidate: string) => {
-    if (!candidate) {
-      setSlugError('Slug cannot be empty');
-      setSlugValid(false);
-      setSlugChecking(false);
-      return;
-    }
-    // quick client-side format check (match backend regex)
-    if (!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(candidate)) {
-      setSlugError('Only lowercase letters, numbers, hyphens and underscores are allowed (no leading/trailing separator).');
-      setSlugValid(false);
-      setSlugChecking(false);
-      return;
-    }
-
-    // call server via Inertia to take advantage of Inertia validation handling
-    const body: any = { slug: candidate, _component: inertiaComponent, _pageProps: props };
-    if (props?.site?.id) body.site_id = props.site.id;
-    if (page?.id ?? page?.data?.id) body.page_id = (page?.id ?? page?.data?.id);
-
-    router.post('/api/slug/validate', body, {
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: (res: any) => {
-        // When server returns 200 with {valid:true}
-        if (res && res.props === undefined) {
-          // direct JSON response (non-Inertia) will come through as the response body; Inertia returns props for 200-page renders
-          try {
-            // Inertia may not populate res.body; assume valid if no error thrown
-            setSlugError(null);
-            setSlugValid(true);
-          } catch (e) {
-            setSlugError('Slug validation failed');
-            setSlugValid(false);
-          }
-        } else {
-          // fallback
-          setSlugError(null);
-          setSlugValid(true);
-        }
-        setSlugChecking(false);
-      },
-      onError: (errors: any) => {
-        // Laravel returns validation errors keyed by field
-        const message = errors?.slug ?? (Array.isArray(errors?.message) ? errors.message.join(', ') : errors?.message) ?? 'Slug validation failed';
-        setSlugError(message);
-        setSlugValid(false);
-        setSlugChecking(false);
-      }
-    });
-  }, 400);
-
-  // when slug changes, sanitize and kick off validation
+  // when slug changes, sanitize and mark as locally valid (no live validation)
   useEffect(() => {
-    // Compute the normalized candidate for validation, but do NOT overwrite the
-    // user's current input (they may be typing leading/trailing separators). Use
-    // `slugify` to produce the canonical value for validation only.
-    const candidate = slugify(slug);
-    setSlugChecking(true);
-    setSlugValid(false);
+    // No live server validation here — we consider the slug valid locally until Save triggers server-side validation.
+    setSlugChecking(false);
+    setSlugValid(true);
     setSlugError(null);
-    validateSlugServer(candidate);
-    // cleanup on unmount
-    return () => { validateSlugServer.clear(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   // Whenever settings change, write them to a global so the main Save button can pick them up
@@ -197,21 +135,61 @@ export default function PageSettings() {
      }
    }, [name, slug, title, keywords, meta, headerJs, footerJs, headerCss, footerCss, page, modified, slugValid]);
 
+  // Listen for slug validation requests (triggered by the Save action) and for validation results.
+  useEffect(() => {
+    const key = page?.id ?? page?.data?.id ?? 'unsaved';
+
+    const onRequest = (ev: Event) => {
+      try {
+        const detail = (ev as CustomEvent)?.detail || {};
+        if (detail.pageKey && detail.pageKey !== key) return;
+        setSlugChecking(true);
+        setSlugError(null);
+      } catch (e) { /* ignore */ }
+    };
+
+    const onResult = (ev: Event) => {
+      try {
+        const detail = (ev as CustomEvent)?.detail || {};
+        if (detail.pageKey && detail.pageKey !== key) return;
+        setSlugChecking(false);
+        if (detail.valid) {
+          setSlugValid(true);
+          setSlugError(null);
+        } else {
+          setSlugValid(false);
+          setSlugError(detail.error || 'Slug validation failed');
+        }
+      } catch (e) { /* ignore */ }
+    };
+
+    try {
+      window.addEventListener('slug-validation-request', onRequest as EventListener);
+      window.addEventListener('slug-validation-result', onResult as EventListener);
+    } catch (e) {}
+
+    return () => {
+      try {
+        window.removeEventListener('slug-validation-request', onRequest as EventListener);
+        window.removeEventListener('slug-validation-result', onResult as EventListener);
+      } catch (e) {}
+    };
+  }, [page]);
 
    return (
     <div className="p-3 space-y-3">
       <h3 className="font-semibold">Page Settings</h3>
 
       <div>
-        <label className="block text-sm text-gray-600">Name</label>
-        <input className="w-full border rounded px-2 py-1" value={name} onChange={e => { setName(e.target.value); setModified(m => ({ ...m, name: true })); }} />
+        <label className="text-sm">Name</label>
+        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={name} onChange={e => { setName(e.target.value); setModified(m => ({ ...m, name: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Slug</label>
+        <label className="text-sm">Slug</label>
         <input
           ref={slugInputRef}
-          className={`w-full border rounded px-2 py-1 ${slugError ? 'border-red-500' : ''}`}
+          className={`w-full dark:bg-gray-600 border rounded px-2 py-1 ${slugError ? 'border-red-500' : ''}`}
           value={slug}
           onChange={e => {
             const raw = (e.target as HTMLInputElement).value;
@@ -318,38 +296,38 @@ export default function PageSettings() {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Page title (meta)</label>
-        <input className="w-full border rounded px-2 py-1" value={title} onChange={e => { setTitle(e.target.value); setModified(m => ({ ...m, title: true })); }} />
+        <label className="text-sm">Page title (meta)</label>
+        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={title} onChange={e => { setTitle(e.target.value); setModified(m => ({ ...m, title: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Keywords (comma separated)</label>
-        <input className="w-full border rounded px-2 py-1" value={keywords} onChange={e => { setKeywords(e.target.value); setModified(m => ({ ...m, keywords: true })); }} />
+        <label className="text-sm">Keywords (comma separated)</label>
+        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={keywords} onChange={e => { setKeywords(e.target.value); setModified(m => ({ ...m, keywords: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Additional meta (raw HTML/meta tags)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm" rows={4} value={meta} onChange={e => { setMeta(e.target.value); setModified(m => ({ ...m, meta: true })); }} />
+        <label className="text-sm">Additional meta (raw HTML/meta tags)</label>
+        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={meta} onChange={e => { setMeta(e.target.value); setModified(m => ({ ...m, meta: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Header CSS (injected into head)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm" rows={4} value={headerCss} onChange={e => { setHeaderCss(e.target.value); setModified(m => ({ ...m, header_css: true })); }} />
+        <label className="text-sm">Header CSS (injected into head)</label>
+        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={headerCss} onChange={e => { setHeaderCss(e.target.value); setModified(m => ({ ...m, header_css: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Footer CSS (injected before body end)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm" rows={2} value={footerCss} onChange={e => { setFooterCss(e.target.value); setModified(m => ({ ...m, footer_css: true })); }} />
+        <label className="text-sm">Footer CSS (injected before body end)</label>
+        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={2} value={footerCss} onChange={e => { setFooterCss(e.target.value); setModified(m => ({ ...m, footer_css: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Header JavaScript (injected into head)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm" rows={4} value={headerJs} onChange={e => { setHeaderJs(e.target.value); setModified(m => ({ ...m, header_js: true })); }} />
+        <label className="text-sm">Header JavaScript (injected into head)</label>
+        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={headerJs} onChange={e => { setHeaderJs(e.target.value); setModified(m => ({ ...m, header_js: true })); }} />
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600">Footer JavaScript (injected before body end)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm" rows={4} value={footerJs} onChange={e => { setFooterJs(e.target.value); setModified(m => ({ ...m, footer_js: true })); }} />
+        <label className="text-sm">Footer JavaScript (injected before body end)</label>
+        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={footerJs} onChange={e => { setFooterJs(e.target.value); setModified(m => ({ ...m, footer_js: true })); }} />
       </div>
 
       <div className="flex justify-end space-x-2">

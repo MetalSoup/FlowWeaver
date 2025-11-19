@@ -13,6 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import {useCallback, useState, useEffect} from "react";
 import FlowSideBar from "@/Views/Flows/FlowSideBar";
+import { DashboardSidebarOutlet } from '@/Layouts/DashboardSidebarOutlet';
 
 
 function FlowEditor({ auth, selected_site } : { auth: any, selected_site?: number | null }) {
@@ -123,7 +124,13 @@ function FlowEditor({ auth, selected_site } : { auth: any, selected_site?: numbe
         >
             <Head title={"New Flow"} />
             <div className={"flex flex-col md:flex-row h-full"}>
-            <FlowSideBar className={"relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-gray-200"} />
+            {/* Render the Flow sidebar into the dashboard bottom outlet */}
+            <DashboardSidebarOutlet>
+                <div className={"relative bg-sidebar h-screen w-64 hidden sm:block shadow-xl dark:bg-gray-200"}>
+                    <FlowSideBar />
+                </div>
+            </DashboardSidebarOutlet>
+
             <div className={"w-full h-full"}>
 
 

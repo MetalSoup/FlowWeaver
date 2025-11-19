@@ -5,6 +5,7 @@ import {usePage} from '@inertiajs/react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { registerToastHandler, unregisterToastHandler } from '@/utils/toast';
+import { DashboardSidebarProvider } from '@/Layouts/DashboardSidebarContext';
 
 
 export default function DashboardLayout({user, header, children, containerClassName = ""}: PropsWithChildren<{
@@ -37,14 +38,15 @@ export default function DashboardLayout({user, header, children, containerClassN
     };
 
     return (
-        <div>
+        <DashboardSidebarProvider user={user}>
+            <div>
 
 
             <div className="flex flex-row bg-red-500">
                 <DashboardSideMenu user={user} name={siteName} selectedSite={selectedSite}
                                    onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
                                    showingNavigationDropdown={showingNavigationDropdown}/>
-                <div className={"flex flex-col flex-1 h-screen overflow-y-auto"}>
+                 <div className={"flex flex-col flex-1 h-screen overflow-y-auto"}>
                     {header && (
                         <header className="bg-gray-100 shadow dark:bg-gray-700 dark:text-white sticky top-0 z-10">
                             <div className="py-4 px-4 sm:px-6 lg:px-8">{header}</div>
@@ -67,5 +69,6 @@ export default function DashboardLayout({user, header, children, containerClassN
             </div>
 
         </div>
-    );
-}
+        </DashboardSidebarProvider>
+     );
+ }
