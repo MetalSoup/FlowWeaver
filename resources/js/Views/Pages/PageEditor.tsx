@@ -14,6 +14,7 @@ import { Custom3 } from './Components/Selectors/Custom3/Custom3';
 import { Video } from './Components/Selectors/Video/Video';
 import { Flow } from './Components/Selectors/Flow/Flow';
 import { Text } from './Components/Selectors/Text/Text';
+import { Image } from './Components/Selectors/Image/Image';
 // Icons for viewport toggles
 import { EyeIcon, PencilSimpleIcon, DeviceMobileIcon, DeviceTabletIcon, DesktopIcon, ArrowCounterClockwiseIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
 import { showAppToast } from '@/utils/toast';
@@ -952,18 +953,19 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
     // Resolver for craft components
     const resolver = {
-        Container,
-        Text,
-        FlexColumn: Column,
-        Custom1,
-        Custom2,
-        Custom2VideoDrop,
-        Custom3,
-        Custom3BtnDrop: (Custom3 as any).BtnDrop || (Custom3 as any),
-        OnlyButtons,
-        Button,
-        Video,
-        Flow,
+        'Container': Container,
+        'Text': Text,
+        'Image': Image,
+        'FlexColumn': Column,
+        'Custom1': Custom1,
+        'Custom2': Custom2,
+        'Custom2VideoDrop': Custom2VideoDrop,
+        'Custom3': Custom3,
+        'Custom3BtnDrop': (Custom3 as any).BtnDrop || (Custom3 as any),
+        'OnlyButtons': OnlyButtons,
+        'Button': Button,
+        'Video': Video,
+        'Flow': Flow,
     } as any;
 
     // Initial children: if we don't have serialized content, render a basic canvas containing the existing HTML (legacy)

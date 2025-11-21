@@ -2,12 +2,13 @@ import {Element, useEditor} from '@craftjs/core';
 import {Tooltip} from '@mui/material';
 import React from 'react';
 import {styled} from 'styled-components';
-import {FileTextIcon, SquaresFourIcon, PlayIcon, SquareIcon} from '@phosphor-icons/react';
+import {FileTextIcon, SquaresFourIcon, PlayIcon, SquareIcon, ImageIcon, FlowArrowIcon} from '@phosphor-icons/react';
 
 import {Button} from '../../Selectors/Button/Button';
 import {Container, Column, Text} from '@/Views/Pages/Components/Selectors';
 import {Video} from '../../Selectors/Video/Video';
 import {Flow} from '../../Selectors/Flow/Flow';
+import {Image} from '../../Selectors/Image/Image';
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
     transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -21,11 +22,7 @@ const Item = styled.a<{ $move?: boolean }>`
     justify-content: center;
     flex-direction: column;
 
-    svg {
-        width: 28px;
-        height: 28px;
-        fill: #707070;
-    }
+
 
     ${(props) =>
         props.$move &&
@@ -42,12 +39,14 @@ export const Toolbox = () => {
         enabled: state.options.enabled,
     }));
 
+    const ItemStyle = "page-component flex flex-col bg-gray-200 rounded justify-center gap-1 p-3 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer";
+
     return (
         <ToolboxDiv
             $enabled={enabled && enabled}
-            className="toolbox transition w-12 h-full flex flex-col bg-white"
+            className="toolbox transition h-full w-full flex flex-col"
         >
-            <div className="flex flex-1 flex-col items-center pt-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 p-2">
                 <div
                     ref={(ref) => {
                         create(
@@ -63,11 +62,13 @@ export const Toolbox = () => {
                         );
                     }}
                 >
-                    <Tooltip title="Container" placement="right">
-                        <Item $move>
-                            <SquareIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <SquareIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Container</div>
                         </Item>
-                    </Tooltip>
+
+
                 </div>
                 <div
                     ref={(ref) => {
@@ -77,44 +78,50 @@ export const Toolbox = () => {
                         );
                     }}
                 >
-                    <Tooltip title="Text" placement="right">
-                        <Item $move>
-                            <FileTextIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <FileTextIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Text</div>
                         </Item>
-                    </Tooltip>
+
+
                 </div>
                 <div
                     ref={(ref) => {
                         create(ref, <Button/>);
                     }}
                 >
-                    <Tooltip title="Button" placement="right">
-                        <Item $move>
-                            <SquareIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <SquareIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Button</div>
                         </Item>
-                    </Tooltip>
+
+
                 </div>
                 <div
                     ref={(ref) => {
                         create(ref, <Video/>);
                     }}
                 >
-                    <Tooltip title="Video" placement="right">
-                        <Item $move>
-                            <PlayIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <PlayIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Video</div>
                         </Item>
-                    </Tooltip>
+
                 </div>
                 <div
                     ref={(ref) => {
                         create(ref, <Flow/>);
                     }}
                 >
-                    <Tooltip title="Form" placement="right">
-                        <Item $move>
-                            <FileTextIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <FlowArrowIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Flow</div>
                         </Item>
-                    </Tooltip>
+
                 </div>
                 <div
                     ref={(ref) => {
@@ -132,11 +139,24 @@ export const Toolbox = () => {
                         );
                     }}
                 >
-                    <Tooltip title="Column" placement="right">
-                        <Item $move>
-                            <SquaresFourIcon size={28}/>
+
+                        <Item $move className={ItemStyle}>
+                            <SquaresFourIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Column</div>
                         </Item>
-                    </Tooltip>
+
+                </div>
+                <div
+                    ref={(ref) => {
+                        create(ref, <Image/>);
+                    }}
+                >
+
+                        <Item $move className={ItemStyle}>
+                            <ImageIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>Image</div>
+                        </Item>
+
                 </div>
             </div>
 

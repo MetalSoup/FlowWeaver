@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Helpers\MediaRenderer;
 
 class PageController extends Controller
 {
@@ -197,6 +198,14 @@ class PageController extends Controller
     public function showPage($slug)
     {
         $page = Page::where('slug', $slug)->firstOrFail();
+
+        // Replace media IDs in serialized content with fresh signed URLs for public pages
+        try {
+            $page->content = MediaRenderer::replaceMediaIdsWithSignedUrls($page->content);
+        } catch (\Throwable $e) {
+            // ignore rendering helper failures to avoid breaking public pages
+        }
+
         return inertia('Pages/PageShow', [
             'page' => $page
         ]);
@@ -205,11 +214,13 @@ class PageController extends Controller
 
     public function show(Page $page)
     {
-        //dd($page);
         $page_content = $page->content;
-        // replace all sites of the string '[ki-path:1]' with 'ki-path-1'
-        //$page_content = str_replace('[ki-path:1]', 'ki-path-1', $page_content);
-        //dd($page_content);
+
+        try {
+            $page->content = MediaRenderer::replaceMediaIdsWithSignedUrls($page->content);
+        } catch (\Throwable $e) {
+            // ignore
+        }
 
         return inertia('Pages/PageShow', [
             'page' => $page

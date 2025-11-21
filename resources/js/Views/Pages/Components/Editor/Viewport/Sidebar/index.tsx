@@ -13,19 +13,19 @@ import TabSection from "@/Components/TabSection";
 import PageSettings from "@/Views/Pages/Components/Editor/Toolbar/PageSettings";
 
 export const SidebarDiv = styled.div<{ $enabled: boolean }>`
-  width: 280px;
   opacity: ${(props) => (props.$enabled ? 1 : 0)};
-  background: #fff;
   margin-right: ${(props) => (props.$enabled ? 0 : -280)}px;
 `;
 
 export const Sidebar = () => {
   const [layersVisible, setLayerVisible] = useState(true);
   const [toolbarVisible] = useState(true);
-  const { enabled, selectedIds, query } = useEditor((state) => ({
+  const { enabled, selectedIds: rawSelectedIds, query } = useEditor((state) => ({
     enabled: state.options.enabled,
     selectedIds: Array.from((state.events.selected as any) || []),
   }));
+
+  const selectedIds: string[] = (rawSelectedIds as unknown as string[]) ?? [];
 
   const activeTab = (selectedIds && selectedIds.length > 0) ? 1 : 0;
   const forceActiveToken = activeTab === 1 ? selectedIds.join('|') : undefined;
@@ -92,17 +92,17 @@ export const Sidebar = () => {
   }, [selectedIds, query]);
 
   return (
-    <div  className="sidebar h-screen transition w-full ">
+    <SidebarDiv $enabled={!!enabled} className="h-screen transition w-full ">
         <TabSection
             tabs={[
                 {
-                    label: (<Tooltip content={"Page Settings"}><GearIcon size={16} className="inline mb-0.5 mr-1"/></Tooltip>),
+                    label: (<Tooltip content={"Page Settings"}><GearIcon size={20} /></Tooltip>),
                     content: (
                         <PageSettings />
                     ),
                 },
                 {
-                    label: (<Tooltip content={"Customize"}><PenIcon size={16} className="inline mb-0.5 mr-1"/></Tooltip>),
+                    label: (<Tooltip content={"Customize"}><PenIcon size={20} /></Tooltip>),
                     content: (
                         <div className="flex flex-col h-full">
                             {selectionHeader}
@@ -111,11 +111,12 @@ export const Sidebar = () => {
                     )
                 },
                 {
-                    label: (<Tooltip content={"Add Elements"}><PlusIcon size={16} className="inline mb-0.5 mr-1"/></Tooltip>),
+                    label: (<Tooltip content={"Add Elements"}><PlusIcon size={20} /></Tooltip>),
                     content: (
                         <Toolbox />
                     )
                 },
+
             ]}
             activeTab={activeTab}
             forceActiveToken={forceActiveToken}
@@ -134,6 +135,6 @@ export const Sidebar = () => {
             </div>
         </SidebarItem>
 
-    </div>
+    </SidebarDiv>
   );
 };

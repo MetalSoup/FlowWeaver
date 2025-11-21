@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as MediaModel;
+use Spatie\Image\Manipulations;
 
-class Site extends Model
+class Site extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     // Allow mass assignment for these fields when creating/updating via controller
     protected $fillable = [
@@ -41,5 +45,24 @@ class Site extends Model
 
     }
 
+    public function registerMediaCollections(): void
+    {
+        $disk = config('medialibrary.disk_name', config('filesystems.default', 'public'));
+
+        $this->addMediaCollection('images')
+            ->useDisk($disk);
+
+        $this->addMediaCollection('files')
+            ->useDisk($disk);
+    }
+
+    public function registerMediaConversions(MediaModel $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(300)
+            ->height(200)
+            ->sharpen(10)
+            ->performOnCollections('images');
+    }
 
 }

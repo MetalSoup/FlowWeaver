@@ -13,6 +13,13 @@ Seeders:
 - Add the ability to change field labels and input styles.
 - Make sure validation works correctly for all field types.
 - Make sure label alignment works for all field types.
+- Add reports for submissions customers and actions to menu
+- User dropdown not working in edit views.
+- Fix sitewide colors
+- Make sure that field options (like required, default value, etc.) are working correctly.
+- Make sure that field types are rendering correctly in the ShowForm node.
+- Make buttons more consistent
+- Fix custom options not working in dropdowns
 - 
 
 ### Node Improvements:

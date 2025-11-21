@@ -110,6 +110,20 @@ export const ReadOnlyVideo: React.FC<any> = ({ src, poster, width = '100%', heig
   );
 };
 
+export const ReadOnlyImage: React.FC<any> = ({ public_url, url, src, alt, caption, width, height, loading = 'lazy' }) => {
+  const displaySrc = public_url ?? url ?? src ?? '';
+  if (!displaySrc) return null;
+  const style: React.CSSProperties = { display: 'block', width: '100%', height: 'auto' };
+  if (width) style.width = width;
+  if (height) style.height = height;
+  return (
+    <div>
+      <img src={displaySrc} alt={alt ?? ''} style={style} loading={loading as any} />
+      {caption ? <div style={{ fontSize: 14, color: '#6b7280', marginTop: 6 }}>{caption}</div> : null}
+    </div>
+  );
+};
+
 export const Fallback: React.FC<any> = ({ type, children, props }) => {
   return (
     <div style={{ border: '1px dashed #ffcc00', padding: 12, background: '#fff7dd' }}>
@@ -128,6 +142,7 @@ export const registry: Record<string, React.ComponentType<any>> = {
   Text: ReadOnlyText,
   Button: ReadOnlyButton,
   Video: ReadOnlyVideo,
+  Image: ReadOnlyImage,
   // Add aliases or common editor-resolved names
   FlexColumn: ReadOnlyContainer,
   Flow: FlowReadOnly,

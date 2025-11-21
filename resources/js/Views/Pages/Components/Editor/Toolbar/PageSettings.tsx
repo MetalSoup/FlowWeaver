@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
+import Input from "@/Components/Input";
+import TextArea from "@/Components/TextArea";
 
 export default function PageSettings() {
   // Load current page props from Inertia page (when editing)
@@ -182,12 +184,12 @@ export default function PageSettings() {
 
       <div>
         <label className="text-sm">Name</label>
-        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={name} onChange={e => { setName(e.target.value); setModified(m => ({ ...m, name: true })); }} />
+        <Input value={name} onChange={e => { setName(e.target.value); setModified(m => ({ ...m, name: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Slug</label>
-        <input
+        <Input
           ref={slugInputRef}
           className={`w-full dark:bg-gray-600 border rounded px-2 py-1 ${slugError ? 'border-red-500' : ''}`}
           value={slug}
@@ -297,37 +299,37 @@ export default function PageSettings() {
 
       <div>
         <label className="text-sm">Page title (meta)</label>
-        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={title} onChange={e => { setTitle(e.target.value); setModified(m => ({ ...m, title: true })); }} />
+        <Input value={title} onChange={e => { setTitle(e.target.value); setModified(m => ({ ...m, title: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Keywords (comma separated)</label>
-        <input className="w-full border rounded px-2 py-1 dark:bg-gray-600" value={keywords} onChange={e => { setKeywords(e.target.value); setModified(m => ({ ...m, keywords: true })); }} />
+        <Input value={keywords} onChange={e => { setKeywords(e.target.value); setModified(m => ({ ...m, keywords: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Additional meta (raw HTML/meta tags)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={meta} onChange={e => { setMeta(e.target.value); setModified(m => ({ ...m, meta: true })); }} />
+        <TextArea rows={4} value={meta} onChange={e => { setMeta(e.target.value); setModified(m => ({ ...m, meta: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Header CSS (injected into head)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={headerCss} onChange={e => { setHeaderCss(e.target.value); setModified(m => ({ ...m, header_css: true })); }} />
+        <TextArea rows={4} value={headerCss} onChange={e => { setHeaderCss(e.target.value); setModified(m => ({ ...m, header_css: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Footer CSS (injected before body end)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={2} value={footerCss} onChange={e => { setFooterCss(e.target.value); setModified(m => ({ ...m, footer_css: true })); }} />
+        <TextArea rows={2} value={footerCss} onChange={e => { setFooterCss(e.target.value); setModified(m => ({ ...m, footer_css: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Header JavaScript (injected into head)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={headerJs} onChange={e => { setHeaderJs(e.target.value); setModified(m => ({ ...m, header_js: true })); }} />
+        <TextArea rows={4} value={headerJs} onChange={e => { setHeaderJs(e.target.value); setModified(m => ({ ...m, header_js: true })); }} />
       </div>
 
       <div>
         <label className="text-sm">Footer JavaScript (injected before body end)</label>
-        <textarea className="w-full border rounded px-2 py-1 font-mono text-sm dark:bg-gray-600" rows={4} value={footerJs} onChange={e => { setFooterJs(e.target.value); setModified(m => ({ ...m, footer_js: true })); }} />
+        <TextArea rows={4} value={footerJs} onChange={e => { setFooterJs(e.target.value); setModified(m => ({ ...m, footer_js: true })); }} />
       </div>
 
       <div className="flex justify-end space-x-2">

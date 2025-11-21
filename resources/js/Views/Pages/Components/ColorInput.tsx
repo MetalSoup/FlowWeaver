@@ -1,3 +1,4 @@
+import Input from "@/Components/Input";
 import React, {useEffect, useRef, useState} from 'react';
 import { ChromePicker } from 'react-color';
 
@@ -46,7 +47,7 @@ export default function ColorInput({ value = '', onChange, placeholder = '' }: {
     <div className="relative" ref={ref}>
       <div className="flex items-center space-x-2">
         <button type="button" onClick={() => setOpen(s => !s)} className="w-8 h-8 p-0 border rounded" style={{ background: normalizeForColorInput(text) }} aria-label="Open color picker"></button>
-        <input type="text" className="flex-1 border rounded p-2 text-sm" value={text} placeholder={placeholder} onChange={(e) => handleTextChange(e.target.value)} />
+        <Input type="text" value={text} placeholder={placeholder} onChange={(e) => handleTextChange(e.target.value)} />
       </div>
       {open ? (
         <div style={{ position: 'absolute', zIndex: 50, top: '40px', left: 0 }}>

@@ -10,7 +10,8 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
-        './resources/js/**/*.tsx',
+        // include JS/TS files so Tailwind picks up classes inside .ts/.tsx/.js/.jsx files
+        './resources/js/**/*.{js,ts,jsx,tsx}',
     ],
 
     theme: {

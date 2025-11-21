@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 
-export const ToolbarSection = ({ title, props, summary, children }: any) => {
+export const ToolbarSection = ({ title, props, summary, children, expanded = false }: any) => {
   const { nodeProps } = useNode((node) => ({
     nodeProps:
       props &&
@@ -17,7 +17,7 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
       }, {}),
   }));
   return (
-    <Accordion>
+    <Accordion sx={{ boxShadow: 'none', backgroundColor: 'transparent', color: 'inherit' }} defaultExpanded={expanded} >
       <AccordionSummary>
         <div className="w-full">
           <Grid container direction="row" alignItems="center" spacing={3}>
@@ -28,7 +28,7 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
             </Grid>
             {summary && props ? (
               <Grid size={{ xs: 8 }}>
-                <h5 className="text-light-gray-2 text-sm text-right text-dark-blue">
+                <h5 className="text-sm text-right">
                   {summary(
                     props.reduce((acc: any, key: any) => {
                       acc[key] = nodeProps[key];
@@ -42,9 +42,9 @@ export const ToolbarSection = ({ title, props, summary, children }: any) => {
         </div>
       </AccordionSummary>
       <AccordionDetails>
-        <Grid container spacing={1}>
+        <div>
           {children}
-        </Grid>
+        </div>
       </AccordionDetails>
     </Accordion>
   );

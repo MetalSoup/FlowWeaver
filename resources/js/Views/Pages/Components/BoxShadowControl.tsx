@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {CaretDownIcon} from "@phosphor-icons/react";
+import Select from "@/Components/Select";
+import Input from "@/Components/Input";
 
 // BoxShadowControl: UI for editing a single box-shadow value with inputs for
 // offset-x, offset-y, blur, spread, unit selector, color and inset toggle.
@@ -85,12 +87,12 @@ export function BoxShadowControl({value = '', onChange, title = ''}: { value?: s
                 <div>{title}</div>
                 <div className={"flex items-center space-x-2"}>
                     <div className={"flex items-center"}>
-                        <select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm border-none bg-none">
+                        <Select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm border-none bg-none">
                             <option value="px">px</option>
                             <option value="rem">rem</option>
                             <option value="em">em</option>
                             <option value="%">%</option>
-                        </select>
+                        </Select>
                         <CaretDownIcon size={10} weight={"bold"} className={"-ml-3"}/>
                     </div>
                     <button type="button" onClick={toggleInset} className={`p-1 border rounded ${inset ? 'bg-gray-100' : ''}`} title={inset ? 'Inset' : 'Outset'}>
@@ -102,22 +104,22 @@ export function BoxShadowControl({value = '', onChange, title = ''}: { value?: s
             <div className="flex items-start">
                 <div className="grid grid-cols-4 gap-2 w-full">
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={offsetX}
+                        <Input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={offsetX}
                                onChange={(e) => onOffsetX(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>X</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={offsetY}
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={offsetY}
                                onChange={(e) => onOffsetY(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Y</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={blur}
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={blur}
                                onChange={(e) => onBlur(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Blur</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={spread}
+                        <Input type="number" step="1" className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={spread}
                                onChange={(e) => onSpread(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Spread</div>
                     </div>
@@ -125,7 +127,7 @@ export function BoxShadowControl({value = '', onChange, title = ''}: { value?: s
             </div>
 
             <div className="flex items-center space-x-2">
-                <input type="text" className="flex-1 border rounded p-2 text-sm" placeholder="Color (e.g. rgba(0,0,0,0.1) or #000)" value={color} onChange={(e) => onColor(e.target.value)} />
+                <Input type="text" className="flex-1 border rounded p-2 text-sm" placeholder="Color (e.g. rgba(0,0,0,0.1) or #000)" value={color} onChange={(e) => onColor(e.target.value)} />
             </div>
         </div>
     );

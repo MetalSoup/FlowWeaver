@@ -56,12 +56,15 @@ export default function TabSection({tabs, activeTab=0, forceActiveToken}: { tabs
                     value={value}
                     onChange={handleChange}
                     aria-label="basic tabs"
+                    variant="fullWidth"
                     sx={{
                         backgroundColor: 'var(--tab-bg)',
                         '& .MuiTab-root': {
                             color: 'var(--tab-text-muted)',
                             textTransform: 'none',
                             minHeight: '40px',
+                            minWidth: 0,
+                            flex: 1,
                         },
                         '& .MuiTab-root.Mui-selected': {
                             color: 'var(--tab-text)'
@@ -74,7 +77,7 @@ export default function TabSection({tabs, activeTab=0, forceActiveToken}: { tabs
                     }}
                 >
                     {tabs.map((tab, index) => (
-                        <Tab label={tab.label} key={index} {...a11yProps(index)} />
+                        <Tab label={tab.label} key={index} {...a11yProps(index)}  />
                     ))}
                 </Tabs>
             </Box>

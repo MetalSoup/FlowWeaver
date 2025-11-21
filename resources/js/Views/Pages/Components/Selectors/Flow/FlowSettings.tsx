@@ -6,9 +6,7 @@ import {SpacingControl} from "@/Views/Pages/Components/SpacingControl";
 import {BoxShadowControl} from "@/Views/Pages/Components/BoxShadowControl";
 import {BorderControl} from "@/Views/Pages/Components/BorderControl";
 import ColorInput from '@/Views/Pages/Components/ColorInput';
-import TabSection from "@/Components/TabSection";
-import {GearIcon, PenIcon, PlusIcon} from "@phosphor-icons/react";
-import Tooltip from "@/Components/Tooltip";
+import Select from "@/Components/Select";
 
 export const FlowSettings = () => {
     // Read flows provided as page props so we can render them in a dropdown
@@ -191,25 +189,32 @@ export const FlowSettings = () => {
     ]
      * */
     return (
-        <React.Fragment>
+        <>
 
-            <ToolbarSection title="Flow selection">
-                <ToolbarItem
-                    full={true}
-                    propKey="flow_id"
-                    type="select"
-                    label="Select flow"
-                    onChange={(v: any) => (v === '' ? null : Number(v))}
-                >
-                    <option value="">-- none --</option>
-                    {Array.isArray(flows)
-                        ? flows.map((f: any) => (
-                            <option key={f.id} value={f.id}>
-                                {f.name || f.title || `Flow ${f.id}`}
-                            </option>
-                        ))
-                        : null}
-                </ToolbarItem>
+            <ToolbarSection title="Flow selection" expanded={true}>
+                <div>
+                    <label className="block text-sm mb-1">Select flow</label>
+                    <Select
+                        className={"w-full"}
+
+                        value={selectedFlowId ?? ''}
+                        onChange={(e) => {
+                            const v = e.target.value === '' ? null : Number(e.target.value);
+                            setProp((props: any) => {
+                                props.flow_id = v;
+                            }, 500);
+                        }}
+                    >
+                        <option value="">-- none --</option>
+                        {Array.isArray(flows)
+                            ? flows.map((f: any) => (
+                                <option key={f.id} value={f.id}>
+                                    {f.name || f.title || `Flow ${f.id}`}
+                                </option>
+                            ))
+                            : null}
+                    </Select>
+                </div>
             </ToolbarSection>
 
 
@@ -589,6 +594,6 @@ export const FlowSettings = () => {
                     </div>
                 </ToolbarSection>
             ) : null}
-        </React.Fragment>
+        </>
     );
 };

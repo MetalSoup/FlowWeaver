@@ -2,8 +2,14 @@
 // value prop is a CSS spacing string like "8px" or "10px 0 10px 0"; onChange returns same format.
 import {useEffect, useState} from "react";
 import {CaretDownIcon, LinkBreakIcon, LinkSimpleIcon} from "@phosphor-icons/react";
+import Select from "@/Components/Select";
+import Input from "@/Components/Input";
 
-export function SpacingControl({value = '', onChange, title = ''}: { value?: string, onChange: (v: string) => void , title?: string }) {
+export function SpacingControl({value = '', onChange, title = ''}: {
+    value?: string,
+    onChange: (v: string) => void,
+    title?: string
+}) {
     // parse value into parts and unit
     const parse = (val: string) => {
         if (!val || typeof val !== 'string') return {parts: ['', '', '', ''], unit: 'px'};
@@ -115,52 +121,55 @@ export function SpacingControl({value = '', onChange, title = ''}: { value?: str
     return (
         <div className={"flex flex-col space-y-2"}>
             <div className={"flex flex-row justify-between"}>
-            {title}
-            <div className={"flex self-end flex-row items-center"}>
+                {title}
+                <div className={"flex self-end flex-row items-center space-x-2"}>
 
-                <select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm border-none bg-none">
-                    <option value="px">px</option>
-                    <option value="rem">rem</option>
-                    <option value="em">em</option>
-                    <option value="%">%</option>
-                </select>
-                <CaretDownIcon size={10} weight={"bold"} className={"-ml-3"}/>
-            </div>
-            </div>
+                    <Select value={unit} onChange={(e) => onUnit(e.target.value)} className="text-sm">
+                        <option value="px">px</option>
+                        <option value="rem">rem</option>
+                        <option value="em">em</option>
+                        <option value="%">%</option>
+                    </Select>
 
-            <div className="flex items-start ">
-
-                <div className="grid grid-cols-4 ">
-                    <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={top}
-                               onChange={(e) => onTop(e.target.value)} placeholder=""/>
-                        <div className={"text-sm"}>Top</div>
-                    </div>
-                    <div className={"text-center"}>
-
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={right}
-                               onChange={(e) => onRight(e.target.value)} placeholder=""/>
-                        <div className={"text-sm"}>Right</div>
-                    </div>
-                    <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={bottom}
-                               onChange={(e) => onBottom(e.target.value)} placeholder=""/>
-                        <div className={"text-sm"}>Bottom</div>
-                    </div>
-                    <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={left}
-                               onChange={(e) => onLeft(e.target.value)} placeholder=""/>
-                        <div className={"text-sm"}>Left</div>
-                    </div>
-
-                </div>
-                <div>
                     <button type="button" onClick={toggleLink}
                             className={`p-[6px] border  ${linked ? 'bg-gray-100' : ''}`}
                             title={linked ? 'Linked' : 'Unlinked'}>
                         {linked ? <LinkSimpleIcon size={16} weight="bold"/> : <LinkBreakIcon size={16} weight="bold"/>}
                     </button>
                 </div>
+
+
+            </div>
+
+            <div className="flex items-start ">
+
+                <div className="grid grid-cols-4 gap-2">
+                    <div className={"text-center"}>
+                        <Input type="number" step="1"
+                               className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={top}
+                               onChange={(e) => onTop(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Top</div>
+                    </div>
+                    <div className={"text-center"}>
+
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={right}
+                               onChange={(e) => onRight(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Right</div>
+                    </div>
+                    <div className={"text-center"}>
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={bottom}
+                               onChange={(e) => onBottom(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Bottom</div>
+                    </div>
+                    <div className={"text-center"}>
+                        <Input type="number" step="1"
+                               className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={left}
+                               onChange={(e) => onLeft(e.target.value)} placeholder=""/>
+                        <div className={"text-sm"}>Left</div>
+                    </div>
+
+                </div>
+
 
             </div>
         </div>

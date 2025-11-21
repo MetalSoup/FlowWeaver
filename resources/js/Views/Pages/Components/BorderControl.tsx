@@ -2,6 +2,8 @@ import React, {useEffect, useState, useRef} from 'react';
 import {LinkBreakIcon, LinkSimpleIcon, CaretDownIcon} from '@phosphor-icons/react';
 import SketchPicker from 'react-color';
 import BorderRadiusControl from './BorderRadiusControl';
+import Select from "@/Components/Select";
+import Input from "@/Components/Input";
 
 // BorderControl: UI for editing border widths (T R B L) with unit and link/unlink,
 // plus border-style and color. Value is stored as an object-string or CSS pieces.
@@ -252,21 +254,21 @@ export function BorderControl({value = '', onChange, title = ''}: { value?: stri
                 <div>{title}</div>
                 <div className={"flex items-center space-x-2"}>
                     <div className={"flex items-center"}>
-                        <select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm border-none bg-none">
+                        <Select value={unit} onChange={(e) => onUnit(e.target.value)} className="p-1 text-sm">
                             <option value="px">px</option>
                             <option value="rem">rem</option>
                             <option value="em">em</option>
                             <option value="%">%</option>
-                        </select>
-                        <CaretDownIcon size={10} weight={"bold"} className={"-ml-3"}/>
+                        </Select>
+
                     </div>
-                    <select value={style} onChange={(e) => onStyle(e.target.value)} className="p-1 text-sm border rounded">
+                    <Select value={style} onChange={(e) => onStyle(e.target.value)} className="p-1 text-sm border rounded">
                         <option value="none">none</option>
                         <option value="solid">solid</option>
                         <option value="dashed">dashed</option>
                         <option value="dotted">dotted</option>
                         <option value="double">double</option>
-                    </select>
+                    </Select>
                     <button type="button" onClick={toggleLink} className={`p-[6px] border  ${linked ? 'bg-gray-100' : ''}`} title={linked ? 'Linked' : 'Unlinked'}>
                         {linked ? <LinkSimpleIcon size={16} weight="bold"/> : <LinkBreakIcon size={16} weight="bold"/>}
                     </button>
@@ -276,22 +278,22 @@ export function BorderControl({value = '', onChange, title = ''}: { value?: stri
             <div className="flex items-start">
                 <div className="grid grid-cols-4 gap-2 w-full">
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={top}
+                        <Input type="number" step="1" className="border-r rounded-l-[3px] w-full p-1 text-sm text-center" value={top}
                                onChange={(e) => onTop(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Top</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={right}
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={right}
                                onChange={(e) => onRight(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Right</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={bottom}
+                        <Input type="number" step="1" className="border-r w-full p-1 text-sm text-center" value={bottom}
                                onChange={(e) => onBottom(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Bottom</div>
                     </div>
                     <div className={"text-center"}>
-                        <input type="number" step="1" className="border-r rounded-r-[3px] w-full p-1 text-sm text-center" value={left}
+                        <Input type="number" step="1" className="w-full text-sm text-center" value={left}
                                onChange={(e) => onLeft(e.target.value)} placeholder=""/>
                         <div className={"text-sm"}>Left</div>
                     </div>

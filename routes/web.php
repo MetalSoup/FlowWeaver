@@ -134,10 +134,28 @@ Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizatio
         Route::post('/sites/select', [SiteController::class, 'storeSelection'])->name('sites.storeSelection')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
         Route::resource('/sites', SiteController::class)->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
 
+        // Media library routes for site-scoped uploads and listing
+        Route::get('/media', [\App\Http\Controllers\MediaController::class, 'index'])->name('media.index');
+        Route::post('/media', [\App\Http\Controllers\MediaController::class, 'store'])->name('media.store');
 
 
     });
 });
+
+// Serve a media file publicly via a temporary signed URL (no auth) - used for public embedding
+Route::get('/media/public/{media}', [\App\Http\Controllers\MediaServeController::class, 'public'])->name('media.public');
+
+// Serve media files securely (must belong to selected site) — top-level route (not under /dashboard)
+Route::get('/media/file/{media}', [\App\Http\Controllers\MediaServeController::class, 'show'])->middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('media.file');
+
+// Debug route to inspect candidate storage paths for a media item
+Route::get('/media/file/{media}/debug', [\App\Http\Controllers\MediaServeController::class, 'debug'])->middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('media.file.debug');
+
+
+// Compatibility redirect for older client requests under /dashboard/media/file/{id}
+Route::get('/dashboard/media/file/{media}', function (\App\Models\Media $media) {
+    return redirect()->to(route('media.file', $media->id));
+})->middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
 
 route::get('testcompiler/{flow}', [FlowController::class, 'compile']);
 route::get('get_flow/{flow}', [FlowController::class, 'getFlow'])->name('get_flow');
@@ -197,6 +215,9 @@ Route::get('/dashboard/stats', function () {
 
 // Simple AJAX API for validating page slugs (used by the editor)
 Route::post('/api/slug/validate', [SlugValidationController::class, 'validateSlug'])->middleware(['auth'])->name('api.slug.validate');
+
+// API endpoint to return media for selected site (used by editor modal)
+Route::get('/api/media', [\App\Http\Controllers\MediaController::class, 'apiIndex'])->middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('api.media.index');
 
 require __DIR__.'/auth.php';
 

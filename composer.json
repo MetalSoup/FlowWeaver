@@ -12,6 +12,7 @@
         "laravel/tinker": "^2.9",
         "opcodesio/log-viewer": "^3.11",
         "rap2hpoutre/laravel-log-viewer": "^2.5",
+        "spatie/laravel-medialibrary": "^11.17",
         "spatie/laravel-permission": "^6.9",
         "tightenco/ziggy": "^2.0"
     },

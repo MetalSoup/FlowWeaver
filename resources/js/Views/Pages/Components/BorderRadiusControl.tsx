@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {LinkBreakIcon, LinkSimpleIcon} from '@phosphor-icons/react';
+import Select from "@/Components/Select";
+import Input from "@/Components/Input";
 
 // BorderRadiusControl: manage border-radius values (TL TR BR BL) with link/unlink
 // Now uses numeric inputs plus a shared unit select (px, rem, em, %).
@@ -112,12 +114,12 @@ export default function BorderRadiusControl({value = '', onChange, title = ''}: 
             <div className="flex justify-between items-center">
                 <div>{title}</div>
                 <div className="flex items-center space-x-2">
-                    <select value={unit} onChange={(e) => onUnitChange(e.target.value)} className="p-1 text-sm border rounded">
+                    <Select value={unit} onChange={(e) => onUnitChange(e.target.value)} className="p-1 text-sm border rounded">
                         <option value="px">px</option>
                         <option value="rem">rem</option>
                         <option value="em">em</option>
                         <option value="%">%</option>
-                    </select>
+                    </Select>
                     <button type="button" onClick={toggleLink} className={`p-[6px] border ${linked ? 'bg-gray-100' : ''}`} title={linked ? 'Linked' : 'Unlinked'}>
                         {linked ? <LinkSimpleIcon size={16} weight="bold"/> : <LinkBreakIcon size={16} weight="bold"/>}
                     </button>
@@ -126,14 +128,14 @@ export default function BorderRadiusControl({value = '', onChange, title = ''}: 
 
             {linked ? (
                 <div className="flex items-center space-x-2">
-                    <input type="number" step="0.25" className="flex-1 border rounded p-1 text-sm" placeholder="Radius (e.g. 4)" value={tl} onChange={(e) => onSetTl(e.target.value)} />
+                    <Input type="number" step="0.25" className="flex-1 border rounded p-1 text-sm" placeholder="Radius (e.g. 4)" value={tl} onChange={(e) => onSetTl(e.target.value)} />
                 </div>
             ) : (
                 <div className="grid grid-cols-4 gap-2 w-full">
-                    <div className="text-center"><input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center" placeholder="TL" value={tl} onChange={(e) => onSetTl(e.target.value)} /><div className="text-sm">TL</div></div>
-                    <div className="text-center"><input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center" placeholder="TR" value={tr} onChange={(e) => onSetTr(e.target.value)} /><div className="text-sm">TR</div></div>
-                    <div className="text-center"><input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center" placeholder="BR" value={br} onChange={(e) => onSetBr(e.target.value)} /><div className="text-sm">BR</div></div>
-                    <div className="text-center"><input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center" placeholder="BL" value={bl} onChange={(e) => onSetBl(e.target.value)} /><div className="text-sm">BL</div></div>
+                    <div className="text-center"><Input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center"  value={tl} onChange={(e) => onSetTl(e.target.value)} /><div className="text-sm">TL</div></div>
+                    <div className="text-center"><Input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center"  value={tr} onChange={(e) => onSetTr(e.target.value)} /><div className="text-sm">TR</div></div>
+                    <div className="text-center"><Input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center"  value={br} onChange={(e) => onSetBr(e.target.value)} /><div className="text-sm">BR</div></div>
+                    <div className="text-center"><Input type="number" step="0.25" className="w-full border rounded p-1 text-sm text-center"  value={bl} onChange={(e) => onSetBl(e.target.value)} /><div className="text-sm">BL</div></div>
                 </div>
             )}
         </div>

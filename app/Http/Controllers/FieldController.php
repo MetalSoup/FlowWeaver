@@ -20,7 +20,7 @@ class FieldController extends Controller
     public function index(Request $request)
     {
         // Resolve selected site id from the authenticated user's preferences.
-        $selectedSite = null;
+        $selectedSiteId = null;
         if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
             $selectedSiteId = $request->user()->selectedSite()->id;
         }
@@ -101,6 +101,12 @@ class FieldController extends Controller
         if (auth()->user() && method_exists(auth()->user(), 'selectedSite') && auth()->user()->selectedSite()) {
             $selectedSiteId = auth()->user()->selectedSite()->id;
         }
+
+        if (! $selectedSiteId) {
+            // Redirect the user to site selection if none is selected to avoid creating orphaned fields
+            return Redirect::route('sites.select')->with('error', 'Please select a site before creating fields.');
+        }
+
         return inertia('Fields/FieldCreate', [
             'field' => new FieldResource(new Field(['site_id' => $selectedSiteId])),
         ]);
@@ -115,6 +121,11 @@ class FieldController extends Controller
         $selectedSiteId = null;
         if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
             $selectedSiteId = $request->user()->selectedSite()->id;
+        }
+
+        if (! $selectedSiteId) {
+            // Prevent creating a field without a site; redirect to site selection
+            return Redirect::route('sites.select')->with('error', 'Please select a site before creating fields.');
         }
 
         // validated data comes from the StoreFieldRequest
@@ -156,9 +167,14 @@ class FieldController extends Controller
         if ($request->user() && method_exists($request->user(), 'selectedSite') && $request->user()->selectedSite()) {
             $selectedSiteId = $request->user()->selectedSite()->id;
         }
-        $validated = $request->validated();
 
+        if (! $selectedSiteId) {
+            return Redirect::route('sites.select')->with('error', 'Please select a site before updating fields.');
+        }
+
+        $validated = $request->validated();
         $validated['site_id'] = $selectedSiteId;
+
         if ($field) $field->update($validated);
         else $field = Field::create($validated);
         return Redirect::route('fields.edit', ['field' => $field->id])->with('success', 'Field updated successfully.');
