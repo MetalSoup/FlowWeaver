@@ -1,18 +1,16 @@
 import React, {useEffect, useState, useRef} from "react";
 import {User} from "@/types";
-import {Link, router, usePage} from "@inertiajs/react";
-import Dropdown from "@/Components/Dropdown";
+import {router, usePage} from "@inertiajs/react";
 import {
     ChartLineUpIcon,
-    CubeIcon,
     FilesIcon,
     FlowArrowIcon,
-    MoonIcon,
-    SunDimIcon,
     TextboxIcon,
-    BuildingOfficeIcon, IdentificationCardIcon, SignOutIcon, ArrowFatLinesRightIcon
+    IdentificationCardIcon,
+    ArrowFatLinesRightIcon
 } from "@phosphor-icons/react";
 import {useDashboardSidebar} from '@/Layouts/DashboardSidebarContext';
+import MainMenu from "@/Layouts/MainMenu";
 
 
 export default function DashboardSideMenu(props: {
@@ -26,6 +24,7 @@ export default function DashboardSideMenu(props: {
 
     const {props: pageProps} = usePage();
     const selectedOrganization = (pageProps as any).selected_organization;
+    const isSuperAdmin = (pageProps as any).isSuperAdmin ?? false;
 
     // Read global sidebar state from context
     const sidebarCtx = (() => {
@@ -36,13 +35,6 @@ export default function DashboardSideMenu(props: {
         }
     })();
 
-    const collapsed = sidebarCtx ? sidebarCtx.collapsed : ((): boolean => {
-        try {
-            return localStorage.getItem('sidebar-collapsed') === '1';
-        } catch (e) {
-            return false;
-        }
-    })();
     const dark = sidebarCtx ? sidebarCtx.dark : ((): boolean => {
         try {
             const serverPref = (user as any)?.preferences?.theme;
@@ -57,13 +49,6 @@ export default function DashboardSideMenu(props: {
     const setDark = sidebarCtx ? sidebarCtx.setDark : (() => {
     });
 
-    // persist collapsed state when it changes
-    useEffect(() => {
-        try {
-            localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
-        } catch (e) {
-        }
-    }, [collapsed]);
 
     // write theme preference and update <html> class when `dark` changes
     const _initialSync = useRef<boolean>(false);
@@ -147,6 +132,10 @@ export default function DashboardSideMenu(props: {
         }
     ];
 
+    if (isSuperAdmin) {
+        navItems.push({ href: route('admin.settings.index'), label: 'Admin', icon: (<IdentificationCardIcon size={25}/>)});
+    }
+
     // detect if we are on editor routes (page edit or flow edit) so we can enable compact behavior
     const [isEditorRoute, setIsEditorRoute] = useState(false);
     useEffect(() => {
@@ -162,12 +151,21 @@ export default function DashboardSideMenu(props: {
     }, []);
 
     // local state for the inline expanded menu when in editor route
-    const [editorMenuOpen, setEditorMenuOpen] = useState(false);
+    // default to open; we'll force it open when not on editor routes but allow toggling when on editor routes
+    const [editorMenuOpen, setEditorMenuOpen] = useState(true);
 
     // refs and state to animate the editor menu sliding open/closed
     const editorMenuWrapperRef = useRef<HTMLDivElement | null>(null);
     const editorMenuContentRef = useRef<HTMLDivElement | null>(null);
     const [editorMenuHeight, setEditorMenuHeight] = useState(0);
+
+    // Ensure menu is always open when NOT on an editor route. When on an editor route
+    // we allow the user to toggle (do not overwrite user toggles).
+    useEffect(() => {
+        if (isEditorRoute) {
+            setEditorMenuOpen(false);
+        }
+    }, [isEditorRoute]);
 
     useEffect(() => {
         const updateHeight = () => {
@@ -199,7 +197,10 @@ export default function DashboardSideMenu(props: {
     useEffect(() => {
         const onPointerDown = (e: PointerEvent) => {
             try {
-                if (!editorMenuOpen) return;
+                // Only allow outside-click to close the menu when we are on an editor route
+                // (when the menu is toggleable). When not on an editor route the menu must
+                // remain open.
+                if (!editorMenuOpen || !isEditorRoute) return;
                 const target = e.target as Node | null;
                 const wrapper = editorMenuWrapperRef.current;
                 const toggleBtn = typeof document !== 'undefined' ? document.getElementById('dashboard-show-menu') : null;
@@ -218,8 +219,7 @@ export default function DashboardSideMenu(props: {
     }, [editorMenuOpen]);
 
     return <aside
-        className={`relative bg-sidebar h-screen hidden sm:flex sm:flex-col ${collapsed ? 'w-20' : 'w-64'} shadow-xl bg-gray-200 dark:bg-gray-900 text-gray-800 dark:text-gray-50`}
-        aria-expanded={!collapsed}>
+        className={`relative bg-sidebar h-screen hidden sm:flex sm:flex-col w-80 shadow-xl bg-gray-200 dark:bg-zinc-800 text-gray-800 dark:text-gray-50 border-r-2  border-gray-50`}>
 
         <div className="flex items-center gap-3 px-3 py-3 border-b border-white/10">
             <div className="flex items-center justify-center h-10 w-10 rounded-md bg-white/10 ms-2">
@@ -252,7 +252,7 @@ export default function DashboardSideMenu(props: {
                         onKeyDown={(e) => {
                             if (e.key === 'Escape') setEditorMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-center p-2 rounded bg-gray-700 ${toggleTextClass} ${toggleBgClass} hover:${toggleHoverBg}`}
+                        className={`w-full mb-2 flex items-center justify-center p-2 rounded bg-gray-700 ${toggleTextClass} ${toggleBgClass} hover:${toggleHoverBg}`}
                         title="Show Menu"
                     >
 
@@ -261,216 +261,46 @@ export default function DashboardSideMenu(props: {
                                 <ArrowFatLinesRightIcon size={25}/>
                             </span>
 
-                        <span className={`ml-2 ${collapsed ? 'hidden' : ''}`}>Main Menu</span>
+                        <span>Main Menu</span>
                     </button>
 
                     {/* Animated container: always mounted so CSS transitions can run */}
-                    <div
-                        ref={editorMenuWrapperRef}
-                        className={`overflow-hidden transition-all duration-300 ease-in-out mt-3`}
-                        style={{
-                            maxHeight: editorMenuOpen ? `${editorMenuHeight}px` : '0px',
-                            opacity: editorMenuOpen ? 1 : 0,
-                            transform: editorMenuOpen ? 'translateY(0)' : 'translateY(-6px)'
-                        }}
-                        aria-hidden={!editorMenuOpen}
-                    >
-                        <div ref={editorMenuContentRef}>
-                            <ul id="dashboard-main-nav" className="space-y-1">
-                                {navItems.map(item => {
-                                    const isActive = (typeof window !== 'undefined') && (() => {
-                                        try {
-                                            const itemPath = new URL(String(item.href), window.location.origin).pathname;
-                                            return itemPath === window.location.pathname;
-                                        } catch (e) {
-                                            return false;
-                                        }
-                                    })();
-                                    const baseClasses = "flex items-center gap-3 px-4 py-3 rounded-md mx-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/30";
-                                    const activeClasses = isActive
-                                        ? `bg-white/6 ring-1 ring-white/10 shadow-sm ${dark ? 'text-white' : 'text-gray-900'}`
-                                        : `${itemTextClass} hover:bg-white/5 ${hoverText}`;
-                                    return (
-                                        <li key={item.label}>
-                                            <Link href={item.href} className={`${baseClasses} ${activeClasses}`}
-                                                  onClick={() => setEditorMenuOpen(false)}>
-                                                <span className={`flex-shrink-0 ${itemTextClass}`}>{item.icon}</span>
-                                                <span className={`truncate ${textPrimary}`}>{item.label}</span>
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                            <div className="border-t border-white/10 mt-6 pt-4 px-3">
-                                <div className={`text-xs ${textTertiary} px-3 ${collapsed ? 'hidden' : ''}`}>Account</div>
-                                <div className="mt-2">
-                                    <Dropdown>
-                                        <Dropdown.Trigger>
-                                            <div className="flex items-center gap-3 px-3 py-4">
-                                                <div className="flex-shrink-0">
-                                                    <div
-                                                        className={`h-10 w-10 rounded-full bg-white/10 flex items-center justify-center ${textPrimary} font-semibold`}>
-                                                        {initials}
-                                                    </div>
-                                                </div>
-                                                <div className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
-                                                    <div
-                                                        className={`${textPrimary} text-sm truncate`}>{user ? user.name : "Guest"}</div>
-                                                    <div
-                                                        className={`${textSecondary} text-xs`}>{user ? (user.email ?? "") : "Not signed in"}</div>
-                                                    {(!collapsed) && (
-                                                        <div className={`${textTertiary} text-xs mt-1`}>
-                                                            <div>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
-                                                            <div>{selectedSite ? (selectedSite.name ?? '') : ''}</div>
-                                                        </div>
 
-
-                                                    )}
-                                                </div>
-
-
-                                            </div>
-                                        </Dropdown.Trigger>
-                                        <Dropdown.Content>
-                                            <Dropdown.Link href={route("organizations.index")}
-                                                           className="px-2 py-1 text-gray-500 flex items-center gap-3"><span
-                                                className={`flex-shrink-0 `}><BuildingOfficeIcon
-                                                size={25}/></span><span>Organizations</span></Dropdown.Link>
-                                            <Dropdown.Link href={route("sites.index")}
-                                                           className={"px-2 py-1 text-gray-500 flex items-center gap-3"}><span
-                                                className={`flex-shrink-0 `}><CubeIcon
-                                                size={25}/></span><span>Sites</span></Dropdown.Link>
-
-                                            <div className="border-t my-2"/>
-                                            <Dropdown.Link href={route("profile.edit")}
-                                                           className={"flex items-center gap-3"}><IdentificationCardIcon
-                                                size={25}/> Profile</Dropdown.Link>
-                                            <Dropdown.Link href={route("logout")} method="post" as="button"
-                                                           className={"flex items-center gap-3"}><SignOutIcon size={25}/>Log Out</Dropdown.Link>
-                                            <button
-                                                onClick={() => setDark(!dark)}
-                                                title={dark ? 'Switch to light' : 'Switch to dark'}
-                                                aria-pressed={dark}
-                                                style={{color: dark ? '#ffffff' : '#111827'}}
-                                                className={`inline-flex items-center justify-center p-1 rounded-md ${toggleTextClass} ${toggleBgClass} ${toggleBorderClass} ${toggleHoverBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${dark ? 'focus-visible:ring-white/30' : 'focus-visible:ring-gray-300'}`}
-                                            >
-                                                {dark ? (
-                                                    <SunDimIcon size={25}/>
-                                                ) : (
-                                                    <MoonIcon size={25}/>
-                                                )}
-                                            </button>
-                                        </Dropdown.Content>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             ) : null}
 
-            {!isEditorRoute && (
-                <>
-                    <ul className="space-y-1">
-                        {navItems.map(item => {
-                            // if editor route is active and editorMenuOpen is used, keep the primary listing but allow it to be hidden by `editorMenuOpen` UI; otherwise render as before
-                            const isActive = (typeof window !== 'undefined') && (() => {
-                                try {
-                                    const itemPath = new URL(String(item.href), window.location.origin).pathname;
-                                    return itemPath === window.location.pathname;
-                                } catch (e) {
-                                    return false;
-                                }
-                            })();
-                            const baseClasses = "flex items-center gap-3 px-4 py-3 rounded-md mx-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/30";
-                            const activeClasses = isActive
-                                ? `bg-white/6 ring-1 ring-white/10 shadow-sm ${dark ? 'text-white' : 'text-gray-900'}`
-                                : `${itemTextClass} hover:bg-white/5 ${hoverText}`;
 
-                            return (
-                                <li key={item.label}>
-                                    <Link href={item.href} className={`${baseClasses} ${activeClasses}`}>
-                                        <span className={`flex-shrink-0 ${itemTextClass}`}>{item.icon}</span>
-                                        <span
-                                            className={`truncate ${collapsed ? 'hidden' : 'block'} ${textPrimary}`}>{item.label}</span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                    <div className="border-t border-white/10 mt-6 pt-4 px-3">
-                        <div className={`text-xs ${textTertiary} px-3 ${collapsed ? 'hidden' : ''}`}>Account</div>
-                        <div className="mt-2">
-                            <Dropdown>
-                                <Dropdown.Trigger>
-                                    <div className="flex items-center gap-3 px-3 py-4">
-                                        <div className="flex-shrink-0">
-                                            <div
-                                                className={`h-10 w-10 rounded-full bg-white/10 flex items-center justify-center ${textPrimary} font-semibold`}>
-                                                {initials}
-                                            </div>
-                                        </div>
-                                        <div className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
-                                            <div
-                                                className={`${textPrimary} text-sm truncate`}>{user ? user.name : "Guest"}</div>
-                                            <div
-                                                className={`${textSecondary} text-xs`}>{user ? (user.email ?? "") : "Not signed in"}</div>
-                                            {(!collapsed) && (
-                                                <div className={`${textTertiary} text-xs mt-1`}>
-                                                    <div>{selectedOrganization ? (selectedOrganization.name ?? '') : ''}</div>
-                                                    <div>{selectedSite ? (selectedSite.name ?? '') : ''}</div>
-                                                </div>
+            <div
+                ref={editorMenuWrapperRef}
+                className={`${isEditorRoute ? ' transition-all duration-1000 ease-in-out' : ''} overflow-hidden  mt-3`}
+                style={{height: editorMenuOpen ? editorMenuHeight : 0}}
+                aria-hidden={!editorMenuOpen}
+            >
+                <div ref={editorMenuContentRef}>
+
+                    <MainMenu
+                        setDark={setDark}
+                        navItems={navItems}
+                        dark={dark}
+                        itemTextClass={itemTextClass}
+                        hoverText={hoverText}
+                        textPrimary={textPrimary}
+                        textSecondary={textSecondary}
+                        textTertiary={textTertiary}
+                        initials={initials}
+                        user={user}
+                        selectedOrganization={selectedOrganization}
+                        selectedSite={selectedSite}
+                        toggleTextClass={toggleTextClass}
+                        toggleBgClass={toggleBgClass}
+                        toggleHoverBg={toggleHoverBg}
+                        toggleBorderClass={toggleBorderClass}
+                    />
+                </div>
+            </div>
 
 
-                                            )}
-                                        </div>
 
-
-                                    </div>
-                                </Dropdown.Trigger>
-                                <Dropdown.Content>
-                                    <Dropdown.Link href={route("organizations.index")}
-                                                   className="px-2 py-1 text-gray-500 flex items-center gap-3"><span
-                                        className={`flex-shrink-0 `}><BuildingOfficeIcon
-                                        size={25}/></span><span>Organizations</span></Dropdown.Link>
-                                    <Dropdown.Link href={route("sites.index")}
-                                                   className={"px-2 py-1 text-gray-500 flex items-center gap-3"}><span
-                                        className={`flex-shrink-0 `}><CubeIcon
-                                        size={25}/></span><span>Sites</span></Dropdown.Link>
-
-                                    <div className="border-t my-2"/>
-                                    <Dropdown.Link href={route("profile.edit")}
-                                                   className={"flex items-center gap-3"}><IdentificationCardIcon
-                                        size={25}/> Profile</Dropdown.Link>
-                                    <Dropdown.Link href={route("logout")} method="post" as="button"
-                                                   className={"flex items-center gap-3"}><SignOutIcon size={25}/>Log Out</Dropdown.Link>
-                                    <button
-                                        onClick={() => setDark(!dark)}
-                                        title={dark ? 'Switch to light' : 'Switch to dark'}
-                                        aria-pressed={dark}
-                                        style={{color: dark ? '#ffffff' : '#111827'}}
-                                        className={`inline-flex items-center justify-center p-1 rounded-md ${toggleTextClass} ${toggleBgClass} ${toggleBorderClass} ${toggleHoverBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${dark ? 'focus-visible:ring-white/30' : 'focus-visible:ring-gray-300'}`}
-                                    >
-                                        {dark ? (
-                                            <SunDimIcon size={25}/>
-                                        ) : (
-                                            <MoonIcon size={25}/>
-                                        )}
-                                    </button>
-                                </Dropdown.Content>
-                            </Dropdown>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/*{ href: route("sites.index"), label: "Sites", icon: (
-                 <Cube size={25}/>
-             ) },*/}
-
-
-            {/* Stable portal target inside the side menu so editor sidebars appear visually within it.
-                This element is intentionally placed here and kept stable (not recreated) to host the portal. */}
             <div id="dashboard-sidebar-bottom"
                  aria-hidden="true"></div>
 
@@ -503,4 +333,3 @@ export default function DashboardSideMenu(props: {
 
     </aside>;
 }
-

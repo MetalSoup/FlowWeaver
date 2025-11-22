@@ -96,8 +96,9 @@ class HandleInertiaRequests extends Middleware
             'flowID' => $request->route()->parameters['flow']['id'] ?? null,
             //'flows' => $request->user()->flows,
             // Read the latest saved preferences from the user at evaluation time
-            'preferences' => fn() => $request->user() ? $request->user()->preferences : []
-
+            'preferences' => fn() => $request->user() ? $request->user()->preferences : [],
+            // expose whether current user is a super-admin (Spatie role)
+            'isSuperAdmin' => fn() => $request->user() ? ($request->user()->hasRole('super-admin') ? true : false) : false,
 
          ];
     }

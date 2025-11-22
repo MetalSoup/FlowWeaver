@@ -197,9 +197,90 @@ class PageController extends Controller
 
     public function showPage($slug)
     {
+        // Determine detected domain (set by DetectSiteByHost middleware)
+        $siteDomain = request()->attributes->get('detected_site_domain');
+
+        // If a site-domain is detected, scope page lookup to that site's pages
+        if ($siteDomain && $siteDomain->site) {
+            $site = $siteDomain->site;
+
+            // Root path handling: when slug is empty or '/', serve domain default -> site fallback -> global
+            if (empty($slug) || $slug === '/') {
+                $page = null;
+
+                if ($siteDomain->default_page_id) {
+                    $page = Page::where('id', $siteDomain->default_page_id)->where('site_id', $site->id)->first();
+                }
+
+                // Future: fall back to site-level default if domain-level not set (site->default_page_id)
+                if (!$page) {
+                    // no domain default, attempt site-level fallback if such a column exists
+                    if (property_exists($site, 'default_page_id') && $site->default_page_id) {
+                        $page = Page::where('id', $site->default_page_id)->where('site_id', $site->id)->first();
+                    }
+                }
+
+                if (!$page) {
+                    // No domain/site default found -> fall back to global landing (existing behavior)
+                    return redirect()->route('login');
+                }
+
+                try {
+                    $page->content = MediaRenderer::replaceMediaIdsWithSignedUrls($page->content);
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+
+                return inertia('Pages/PageShow', ['page' => $page]);
+            }
+
+            // Non-root slugs: ensure the page belongs to the detected site
+            $page = Page::where('slug', $slug)->where('site_id', $site->id)->first();
+
+            if ($page) {
+                try {
+                    $page->content = MediaRenderer::replaceMediaIdsWithSignedUrls($page->content);
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+
+                return inertia('Pages/PageShow', ['page' => $page]);
+            }
+
+            // Page not found for this domain: try domain-specific 404 -> site fallback -> system 404
+            if ($siteDomain->not_found_page_id) {
+                $nf = Page::where('id', $siteDomain->not_found_page_id)->where('site_id', $site->id)->first();
+                if ($nf) {
+                    try {
+                        $nf->content = MediaRenderer::replaceMediaIdsWithSignedUrls($nf->content);
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+
+                    return response()->view('pages.page-show', ['page' => $nf], 404);
+                }
+            }
+
+            // site-level fallback if available
+            if (property_exists($site, 'not_found_page_id') && $site->not_found_page_id) {
+                $nf = Page::where('id', $site->not_found_page_id)->where('site_id', $site->id)->first();
+                if ($nf) {
+                    try {
+                        $nf->content = MediaRenderer::replaceMediaIdsWithSignedUrls($nf->content);
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+
+                    return response()->view('pages.page-show', ['page' => $nf], 404);
+                }
+            }
+
+            abort(404);
+        }
+
+        // No domain detected: preserve global behavior (global landing or global page handling)
         $page = Page::where('slug', $slug)->firstOrFail();
 
-        // Replace media IDs in serialized content with fresh signed URLs for public pages
         try {
             $page->content = MediaRenderer::replaceMediaIdsWithSignedUrls($page->content);
         } catch (\Throwable $e) {

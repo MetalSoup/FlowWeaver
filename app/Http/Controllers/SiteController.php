@@ -239,6 +239,10 @@ class SiteController extends Controller
 
         return Inertia::render('Sites/SiteEdit', [
             'site' => $site,
+            'domains' => $site->domains()->with(['defaultPage','notFoundPage'])->get(),
+            'pages' => $site->pages()->select('id','name')->get(),
+            'isSuperAdmin' => auth()->check() ? auth()->user()->hasRole('super-admin') : false,
+            'main_domain' => config('app.main_domain'),
         ]);
     }
 

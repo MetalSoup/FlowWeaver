@@ -19,11 +19,11 @@
 
 .react-flow__handle-left
 {
-    left:0 !important;
-    transform: translate(0 , -50%) !important;
+
+    left:3px;
     width:1.5rem !important;
     height: 1.5rem !important;
-
+    transform: translate(0 , -50%) !important;
 
 
 }
@@ -32,7 +32,7 @@
 
 .react-flow__handle-right
 {
-    right:0;
+    right:3px;
     width:1.5rem !important;
     height: 1.5rem !important;
     transform: translate(0 , -50%) !important;
@@ -98,9 +98,29 @@
 
 /* small helper to increase clickable area */
 .react-flow__handle {
-  width: 14px !important;
-  height: 14px !important;
+  width: 26px !important;
+  height: 26px !important;
 }
+
+.node_start_handle .react-flow__handle,
+.node_end_handle .react-flow__handle {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 100px;
+
+
+}
+
+.node_end_handle .react-flow__handle
+{
+    right: 5px;
+}
+
+.node_start_handle .react-flow__handle
+{
+    left: 5px !important;
+}
+
 
 /* If you prefer Tailwind utility classes, you can map these using @apply in your main CSS (requires Tailwind configured to allow this file). */
 
@@ -116,37 +136,39 @@
 
 /* Handle type specific styles */
 .node_start_handle .handle_icon {
-    left: 0;
+    left: 8px;
     width: 34px;
     height: 34px;
     border-radius: 9999px;
+    box-shadow: 0 0 5px 5px rgba(0,0,0,0.5) inset, 0 0 1px 2px grey, 0 0 0 4px white;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(150,222,131,0.12); /* light green */
     color: var(--kd-green);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+
 }
 .node_start_handle .handle_icon.connected {
     background: var(--kd-green);
     color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    box-shadow: -4px -4px 10px 2px #235416 inset, 0 0 1px 2px grey, 0 0 0 4px white, 4px 4px 10px rgba(0,0,0,0.6);
 }
 
 .node_end_handle .handle_icon {
-    right: 0;
+    right: 8px;
     width: 34px;
     height: 34px;
     border-radius: 9999px;
+    box-shadow: 0 0 5px 5px rgba(0,0,0,0.5) inset, 0 0 1px 2px grey, 0 0 0 4px white;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(150,222,131,0.12); /* light green */
     color: var(--kd-green);
-    transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+
 }
 .node_end_handle .handle_icon.connected {
     background: var(--kd-green);
     color: white;
-    box-shadow: 0 6px 18px rgba(18,103,219,0.14);
+    box-shadow: -4px -4px 10px 2px #235416 inset, 0 0 1px 2px grey, 0 0 0 4px white, 4px 4px 10px rgba(0,0,0,0.6);
 }

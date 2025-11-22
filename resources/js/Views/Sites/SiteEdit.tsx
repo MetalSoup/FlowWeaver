@@ -2,7 +2,8 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 // using `any` for the site prop to keep the editor flexible
 import { Head, router } from "@inertiajs/react";
 import {useState} from "react";
-export default function SiteEdit({auth, site}: { auth: any, site: any }) {
+import DomainsPanel from './DomainsPanel';
+export default function SiteEdit({auth, site, domains, pages, isSuperAdmin, main_domain}: { auth: any, site: any, domains: any[], pages: any[], isSuperAdmin?: boolean, main_domain?: string }) {
     const [name, setName] = useState(site.name ? site.name : "");
     const [description, setDescription] = useState(site.description ? site.description : "");
     const onChangeName = (event: any) => {
@@ -61,6 +62,11 @@ export default function SiteEdit({auth, site}: { auth: any, site: any }) {
 
 
                 </div>
+                {site.id && (
+                    <div className="w-full p-5">
+                        <DomainsPanel site={site} domains={domains} pages={pages} auth={auth} isSuperAdmin={isSuperAdmin} main_domain={main_domain} />
+                    </div>
+                )}
             </div>
 
         </DashboardLayout>

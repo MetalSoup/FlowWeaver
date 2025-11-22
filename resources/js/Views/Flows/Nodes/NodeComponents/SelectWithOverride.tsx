@@ -2,6 +2,7 @@ import React from 'react';
 import Select, {SingleValue} from "react-select";
 import CreatableSelect from "react-select/creatable";
 import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
+import {reactSelectClassNames, selectBase} from "@/Components/ui";
 
 interface SelectWithOverrideProps {
     onChange: any;
@@ -20,14 +21,19 @@ interface SelectWithOverrideProps {
     [key: string]: any;
 }
 
-const SelectWithOverride: any = ({className = '',isSearchable, options, onChange, handleID, value, nodeID, label,creatable = false, id, dataType}) => {
+export function SelectWithOverride(props: SelectWithOverrideProps) {
+    const {className = '', isSearchable, options, onChange, handleID, value: propValue, nodeID, label, creatable = false, id, dataType} = props;
+
+    let value = propValue;
 
     if (options && value) {
-        let option = options.find(option => option.value === value.value);
+        let option = options.find(option => option.value === (value as any).value);
         if (option) {
             value = option;
         }
     }
+
+
 
     return (
         <>
@@ -42,7 +48,8 @@ const SelectWithOverride: any = ({className = '',isSearchable, options, onChange
                         {!creatable &&
 
                             <Select
-                                className={"r-select w-[300px] nowheel " + (className ?? '')}
+                                className={("r-select nowheel " + (className ?? ''))}
+                                classNames={reactSelectClassNames}
                                 onChange={onChange}
                                 defaultValue={value}
                                 id={id}
@@ -52,7 +59,8 @@ const SelectWithOverride: any = ({className = '',isSearchable, options, onChange
                         }
                         {creatable &&
                             <CreatableSelect
-                                className={"r-select w-[300px] nowheel " + (className ?? '')}
+                                className={("r-select nowheel " + (className ?? ''))}
+                                classNames={reactSelectClassNames}
                                 onChange={onChange}
                                 defaultValue={value}
                                 id={id}
@@ -66,7 +74,7 @@ const SelectWithOverride: any = ({className = '',isSearchable, options, onChange
 
                 </NodeInputHandle>
 
-{/*                <Handle
+            {/*                <Handle
                     type="target"
                     position={Position.Left}
                     id={handleID}
@@ -76,7 +84,5 @@ const SelectWithOverride: any = ({className = '',isSearchable, options, onChange
 
             </div>
         </>
-    );
-};
-
-export default SelectWithOverride as any;
+    )
+}

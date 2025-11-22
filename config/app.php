@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -123,4 +122,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // Main platform domain used for admin/dashboard routing (set via APP_MAIN_DOMAIN)
+    'main_domain' => env('APP_MAIN_DOMAIN', 'flow-weaver.test'),
 ];

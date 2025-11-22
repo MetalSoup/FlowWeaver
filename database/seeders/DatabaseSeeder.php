@@ -24,5 +24,11 @@ class DatabaseSeeder extends Seeder
         // php artisan db:seed --class=Database\Seeders\LargeUsersSeeder
         // or register LargeUsersSeeder here by uncommenting the line below:
         // $this->call(LargeUsersSeeder::class);
+
+        // Ensure main domain is seeded
+        $this->call(\Database\Seeders\MainDomainSeeder::class);
+
+        // Ensure roles exist and assign a super-admin to the test user
+        $this->call(\Database\Seeders\RoleSeeder::class);
     }
 }

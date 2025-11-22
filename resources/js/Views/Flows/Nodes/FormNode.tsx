@@ -15,7 +15,7 @@ import SelectWithoutOverride from "@/Views/Flows/Nodes/NodeComponents/SelectWith
 import CheckBoxWithOverride from "@/Views/Flows/Nodes/NodeComponents/CheckBoxWithOverride";
 import {SortableItem} from "@/Views/Flows/Nodes/NodeComponents/SortableItem";
 import {v4 as uuidv4} from 'uuid';
-import { PlusCircleIcon } from '@phosphor-icons/react';
+import {ClipboardIcon, ClipboardTextIcon, PlusCircleIcon} from '@phosphor-icons/react';
 import {useReactFlow, useUpdateNodeInternals, useStore} from "@xyflow/react";
 import {SingleValue} from 'react-select';
 import {usePage} from "@inertiajs/react";
@@ -129,7 +129,7 @@ export default function FormNode({data}: { data: any }) {
     return (
         <>
             <NodeBody className={"formNode"}>
-                <NodeHeading onChange={(newHeading: string) => {
+                <NodeHeading icon={(<ClipboardTextIcon size={50}/>)} onChange={(newHeading: string) => {
                     data.heading = newHeading;
                 }}>
                     {data.heading || "Show Form"}

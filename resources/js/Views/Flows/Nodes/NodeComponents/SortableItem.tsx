@@ -1,7 +1,7 @@
 import React from "react";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
-import { TrashIcon } from '@phosphor-icons/react';
+import {CaretUpDown, CaretUpDownIcon, DotsSixVerticalIcon, ListIcon, TrashIcon} from '@phosphor-icons/react';
 
 export function SortableItem({id, children, onDeleteField, field, className = ''}: {
     id: string,
@@ -24,15 +24,15 @@ export function SortableItem({id, children, onDeleteField, field, className = ''
     };
 
     return (
-        <div className={"sortableItem relative flex py-2 mb-3 " + (className ?? '')} ref={setNodeRef} style={style}>
+        <div className={"sortableItem w-full relative flex flex-row gap-3 items-center py-2 mb-3 " + (className ?? '')} ref={setNodeRef} style={style}>
 
 
-            <div className={"flex"}>
+
                 {children}
-            </div>
+
             {/*{onDeleteField && field && (*/}
                 <button
-                    className="bg-transparent text-gray-200 hover:text-red-500 flex-col px-2"
+                    className="bg-transparent text-gray-200 hover:text-red-500"
                     onClick={() => onDeleteField(field.id)}
                 >
                     <TrashIcon size={20} />
@@ -40,8 +40,8 @@ export function SortableItem({id, children, onDeleteField, field, className = ''
      {/*       )
             }*/}
 
-            <button {...attributes} {...listeners} className={"flex-col px-2"}>
-                ⣿
+            <button {...attributes} {...listeners} className={"p-2 cursor-move"}>
+                <ListIcon size={20} weight={"duotone"}/>
             </button>
         </div>
     );

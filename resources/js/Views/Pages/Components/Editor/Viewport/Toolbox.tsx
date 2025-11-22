@@ -9,6 +9,7 @@ import {Container, Column, Text} from '@/Views/Pages/Components/Selectors';
 import {Video} from '../../Selectors/Video/Video';
 import {Flow} from '../../Selectors/Flow/Flow';
 import {Image} from '../../Selectors/Image/Image';
+import {gridButtonStyle} from "@/Components/ui";
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
     transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
@@ -17,10 +18,7 @@ const ToolboxDiv = styled.div<{ $enabled: boolean }>`
 `;
 
 const Item = styled.a<{ $move?: boolean }>`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
+
 
 
 
@@ -39,7 +37,7 @@ export const Toolbox = () => {
         enabled: state.options.enabled,
     }));
 
-    const ItemStyle = "page-component flex flex-col bg-gray-200 rounded justify-center gap-1 p-3 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer";
+    const ItemStyle = gridButtonStyle;
 
     return (
         <ToolboxDiv
@@ -65,7 +63,7 @@ export const Toolbox = () => {
 
                         <Item $move className={ItemStyle}>
                             <SquareIcon size={40} weight="duotone"/>
-                            <div className={"text-sm"}>Container</div>
+                            <div>Container</div>
                         </Item>
 
 
@@ -81,7 +79,7 @@ export const Toolbox = () => {
 
                         <Item $move className={ItemStyle}>
                             <FileTextIcon size={40} weight="duotone"/>
-                            <div className={"text-sm"}>Text</div>
+                            <div>Text</div>
                         </Item>
 
 
@@ -94,7 +92,7 @@ export const Toolbox = () => {
 
                         <Item $move className={ItemStyle}>
                             <SquareIcon size={40} weight="duotone"/>
-                            <div className={"text-sm"}>Button</div>
+                            <div>Button</div>
                         </Item>
 
 
@@ -107,7 +105,7 @@ export const Toolbox = () => {
 
                         <Item $move className={ItemStyle}>
                             <PlayIcon size={40} weight="duotone"/>
-                            <div className={"text-sm"}>Video</div>
+                            <div>Video</div>
                         </Item>
 
                 </div>
@@ -119,7 +117,7 @@ export const Toolbox = () => {
 
                         <Item $move className={ItemStyle}>
                             <FlowArrowIcon size={40} weight="duotone"/>
-                            <div className={"text-sm"}>Flow</div>
+                            <div>Flow</div>
                         </Item>
 
                 </div>

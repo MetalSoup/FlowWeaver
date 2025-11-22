@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\SiteDomain;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as MediaModel;
@@ -63,6 +64,14 @@ class Site extends Model implements HasMedia
             ->height(200)
             ->sharpen(10)
             ->performOnCollections('images');
+    }
+
+    /**
+     * Domains associated with this Site (per-domain settings like default/404 pages)
+     */
+    public function domains(): HasMany
+    {
+        return $this->hasMany(SiteDomain::class, 'site_id');
     }
 
 }

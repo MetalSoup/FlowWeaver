@@ -1,5 +1,6 @@
 import Select, {SingleValue} from 'react-select'
 import CreatableSelect from "react-select/creatable";
+import {reactSelectClassNames} from "@/Components/ui";
 
 export default function SelectWithoutOverride({onChange, isSearchable = true, value, style, label,options, className,creatable = false}: {
     onChange: any,
@@ -35,7 +36,8 @@ export default function SelectWithoutOverride({onChange, isSearchable = true, va
                     {!creatable &&
 
                     <Select
-                        className={"r-select nowheel "+className}
+                        className={("r-select nowheel " + (className ?? ''))}
+                        classNames={reactSelectClassNames}
                         onChange={onChange}
                         defaultValue={value}
                         id={"method"}
@@ -45,7 +47,8 @@ export default function SelectWithoutOverride({onChange, isSearchable = true, va
                         }
                     {creatable &&
                         <CreatableSelect
-                            className={"r-select nowheel "+className}
+                            className={("r-select nowheel " + (className ?? ''))}
+                            classNames={reactSelectClassNames}
                             onChange={onChange}
                             defaultValue={value}
                             id={"method"}

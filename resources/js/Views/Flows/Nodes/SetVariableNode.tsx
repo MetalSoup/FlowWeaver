@@ -7,6 +7,8 @@ import NodeSection from "@/Views/Flows/Nodes/NodeComponents/NodeSection";
 import {usePage} from "@inertiajs/react";
 import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
 import CreatableSelect from "react-select/creatable";
+import {reactSelectClassNames} from "@/Components/ui";
+import {DownloadSimpleIcon, ExportIcon, WebhooksLogoIcon} from "@phosphor-icons/react";
 
 
 export default function SetVariableNode({data}: { data: any }) {
@@ -39,7 +41,7 @@ export default function SetVariableNode({data}: { data: any }) {
         <>
             <NodeBody>
 
-                <NodeHeading onChange={(newHeading: string) => {
+                <NodeHeading icon={(<DownloadSimpleIcon size={50}/>)} onChange={(newHeading: string) => {
                     data.heading = newHeading;
                 }}>
                     {data.heading || "Set Variable"}
@@ -71,6 +73,7 @@ export default function SetVariableNode({data}: { data: any }) {
                     <NodeInputHandle nodeID={nodeID} handleID={"variableName-override"} dataType={"text"}>
                         <CreatableSelect
                             className={"r-select w-[300px] nowheel mb-7 nodrag text-gray-700"}
+                            classNames={reactSelectClassNames}
                             onChange={onVariableNameChange}
                             defaultValue={data.variableName == null ? null : (fieldOptions.find((o: any) => o.value === data.variableName) ?? {value: data.variableName, label: data.variableName})}
                             id={"variableName"}

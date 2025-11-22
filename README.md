@@ -19,7 +19,9 @@ Seeders:
 - Make sure that field options (like required, default value, etc.) are working correctly.
 - Make sure that field types are rendering correctly in the ShowForm node.
 - Make buttons more consistent
-- Fix custom options not working in dropdowns
+- Fix custom options not working in flow dropdowns
+- Fix border setting in page editor spazzing out
+- 
 - 
 
 ### Node Improvements:

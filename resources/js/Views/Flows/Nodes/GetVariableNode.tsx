@@ -5,6 +5,7 @@ import NodeOutputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeOutputHandl
 import NodeSection from "@/Views/Flows/Nodes/NodeComponents/NodeSection";
 import { useStore } from "@xyflow/react";
 import { usePage } from "@inertiajs/react";
+import {ExportIcon} from "@phosphor-icons/react";
 
 
 export default function GetVariableNode({data}: { data: any}) {
@@ -63,7 +64,7 @@ export default function GetVariableNode({data}: { data: any}) {
     return (
         <>
             <NodeBody>
-                <NodeHeading onChange={(newHeading: string) => {
+                <NodeHeading icon={(<ExportIcon size={50}/>)} onChange={(newHeading: string) => {
                     data.heading = newHeading;
                 }}>
                     {data.heading || "Get Variable"}

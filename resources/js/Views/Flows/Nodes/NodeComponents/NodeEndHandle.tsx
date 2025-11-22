@@ -1,9 +1,11 @@
-import {Handle, Position, useStore} from "@xyflow/react";
+import {Handle as Socket, Position, useStore} from "@xyflow/react";
 import { PlayIcon } from '@phosphor-icons/react';
 import tooltip from './handleTooltip';
+import Tippy from "@tippyjs/react";
+import Tooltip from "@/Components/Tooltip";
 
 
-export default function NodeEndHandle ({ onConnect, id, children, nodeID, dataType }: {
+export default function NodeEndSocket ({ onConnect, id, children, nodeID, dataType }: {
 
     onConnect: any,
     id: string,
@@ -23,14 +25,14 @@ export default function NodeEndHandle ({ onConnect, id, children, nodeID, dataTy
 
     const parseType = (hid: string) => { if (!hid) return undefined; const parts = hid.split('::'); return parts.length > 1 ? parts.slice(1).join('::') : undefined; }
     const onEnter = (e: React.MouseEvent) => { const t = parseType(handleId); const text = `${handleId}${t ? ' ('+t+')' : ''}\nNode: ${nodeID} (${nodeType})\nEdges: ${edgesCount}`; tooltip.show(text, e.clientX, e.clientY); }
-    const onMove = (e: React.MouseEvent) => { tooltip.move(e.clientX, e.clientY); }
-    const onLeave = () => tooltip.hide();
+
+
 
     return (
         <>
-            <div className={"relative node_end_handle" + typeClass} onMouseEnter={onEnter} onMouseMove={onMove} onMouseLeave={onLeave}>
+            <div className={"relative node_end_handle" + typeClass} onMouseEnter={onEnter}>
 
-                <Handle
+                <Socket
                     type="source"
                     position={Position.Right}
                     className={`testing ${isConnected ? 'connected' : ''} z-10`}
@@ -39,10 +41,15 @@ export default function NodeEndHandle ({ onConnect, id, children, nodeID, dataTy
 
 
                 />
+
+
                 <div className={"handle_icon absolute right-0 z-0 " + (isConnected ? 'connected' : '')} title={isConnected ? 'Connected (next)' : 'Connect next node'}>
+                    <Tooltip content={isConnected ? 'Connected (next)' : 'Connect next node'}>
                     <PlayIcon size={28} weight={isConnected ? 'fill' : 'regular'} />
+                    </Tooltip>
                     {/* phosphor: using weight 'fill' for connected state to show visual difference */}
                 </div>
+
 
 
 

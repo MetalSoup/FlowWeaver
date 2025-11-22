@@ -1,5 +1,6 @@
 import {Handle, Position, useStore} from "@xyflow/react";
 import NodeInputHandle from "@/Views/Flows/Nodes/NodeComponents/NodeInputHandle";
+import Input from "@/Components/Input";
 
 export default function InputWithOverride(
     {
@@ -44,14 +45,14 @@ export default function InputWithOverride(
                 <NodeInputHandle nodeID={nodeID} handleID={handleID} onConnect={onConnect} dataType={dataType} >
 
 
-                    <input
+                    <Input
                         style={{opacity: isConnected ? 0.2 : 1, minWidth: '200px', ...style}}
                         type="text"
                         placeholder={placeholder}
                         onChange={onChange}
                         defaultValue={value}
                         disabled={isConnected}
-                        className={"appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"}
+
 
 
                     />

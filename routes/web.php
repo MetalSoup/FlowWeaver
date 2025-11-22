@@ -21,9 +21,8 @@ use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 Route::get('logs', [LogViewerController::class, 'index']);
 
-Route::get('/',function () {
-    return redirect()->route('login');
-});
+// Public root: serve domain-specific default page when available, otherwise redirect to login
+Route::get('/', [PageController::class, 'showPage'])->name('home');
 
 //disable csfr token
 Route::any('/test_post', function(){
@@ -92,7 +91,7 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard', [
         'submissionStats' => $days,
     ]);
-})->middleware(['auth', 'verified', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('dashboard');
+})->middleware(['auth', 'verified', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class, \App\Http\Middleware\EnsureAdminHost::class])->name('dashboard');
 
 //these routes should be in /dashboard/
 
@@ -100,7 +99,7 @@ Route::get('/flow/load/{flow}', [FlowController::class, 'load'])->name('flow.loa
 Route::get('/flow/{flow}/{startNode?}', [FlowController::class, 'show'])->name('flow.show');
 
 
-Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->group(function () {
+Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class, \App\Http\Middleware\EnsureAdminHost::class])->group(function () {
     Route::prefix('dashboard')->group(function () {
         // Ensure models being accessed belong to the user's selected site
         Route::middleware([\App\Http\Middleware\EnsureModelBelongsToSelectedSite::class])->group(function () {
@@ -133,6 +132,11 @@ Route::middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizatio
         Route::get('/sites/select', [SiteController::class, 'select'])->name('sites.select')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
         Route::post('/sites/select', [SiteController::class, 'storeSelection'])->name('sites.storeSelection')->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
         Route::resource('/sites', SiteController::class)->withoutMiddleware([CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class]);
+
+        // Site domain management
+        Route::post('/sites/{site}/domains', [\App\Http\Controllers\SiteDomainController::class, 'store'])->name('sites.domains.store');
+        Route::put('/domains/{domain}', [\App\Http\Controllers\SiteDomainController::class, 'update'])->name('domains.update');
+        Route::delete('/domains/{domain}', [\App\Http\Controllers\SiteDomainController::class, 'destroy'])->name('domains.destroy');
 
         // Media library routes for site-scoped uploads and listing
         Route::get('/media', [\App\Http\Controllers\MediaController::class, 'index'])->name('media.index');
@@ -218,6 +222,12 @@ Route::post('/api/slug/validate', [SlugValidationController::class, 'validateSlu
 
 // API endpoint to return media for selected site (used by editor modal)
 Route::get('/api/media', [\App\Http\Controllers\MediaController::class, 'apiIndex'])->middleware(['auth', CheckSiteSelectedMiddleware::class, SelectOrganizationMiddleware::class])->name('api.media.index');
+
+// Admin settings (super-admin only)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/settings', [\App\Http\Controllers\AdminSettingsController::class, 'index'])->name('admin.settings.index');
+    Route::post('/admin/settings', [\App\Http\Controllers\AdminSettingsController::class, 'update'])->name('admin.settings.update');
+});
 
 require __DIR__.'/auth.php';
 
