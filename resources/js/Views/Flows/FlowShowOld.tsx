@@ -276,7 +276,17 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
         const payload: any = { step: currentStepKey, data: {} };
         if (node.fields && Array.isArray(node.fields)) {
             for (const f of node.fields) {
-                const name = f.name ?? `field_${f.field_id}`;
+                const fid = (f.field_id ?? f.id) ?? null;
+                let name: string;
+                if (f.name && f.name !== '') {
+                    name = f.name;
+                } else if (fid !== null && fid !== undefined) {
+                    name = `field_${fid}`;
+                } else if (f.type === 'submitButtons') {
+                    name = 'submit_button';
+                } else {
+                    name = 'field_unknown';
+                }
                 payload.data[name] = formValues[name] ?? null;
             }
             payload['flow_id'] = flow_id;
@@ -316,6 +326,7 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
             if (isLast && !targetNext) {
                 try { if (storageKey && window.localStorage) window.localStorage.removeItem(storageKey); } catch (err) {}
                 try { if (storageSubmissionKey && window.localStorage) window.localStorage.removeItem(storageSubmissionKey); } catch (err) {}
+
                 setFormValues({});
                 setSubmissionIds({});
                 setSubmissionId(null);
@@ -475,7 +486,17 @@ export default function ShowFlow({flow_id, flow = {} }: any) {
     const renderField = (field: any) => {
         const inputType = field.type === "default" ? "text" : field.type;
         const options = normalizeOptions(field.options);
-        const name = field.name ?? `field_${field.field_id}`;
+        const fid = (field.field_id ?? field.id) ?? null;
+        let name: string;
+        if (field.name && field.name !== '') {
+            name = field.name;
+        } else if (fid !== null && fid !== undefined) {
+            name = `field_${fid}`;
+        } else if (field.type === 'submitButtons') {
+            name = 'submit_button';
+        } else {
+            name = 'field_unknown';
+        }
 
         switch (inputType) {
             case "textarea":

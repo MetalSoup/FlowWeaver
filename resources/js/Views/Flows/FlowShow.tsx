@@ -235,11 +235,13 @@ export default function FlowShow({ flow, flow_id, pageOverrides, onSelectField, 
                                         onSelectField={onSelectField}
                                         isEditorEnabled={isEditorEnabled}
                                         selectedFieldId={selectedFieldId}
+                                        onSubmit={submitStep}
+                                        disabled={submitting}
                                     />
                                 </div>
                             ))}
 
-                        <PrimaryButton onClick={submitStep} disabled={submitting}>Submit</PrimaryButton>
+                        {/*<PrimaryButton onClick={submitStep} disabled={submitting}>Submit</PrimaryButton>*/}
                     </div>)}
 
                 </div>

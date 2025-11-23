@@ -44,7 +44,7 @@ class UpdateFieldRequest extends FormRequest
                     }
                 },
             ],
-            'label' => ['required', 'string', 'max:255'],
+            'label' => ['nullable', 'string', 'max:255'],
             'type' => ['required', 'string', 'max:255'],
             'options' => ['nullable', 'array'],
             'description' => ['nullable', 'string', 'max:1000'],

@@ -28,7 +28,7 @@ import {
     MagnifyingGlassIcon,
     HandTapIcon,
     CheckCircleIcon,
-    WarningIcon,
+    WarningIcon, RectangleIcon,
 } from '@phosphor-icons/react';
 
 // Map of field `type` values to the human-friendly labels matching the create form
@@ -57,6 +57,7 @@ const TYPE_LABELS: Record<string, string> = {
     'search': 'Search',
     'button': 'Button',
     'submit': 'Submit',
+    'submitButtons': 'Submit Buttons',
 };
 
 const getTypeLabel = (t: string | undefined | null) => {
@@ -90,6 +91,7 @@ const TYPE_ICONS: Record<string, any> = {
     'search': MagnifyingGlassIcon,
     'button': HandTapIcon,
     'submit': CheckCircleIcon,
+    'submitButtons': RectangleIcon,
 };
 
 const renderTypeIcon = (t: string | undefined | null) => {

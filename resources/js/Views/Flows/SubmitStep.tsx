@@ -18,7 +18,10 @@ export default function SubmitStep(
         setCurrentStep = (step: any) => {
         }
     }: any) {
-    return () => {
+    // Return a submit function that accepts an optional `overrideValues` object.
+    // When provided, we will use `overrideValues` in place of the closed-over `formValues`
+    // so callers can trigger a submit with freshly-computed values (e.g. from RenderField).
+    return (overrideValues?: Record<string, any>) => {
 
 
         if (!activeStep) return;
@@ -69,10 +72,24 @@ export default function SubmitStep(
         const currentStepKey = activeStep;
 
         const payload: any = {step: currentStepKey, data: {}};
+        // Merge overrideValues into the current formValues so callers can provide a partial
+        // update (e.g. a single changed field) without losing other fields' values.
+        const values = { ...(formValues || {}), ...(overrideValues || {}) };
+        try { console.debug('SubmitStep.mergedValues', { overrideValuesProvided: !!overrideValues, values }); } catch (e) {}
         if (node.fields && Array.isArray(node.fields)) {
             for (const f of node.fields) {
-                const name = f.name ?? `field_${f.field_id}`;
-                payload.data[name] = formValues[name] ?? null;
+                const fid = (f.field_id ?? f.id) ?? null;
+                let name: string;
+                if (f.name && f.name !== '') {
+                    name = f.name;
+                } else if (fid !== null && fid !== undefined) {
+                    name = `field_${fid}`;
+                } else if (f.type === 'submitButtons') {
+                    name = 'submit_button';
+                } else {
+                    name = 'field_unknown';
+                }
+                payload.data[name] = (values && values[name] !== undefined) ? values[name] : null;
             }
             payload['flow_id'] = flow_id;
         } else if (node.html) {
@@ -159,6 +176,9 @@ export default function SubmitStep(
             pendingNextRef.current = chosenNext;
         };
 
+        // Debug: show payload that will be sent to server so we can verify overrideValues are applied
+        try { console.debug('SubmitStep.payload', { payload, submissionId, overrideProvided: !!overrideValues }); } catch (e) {}
+
         if (submissionId) {
             const extractId = (s: any): string | null => {
                 if (s === null || s === undefined) return null;
@@ -188,10 +208,10 @@ export default function SubmitStep(
 
             router.put(route('submissions.update', sidParam), payload, postOptions);
 
-        } else {
+         } else {
 
 
             router.post(route('submissions.store'), payload, postOptions)
-        }
-    };
-}
+         }
+     };
+ }

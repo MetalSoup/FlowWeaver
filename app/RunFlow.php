@@ -153,7 +153,16 @@ class RunFlow
             elseif (is_array($submission) && array_key_exists('data', $submission)) $existing = $submission['data'] ?? [];
         }
         if (is_array($request)) $incoming = $request['data'] ?? [];
-
+        // Defensive normalization: older client bundles sometimes sent submit buttons with the
+        // key `field_null` (when the client fell back to `field_${null}`). Normalize that
+        // into the expected `submit_button` key so downstream code sees the intended value.
+        if (is_array($incoming)) {
+            if (array_key_exists('field_null', $incoming) && !array_key_exists('submit_button', $incoming)) {
+                $incoming['submit_button'] = $incoming['field_null'];
+            }
+            // also tolerate legacy `field_unknown` -> keep as-is (no overwrite)
+        }
+        try { Log::debug('RunFlow::doFormSubmit incoming normalized', $incoming); } catch (\Throwable $_) {}
         $merged = array_merge($existing, $incoming);
 
         // Persist changes only when we have a proper model object that supports those properties/methods
@@ -168,8 +177,10 @@ class RunFlow
                 $upPhone = $request['phone'] ?? ($request['data']['phone'] ?? null);
                 if ($upEmail !== null) $submission->email = $upEmail;
                 if ($upPhone !== null) $submission->phone = $upPhone;
+                $submission->data = $merged;
 
                 $submission->save();
+                dd($submission);
                 // Refresh session submission_id in case it wasn't already present or to extend its life
                 session()->put('submission_id', $submission->id ?? null);
 

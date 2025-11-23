@@ -203,13 +203,14 @@ export default function EditField({auth, field}: {auth:any,field:any})
                             <option value="select">Select</option>
                             <option value="textarea">Textarea</option>
                             <option value="hidden">Hidden</option>
+                            <option value="submitButtons">Submit Buttons</option>
 
                         </select>
 
 
 
                     </div>
-                    {(data.type === "radio" || data.type === "checkbox" || data.type === "select") && (
+                    {(data.type === "radio" || data.type === "checkbox" || data.type === "select" || data.type === "submitButtons") && (
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-lg font-semibold">Answers</h3>

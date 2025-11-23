@@ -1,11 +1,32 @@
 import React, { useEffect, useState } from "react";
 
-export default function RenderField({field, formValues = {}, setFormValues, pageOverrides = {}, onSelectField, isEditorEnabled = false, selectedFieldId}: any)  {
+export default function RenderField({field, formValues = {}, setFormValues, pageOverrides = {}, onSelectField, isEditorEnabled = false, selectedFieldId, onSubmit, disabled = false}: any)  {
     const [validationError, setValidationError] = useState<string | null>(null);
 
     const updateField = (name: string, value: any) => {
         setFormValues((prev: any) => {
             return {...(prev || {}), [name]: value};
+        });
+    };
+
+    const updateSubmitField = (name: string, value: any) => {
+        // Compute next state in the functional updater so we can both update
+        // the state and synchronously call onSubmit with the new values (avoids stale reads).
+        setFormValues((prev: any) => {
+            const next = { ...(prev || {}), [name]: value };
+            // Debug: log the next computed values so developers can inspect what will be submitted
+            try { console.debug('RenderField.updateSubmitField next:', { name, value, next }); } catch (e) {}
+            // If an onSubmit callback was provided, invoke it with the updated form values
+            // so it will have the correct, up-to-date data.
+            if (typeof onSubmit === 'function') {
+                try {
+                    onSubmit(next);
+                } catch (e) {
+                    // swallow errors from caller to avoid breaking state update
+                    // caller can still handle their own errors
+                }
+            }
+            return next;
         });
     };
 
@@ -23,8 +44,21 @@ export default function RenderField({field, formValues = {}, setFormValues, page
     const inputType = field.type === "default" ? "text" : field.type;
     const options = normalizeOptions(field.answers);
     // support either `field_id` or `id` depending on source
-    const fid = field.field_id ?? field.id;
-    const name = field.name ?? `field_${fid}`;
+    const fid = (field.field_id ?? field.id) ?? null;
+    // compute a stable input name used across the UI and submission logic. If the field
+    // lacks an explicit name and also has no id, fall back to a sensible default for
+    // submit buttons ('submit_button') to avoid names like 'field_null'. Otherwise use
+    // 'field_unknown' as a generic fallback.
+    let name: string;
+    if (field.name && field.name !== '') {
+        name = field.name;
+    } else if (fid !== null && fid !== undefined) {
+        name = `field_${fid}`;
+    } else if (field.type === 'submitButtons') {
+        name = 'submit_button';
+    } else {
+        name = `field_unknown`;
+    }
 
     // apply per-page overrides if present; also support global defaults stored under __defaults
     const overrides = (pageOverrides && pageOverrides[fid]) || {};
@@ -90,10 +124,41 @@ export default function RenderField({field, formValues = {}, setFormValues, page
     const isSelected = selectedFieldId != null && String(selectedFieldId) === fidKey;
     const containerBase = "mb-2 p-2 rounded";
     const editorCursor = isEditorEnabled ? ' cursor-pointer' : '';
-    const hoverStyle = isEditorEnabled ? ' hover:border-blue-400 hover:shadow-sm' : '';
-    const selectedStyle = isEditorEnabled && isSelected ? ' border-2 border-blue-500 bg-blue-50' : ' border border-transparent';
+    const hoverStyle = isEditorEnabled ? ' field-highlight' : '';
+    const selectedStyle = isEditorEnabled && isSelected ? ' field-selected' : '';
+    /*Only add hoverStyle if the field is actually being hovered over*/
+    const [isHovered, setIsHovered] = useState(false);
+
+    useEffect(() => {
+        if (!isEditorEnabled) return;
+
+        const handleMouseOver = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && target.closest(`[data-flow-field-id="${fid}"]`)) {
+                setIsHovered(true);
+            }
+        }
+        const handleMouseOut = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && target.closest(`[data-flow-field-id="${fid}"]`)) {
+                setIsHovered(false);
+            }
+        }
+
+        document.addEventListener('mouseover', handleMouseOver);
+        document.addEventListener('mouseout', handleMouseOut);
+
+        return () => {
+            document.removeEventListener('mouseover', handleMouseOver);
+            document.removeEventListener('mouseout', handleMouseOut);
+        }
+    }, [fid, isEditorEnabled]);
+
+    const finalHoverStyle = isHovered ? hoverStyle : '';
+
     // add group/relative to support hover overlay
-    const containerClass = `group relative ${containerBase}${editorCursor}${hoverStyle}${selectedStyle} ${mergedContainerClass}`.trim();
+
+    const containerClass = `group relative ${containerBase}${editorCursor}${finalHoverStyle}${selectedStyle} ${mergedContainerClass}`.trim();
 
     // build inline style objects from concrete defaults and per-field overrides
     const containerStyle: any = {};
@@ -160,12 +225,47 @@ export default function RenderField({field, formValues = {}, setFormValues, page
         }
     };
 
+    const Container = ({children}) => {
+
+        return (
+            <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}
+                 onClick={handleContainerClick}>
+                {children}
+            </div>
+        );
+    }
+
+
     switch (inputType) {
+        case "submitButtons":
+            const current = formValues[name];
+            return (
+                <Container>
+                    <div className="block mb-1 font-medium" style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
+                    <div className="flex flex-wrap gap-2">
+                        {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => (
+                            <button
+                                key={opt.value + idx}
+                                type="button"
+                                className={`px-3 py-1 rounded ${optionStyle === 'pill' ? 'rounded-full' : ''} ${current === opt.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-black'}`}
+                                onClick={() => {
+                                    /*console.log('submitButtons button clicked', { name, value: opt.value, disabled });
+                                    e.stopPropagation(); // prevent container click logic from interfering*/
+                                    updateSubmitField(name, opt.value);
+                                }}
+                                dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}
+                                disabled = {disabled}
+
+                            />
+                        ))}
+                    </div>
+                </Container>
+            );
         case "textarea":
             // layout variations: left label or top
             if (labelPosition === 'left') {
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
+                    <Container>
                         <div className="flex items-start">
                             <div className={`w-1/3 pr-3 pt-2 ${mergedLabelClass}`.trim()}>{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -173,20 +273,20 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                 {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
                             </div>
                         </div>
-                    </div>
+                    </Container>
                 );
             }
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                <Container>
                      {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
                      <textarea id={name} name={name} className={inputBaseClass} style={inputStyle} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} value={formValues[name] ?? ''} required={required} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
                      {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
-                 </div>
+                </Container>
              );
         case "select":
             if (labelPosition === 'left') {
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
+                    <Container>
                         <div className="flex items-center">
                             <div className="w-1/3 pr-3">{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -198,11 +298,11 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    </Container>
                 );
             }
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                <Container>
                      {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</label>}
                      <select id={name} name={name} className={inputBaseClass} value={formValues[name] ?? ''} required={required} onChange={(e) => updateField(name, e.target.value)}>
                          <option value="">-- select --</option>
@@ -210,14 +310,14 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                              <option key={opt.value} value={opt.value} dangerouslySetInnerHTML={{ __html: renderOptionLabel(opt) || '' }}></option>
                          ))}
                      </select>
-                 </div>
+                </Container>
              );
         case "radio":
             // if displayMode === 'buttons', render as buttons
             if (displayMode === 'buttons') {
                 const current = formValues[name];
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
+                    <Container>
                          <div className="block mb-1 font-medium" style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
                          <div className="flex flex-wrap gap-2">
                             {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => (
@@ -230,12 +330,12 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                 />
                             ))}
                          </div>
-                     </div>
+                     </Container>
                  );
              }
 
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                <Container>
                      {labelPosition !== 'inside' && labelPosition !== 'none' ? (
                      <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
                      ) : null}
@@ -247,7 +347,7 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                             </label>
                         ))}
                     </div>
-                </div>
+                </Container>
             );
         case "checkbox":
             // buttons display for checkboxes (treat as toggle buttons multiple select)
@@ -261,7 +361,7 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                     updateField(name, next);
                 };
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
+                    <Container>
                         <div className="block mb-1 font-medium">{labelToRender}{required ? ' *' : ''}</div>
                         <div className="flex flex-wrap gap-2">
                             {(options.length > 0 ? options : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]).map((opt: any, idx: number) => {
@@ -277,12 +377,12 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                 );
                             })}
                         </div>
-                    </div>
+                    </Container>
                 );
             }
 
             return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                <Container>
                      {labelPosition !== 'inside' && labelPosition !== 'none' ? (
                      <div className={`block mb-1 font-medium ${mergedLabelClass}`.trim()} style={labelStyle}>{labelToRender}{required ? ' *' : ''}</div>
                      ) : null}
@@ -311,23 +411,23 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                             );
                         })}
                     </div>
-                </div>
+                </Container>
             );
         default:
             const htmlType = ["text", "email", "tel", "number", "password", "date"].includes(inputType) ? inputType : "text";
             // special-case 'html' field type: render raw HTML block
             if (inputType === 'html') {
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                    <Container>
                          <div dangerouslySetInnerHTML={{ __html: field.html || '' }} />
-                    </div>
+                    </Container>
                 );
             }
 
             // handle normal input types with label positioning and validation
             if (labelPosition === 'left') {
                 return (
-                    <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid}>
+                    <Container>
                         <div className="flex items-center">
                             <div className="w-1/3 pr-3">{labelToRender}{required ? ' *' : ''}</div>
                             <div className="flex-1">
@@ -335,16 +435,16 @@ export default function RenderField({field, formValues = {}, setFormValues, page
                                 {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
                             </div>
                         </div>
-                    </div>
+                    </Container>
                 );
             }
 
              return (
-                <div key={fid} className={containerClass} style={containerStyle} data-flow-field-id={fid} onClick={handleContainerClick}>
+                 <Container>
                      {labelPosition !== 'none' && labelPosition !== 'inside' && <label htmlFor={name} className={`block mb-1 ${mergedLabelClass}`.trim()} style={labelStyle} dangerouslySetInnerHTML={{ __html: labelToRender || '' }}></label>}
                      <input id={name} name={name} type={htmlType} className={inputBaseClass} style={inputStyle} autoComplete="on" value={formValues[name] ?? ''} placeholder={labelPosition === 'inside' ? (placeholderText || labelToRender || '') : ''} required={required} pattern={regex || undefined} onChange={(e) => { updateField(name, e.target.value); validateValue(e.target.value); }} />
                      {validationError ? <div className="text-xs text-red-600 mt-1">{validationError}</div> : null}
-                 </div>
+                 </Container>
              );
      }
 

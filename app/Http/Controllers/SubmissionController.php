@@ -64,7 +64,7 @@ class SubmissionController extends Controller
         list($submission, $returnData, $compiled) = $this->saveData($request,$submission);
         return Redirect::back()->with(['success' => true, 'submission_id' => $submission->id, 'data' => $returnData, 'flow' => $compiled]);
 
-        sleep(1);
+        /*sleep(1);
 
         $validated = $request->validated();
 
@@ -124,7 +124,7 @@ class SubmissionController extends Controller
         }
 
 
-        return Redirect::back()->with(['success' => true, 'submission_id' => $submission->id, 'data' => $returnData]);
+        return Redirect::back()->with(['success' => true, 'submission_id' => $submission->id, 'data' => $returnData]);*/
     }
 
     /**
