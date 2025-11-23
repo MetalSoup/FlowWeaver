@@ -73,20 +73,11 @@ export default function PageSettings() {
     // update prev ref for next comparison
     prevPageRef.current = curr;
 
-    setSlugError(null);
-    setSlugValid(!!initialSlug);
-    setSlugChecking(false);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props?.page]);
 
-  // when slug changes, sanitize and mark as locally valid (no live validation)
-  useEffect(() => {
-    // No live server validation here — we consider the slug valid locally until Save triggers server-side validation.
-    setSlugChecking(false);
-    setSlugValid(true);
-    setSlugError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+
 
   // Whenever settings change, write them to a global so the main Save button can pick them up
   useEffect(() => {
@@ -98,10 +89,8 @@ export default function PageSettings() {
 
       // top-level fields
       if (modified['name']) entry.name = name;
-      // only write slug when validated
-      if (modified['slug'] && slugValid) entry.slug = slug;
+           if (modified['slug']) entry.slug = slug;
 
-      // options: include only modified option fields
       const opts: Record<string, any> = {};
       if (modified['title']) opts.title = title;
       if (modified['keywords']) opts.keywords = keywords;
@@ -137,46 +126,6 @@ export default function PageSettings() {
      }
    }, [name, slug, title, keywords, meta, headerJs, footerJs, headerCss, footerCss, page, modified, slugValid]);
 
-  // Listen for slug validation requests (triggered by the Save action) and for validation results.
-  useEffect(() => {
-    const key = page?.id ?? page?.data?.id ?? 'unsaved';
-
-    const onRequest = (ev: Event) => {
-      try {
-        const detail = (ev as CustomEvent)?.detail || {};
-        if (detail.pageKey && detail.pageKey !== key) return;
-        setSlugChecking(true);
-        setSlugError(null);
-      } catch (e) { /* ignore */ }
-    };
-
-    const onResult = (ev: Event) => {
-      try {
-        const detail = (ev as CustomEvent)?.detail || {};
-        if (detail.pageKey && detail.pageKey !== key) return;
-        setSlugChecking(false);
-        if (detail.valid) {
-          setSlugValid(true);
-          setSlugError(null);
-        } else {
-          setSlugValid(false);
-          setSlugError(detail.error || 'Slug validation failed');
-        }
-      } catch (e) { /* ignore */ }
-    };
-
-    try {
-      window.addEventListener('slug-validation-request', onRequest as EventListener);
-      window.addEventListener('slug-validation-result', onResult as EventListener);
-    } catch (e) {}
-
-    return () => {
-      try {
-        window.removeEventListener('slug-validation-request', onRequest as EventListener);
-        window.removeEventListener('slug-validation-result', onResult as EventListener);
-      } catch (e) {}
-    };
-  }, [page]);
 
    return (
     <div className="p-3 space-y-3">
@@ -190,111 +139,9 @@ export default function PageSettings() {
       <div>
         <label className="text-sm">Slug</label>
         <Input
-          ref={slugInputRef}
           className={`w-full dark:bg-gray-600 border rounded px-2 py-1 ${slugError ? 'border-red-500' : ''}`}
           value={slug}
-          onChange={e => {
-            const raw = (e.target as HTMLInputElement).value;
-            // If we're in composition (IME), don't sanitize yet — preserve intermediate input
-            if (isComposingRef.current) {
-              setSlug(raw);
-              setModified(m => ({ ...m, slug: true }));
-              return;
-            }
-            // Replace any whitespace with a single hyphen immediately and lowercase.
-            const selStart = (e.target as HTMLInputElement).selectionStart ?? raw.length;
-            const left = raw.slice(0, selStart);
-            const sanitizedLeft = left.replace(/\s+/g, '-').toLowerCase();
-            const sanitized = raw.replace(/\s+/g, '-').toLowerCase();
-            setSlug(sanitized);
-            setModified(m => ({ ...m, slug: true }));
-            // restore caret to the mapped position on next tick
-            setTimeout(() => {
-              try {
-                if (slugInputRef.current) {
-                  const newPos = Math.min(sanitizedLeft.length, sanitized.length);
-                  slugInputRef.current.setSelectionRange(newPos, newPos);
-                }
-              } catch (err) {
-                // ignore
-              }
-            }, 0);
-          }}
-          onCompositionStart={() => { isComposingRef.current = true; }}
-          onCompositionEnd={(e) => {
-            isComposingRef.current = false;
-            // After composition ends, sanitize the final composed value
-            const input = e.target as HTMLInputElement;
-            const raw = input.value;
-            const selStart = input.selectionStart ?? raw.length;
-            const left = raw.slice(0, selStart);
-            const sanitizedLeft = left.replace(/\s+/g, '-').toLowerCase();
-            const sanitized = raw.replace(/\s+/g, '-').toLowerCase();
-            setSlug(sanitized);
-            setModified(m => ({ ...m, slug: true }));
-            setTimeout(() => {
-              try {
-                if (slugInputRef.current) {
-                  const newPos = Math.min(sanitizedLeft.length, sanitized.length);
-                  slugInputRef.current.setSelectionRange(newPos, newPos);
-                }
-              } catch (err) {
-                // ignore
-              }
-            }, 0);
-          }}
-          onBeforeInput={(e: any) => {
-            // Intercept space insertions and replace them with a hyphen while not composing.
-            if (isComposingRef.current) return;
-            try {
-              const ne = e.nativeEvent as InputEvent;
-              const inputType = ne?.inputType;
-              const data = ne?.data;
-              if (inputType === 'insertText' && data === ' ') {
-                e.preventDefault();
-                const input = slugInputRef.current as HTMLInputElement | null;
-                if (!input) return;
-                const raw = input.value;
-                const selStart = input.selectionStart ?? raw.length;
-                const selEnd = input.selectionEnd ?? selStart;
-                const before = raw.slice(0, selStart);
-                const after = raw.slice(selEnd);
-                const newRaw = before + '-' + after;
-                const sanitized = newRaw.replace(/\s+/g, '-').toLowerCase();
-                setSlug(sanitized);
-                setModified(m => ({ ...m, slug: true }));
-                setTimeout(() => {
-                  try { input.setSelectionRange(before.length + 1, before.length + 1); } catch (err) {}
-                }, 0);
-              }
-            } catch (err) {
-              // ignore
-            }
-          }}
-          onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => {
-            e.preventDefault();
-            const clipboard = e.clipboardData?.getData('text') ?? '';
-            const input = slugInputRef.current as HTMLInputElement | null;
-            if (!input) return;
-            const raw = slug;
-            const selStart = input.selectionStart ?? raw.length;
-            const selEnd = input.selectionEnd ?? selStart;
-            // sanitize pasted content: convert spaces to dashes and lowercase
-            const pasted = clipboard.replace(/\s+/g, '-').toLowerCase();
-            const before = raw.slice(0, selStart);
-            const after = raw.slice(selEnd);
-            const newValue = (before + pasted + after);
-            setSlug(newValue);
-            setModified(m => ({ ...m, slug: true }));
-            // place caret after pasted content
-            setTimeout(() => {
-              try { input.setSelectionRange(before.length + pasted.length, before.length + pasted.length); } catch (err) {}
-            }, 0);
-          }}
-        />
-        <div className="text-xs mt-1">
-          {slugChecking ? <span className="text-gray-500">Checking...</span> : slugError ? <span className="text-red-600">{slugError}</span> : slugValid ? <span className="text-green-600">Slug looks good</span> : <span className="text-gray-500">Allowed: lowercase letters, numbers, hyphens and underscores.</span>}
-        </div>
+          onChange={e => { setSlug(e.target.value); setModified(m => ({ ...m, slug: true })); }} />
       </div>
 
       <div>

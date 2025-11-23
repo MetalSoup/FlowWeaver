@@ -15,6 +15,7 @@ import { Video } from './Components/Selectors/Video/Video';
 import { Flow } from './Components/Selectors/Flow/Flow';
 import { Text } from './Components/Selectors/Text/Text';
 import { Image } from './Components/Selectors/Image/Image';
+import { Html, PlaceholderDrop } from './Components/Selectors/Html/Html';
 // Icons for viewport toggles
 import { EyeIcon, PencilSimpleIcon, DeviceMobileIcon, DeviceTabletIcon, DesktopIcon, ArrowCounterClockwiseIcon, ArrowClockwiseIcon } from '@phosphor-icons/react';
 import { showAppToast } from '@/utils/toast';
@@ -208,6 +209,24 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
             // ignore storage errors
         }
     }, [viewportSize]);
+
+    // Listen for editor viewport messages (e.g. toolbar device buttons) and update state
+    useEffect(() => {
+        const handler = (ev: MessageEvent) => {
+            try {
+                if (!ev?.data) return;
+                const d = ev.data;
+                if (d && d.type === 'editor:setViewport') {
+                    const v = d.viewport;
+                    if (v === 'mobile' || v === 'tablet' || v === 'desktop') setViewportSize(v);
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+        window.addEventListener('message', handler);
+        return () => window.removeEventListener('message', handler);
+    }, []);
 
     // Inject custom CSS into document.head so it is applied after other styles and can override them.
     useEffect(() => {
@@ -491,60 +510,7 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
 
 
         // If the Page Settings include a slug, validate it server-side now (only on Save).
-        try {
-            const key = page_id || 'unsaved';
-            const globalSettings = (window as any).__PAGE_SETTINGS || {};
-            const entry = globalSettings[key] || {};
-            const candidateSlug = entry.slug;
-            if (candidateSlug) {
-                // notify listeners (PageSettings) that validation is starting
-                try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('slug-validation-request', { detail: { pageKey: key } })); } catch (e) {}
 
-                // build request body with site/page context if available
-                const body: any = { slug: candidateSlug };
-                try { if (typeof window !== 'undefined' && (window as any).__SITE_ID) body.site_id = (window as any).__SITE_ID; } catch (e) {}
-                try { if (page_id) body.page_id = page_id; } catch (e) {}
-
-                let valid = true;
-                let error: any = null;
-                try {
-                    const resp = await fetch('/api/slug/validate', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        body: JSON.stringify(body),
-                    });
-                    const result = await resp.json().catch(() => null);
-                    if (!resp.ok) {
-                        valid = false;
-                        error = (result && (result.slug || result.message)) || `Server returned ${resp.status}`;
-                    } else {
-                        if (result && typeof result.valid !== 'undefined') {
-                            valid = !!result.valid;
-                            if (!valid) error = result.error || result.message || 'Slug validation failed';
-                        } else {
-                            // If server returned Inertia page props, treat as valid
-                            valid = true;
-                        }
-                    }
-                } catch (e) {
-                    valid = false;
-                    error = (e && (e.message || String(e))) || 'Slug validation failed';
-                }
-
-                // notify listeners of result
-                try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('slug-validation-result', { detail: { pageKey: key, valid, error } })); } catch (e) {}
-
-                if (!valid) {
-                    // abort save so user can fix slug; PageSettings will show the error
-                    try { showToast('Slug validation failed — fix the slug before saving'); } catch (e) {}
-                    return;
-                }
-            }
-        } catch (e) {
-            // non-fatal: continue with save if slug validation throws unexpectedly
-            try { console.error('slug validation check failed', e); } catch (e) {}
-        }
 
         if (!page_id) {
             // If there are page settings written by the settings panel, include them in the create payload
@@ -670,6 +636,19 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         useEffect(() => {
             editorApiRef.current = { actions, query };
             try { setEditorReady(true); } catch (e) {}
+            // Expose the editor API and a setViewport helper on window so toolbar components
+            // can call into the editor (direct craftjs ref) to change the global viewport.
+            try {
+                (window as any).__editorApi = {
+                    actions,
+                    query,
+                    setViewport: (v: 'mobile'|'tablet'|'desktop') => {
+                        try { setViewportSize(v); } catch (e) { /* ignore */ }
+                    }
+                };
+            } catch (e) {
+                // ignore exposure errors
+            }
             // Do not unset `editorReady` on cleanup. Keeping it `true` avoids flicker if
             // Craft internals briefly change `actions`/`query` during initialization.
             return () => {
@@ -966,6 +945,8 @@ export default function PageEditor({ auth, page = null, forms: _forms = {}, flow
         'Button': Button,
         'Video': Video,
         'Flow': Flow,
+        'Html': Html,
+        'PlaceholderDrop': PlaceholderDrop,
     } as any;
 
     // Initial children: if we don't have serialized content, render a basic canvas containing the existing HTML (legacy)

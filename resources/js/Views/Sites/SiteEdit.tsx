@@ -64,7 +64,7 @@ export default function SiteEdit({auth, site, domains, pages, isSuperAdmin, main
                 </div>
                 {site.id && (
                     <div className="w-full p-5">
-                        <DomainsPanel site={site} domains={domains} pages={pages} auth={auth} isSuperAdmin={isSuperAdmin} main_domain={main_domain} />
+                        <DomainsPanel site={site} domains={domains} pages={pages} auth={auth} isSuperAdmin={isSuperAdmin} mainDomain={main_domain} />
                     </div>
                 )}
             </div>

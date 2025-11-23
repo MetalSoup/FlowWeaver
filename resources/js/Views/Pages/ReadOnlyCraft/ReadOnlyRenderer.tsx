@@ -1,5 +1,6 @@
 // Read-only renderer for craft.js serialized pages
 import React from 'react';
+import DOMPurify from 'dompurify';
 import registry from './registry';
 
 type NodesMap = Record<string, any>;
@@ -45,6 +46,81 @@ const renderNode = (nodeId: string, nodes: NodesMap): React.ReactNode => {
   const type = data?.type ?? data?.resolvedName ?? data?.displayName ?? data?.type;
   const props = data?.props ?? {};
   const childNodeIds: string[] = node.nodes ?? node.data?.nodes ?? [];
+
+  // Special-case Html nodes so we can reliably interleave HTML fragments and child nodes
+  if (typeof type === 'string' && type === 'Html') {
+    try {
+      const html = props?.html ?? '';
+      const parts = String(html || '').split(new RegExp('\\[placeholder]', 'i'));
+
+      // linkedNodes sometimes maps placeholder slot keys (html_placeholder_0) to node ids
+      const linkedMap: Record<string, string> = (node.linkedNodes ?? node.data?.linkedNodes) || {};
+      const rendered = new Set<string>();
+
+      const renderedFragments = parts.map((part: string, idx: number) => {
+        // determine the target for this placeholder: prefer explicit child node, then linkedNodes
+        const placeholderKey = `html_placeholder_${idx}`;
+        const target = (childNodeIds && childNodeIds[idx]) || linkedMap[placeholderKey];
+
+        let placeholderContent: React.ReactNode = null;
+        if (target) {
+          // If the target is a placeholder node (canvas), it will usually contain its own child nodes
+          const targetNode = nodes[target];
+          if (targetNode && Array.isArray(targetNode.nodes) && targetNode.nodes.length > 0) {
+            // render each child inside the placeholder node
+            placeholderContent = targetNode.nodes.map((nid: string) => {
+              rendered.add(nid);
+              return <React.Fragment key={nid}>{renderNode(nid, nodes)}</React.Fragment>;
+            });
+          } else {
+            // render the target node itself
+            rendered.add(target);
+            placeholderContent = <React.Fragment key={target}>{renderNode(target, nodes)}</React.Fragment>;
+          }
+        }
+
+        return (
+          <React.Fragment key={idx}>
+            {part ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(part) }} /> : null}
+            {idx < parts.length - 1 ? placeholderContent : null}
+          </React.Fragment>
+        );
+      });
+
+      // Render any remaining child nodes (that were not consumed via placeholders)
+      const remainingChildren = (childNodeIds || []).filter((cid) => !rendered.has(cid)).map((cid) => (
+        <React.Fragment key={cid}>{renderNode(cid, nodes)}</React.Fragment>
+      ));
+
+      // Also render any nodes referenced in linkedMap values that weren't consumed above
+      const linkedValues = Object.values(linkedMap).filter(Boolean) as string[];
+      const remainingLinked = linkedValues
+        .filter((lid) => {
+          // if the linked node itself contains children, those children were already rendered and marked
+          if (nodes[lid] && Array.isArray(nodes[lid].nodes) && nodes[lid].nodes.length > 0) {
+            return nodes[lid].nodes.some((cid: string) => !rendered.has(cid));
+          }
+          return !rendered.has(lid);
+        })
+        .map((lid) => {
+          if (nodes[lid] && Array.isArray(nodes[lid].nodes) && nodes[lid].nodes.length > 0) {
+            return nodes[lid].nodes.filter((cid: string) => !rendered.has(cid)).map((cid: string) => <React.Fragment key={cid}>{renderNode(cid, nodes)}</React.Fragment>);
+          }
+          return <React.Fragment key={lid}>{renderNode(lid, nodes)}</React.Fragment>;
+        });
+
+      return (
+        <div>
+          {renderedFragments}
+          {remainingChildren}
+          {remainingLinked}
+        </div>
+      );
+    } catch (e) {
+      console.error('ReadOnlyRenderer.renderNode Html error', e, { nodeId, props });
+      return <div style={{ color: 'red' }}>Html render error</div>;
+    }
+  }
 
   const Comp = (typeof type === 'string' && (registry as any)[type]) || (registry as any)[type?.resolvedName] || (registry as any).__FALLBACK__;
 

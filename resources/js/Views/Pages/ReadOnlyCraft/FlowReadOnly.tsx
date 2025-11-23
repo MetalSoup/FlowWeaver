@@ -7,6 +7,7 @@ import FlowShow from '@/Views/Flows/FlowShow';
 
 export default function FlowReadOnly({ flow_id, flow: initialFlow, field_id, field_overrides }: any) {
   const [thisFlow, setThisFlow] = useState<any>(initialFlow ?? null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const loadingRef = useRef(false);
 
   useEffect(() => {
@@ -64,11 +65,14 @@ export default function FlowReadOnly({ flow_id, flow: initialFlow, field_id, fie
         }
         if (remote) {
           setThisFlow(remote);
+          setFetchError(null);
         } else {
           console.warn('FlowReadOnly: could not find compiled flow in get_flow response', json);
+          setFetchError('Compiled flow not found');
         }
       } catch (err) {
         console.warn('FlowReadOnly: fetching compiled flow failed', err);
+        setFetchError(String(err?.message || err));
       } finally {
         loadingRef.current = false;
       }
@@ -77,6 +81,16 @@ export default function FlowReadOnly({ flow_id, flow: initialFlow, field_id, fie
   }, [flow_id]);
 
   // Render FlowShow with isEditorEnabled=false so it behaves as a front-end flow
+  if (fetchError && !thisFlow) {
+    return (
+      <div style={{ border: '1px dashed #ccc', padding: 12, background: '#fff' }}>
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>Flow failed to load</div>
+        <div style={{ fontSize: 13, color: '#555' }}>Flow id: {String(flow_id)}</div>
+        <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>Error: {fetchError}</div>
+      </div>
+    );
+  }
+
   return (
     <FlowShow flow={thisFlow} flow_id={flow_id} pageOverrides={field_overrides} isEditorEnabled={false} selectedFieldId={field_id} />
   );

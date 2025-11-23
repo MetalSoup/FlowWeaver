@@ -2,7 +2,7 @@ import Input from "@/Components/Input";
 import React, {useEffect, useRef, useState} from 'react';
 import { ChromePicker } from 'react-color';
 
-export default function ColorInput({ value = '', onChange, placeholder = '' }: { value?: string, onChange: (v: string)=>void, placeholder?: string }) {
+export default function ColorInput({ value = '', onChange, placeholder = '' }: { value?: string|any, onChange: (v: string)=>void, placeholder?: string }) {
   const [text, setText] = useState<string>(value || '');
   const [open, setOpen] = useState<boolean>(false);
   const ref = useRef<HTMLDivElement|null>(null);
@@ -20,8 +20,24 @@ export default function ColorInput({ value = '', onChange, placeholder = '' }: {
     return () => window.removeEventListener('mousedown', handle);
   }, [open]);
 
-  const normalizeForColorInput = (v: string) => {
-    if (!v) return '#000000';
+  const normalizeForColorInput = (v: any) => {
+    if (v == null || v === '') return '#000000';
+    // if v is not a string, try to convert object/array to rgba string
+    if (typeof v !== 'string') {
+      if (Array.isArray(v)) {
+        const [r = 0, g = 0, b = 0, a = 1] = v;
+        return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+      }
+      if (typeof v === 'object') {
+        const r = v.r ?? v[0] ?? 0;
+        const g = v.g ?? v[1] ?? 0;
+        const b = v.b ?? v[2] ?? 0;
+        const a = v.a ?? v[3] ?? 1;
+        return `rgba(${Number(r)}, ${Number(g)}, ${Number(b)}, ${Number(a)})`;
+      }
+      // fallback to string conversion
+      v = String(v);
+    }
     v = v.trim();
     // if hex shorthand expand
     if (/^#([0-9a-f]{3})$/i.test(v)) return v.replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i, '#$1$1$2$2$3$3');
@@ -57,4 +73,3 @@ export default function ColorInput({ value = '', onChange, placeholder = '' }: {
     </div>
   );
 }
-

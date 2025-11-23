@@ -1,5 +1,4 @@
 import {Element, useEditor} from '@craftjs/core';
-import {Tooltip} from '@mui/material';
 import React from 'react';
 import {styled} from 'styled-components';
 import {FileTextIcon, SquaresFourIcon, PlayIcon, SquareIcon, ImageIcon, FlowArrowIcon} from '@phosphor-icons/react';
@@ -9,6 +8,7 @@ import {Container, Column, Text} from '@/Views/Pages/Components/Selectors';
 import {Video} from '../../Selectors/Video/Video';
 import {Flow} from '../../Selectors/Flow/Flow';
 import {Image} from '../../Selectors/Image/Image';
+import { Html } from '../../Selectors/Html/Html';
 import {gridButtonStyle} from "@/Components/ui";
 
 const ToolboxDiv = styled.div<{ $enabled: boolean }>`
@@ -153,6 +153,18 @@ export const Toolbox = () => {
                         <Item $move className={ItemStyle}>
                             <ImageIcon size={40} weight="duotone"/>
                             <div className={"text-sm"}>Image</div>
+                        </Item>
+
+                </div>
+                <div
+                    ref={(ref) => {
+                        create(ref, <Html />);
+                    }}
+                >
+
+                        <Item $move className={ItemStyle}>
+                            <FileTextIcon size={40} weight="duotone"/>
+                            <div className={"text-sm"}>HTML</div>
                         </Item>
 
                 </div>

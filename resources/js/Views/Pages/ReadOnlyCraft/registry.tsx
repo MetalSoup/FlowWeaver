@@ -124,6 +124,38 @@ export const ReadOnlyImage: React.FC<any> = ({ public_url, url, src, alt, captio
   );
 };
 
+// Read-only Html renderer: sanitize HTML fragments and interleave placeholder children
+export const ReadOnlyHtml: React.FC<any> = ({ html = '', children }) => {
+  const childArr = React.Children.toArray(children);
+  // split on [placeholder] tokens (case-insensitive)
+  const parts = String(html || '').split(new RegExp('\\[placeholder]', 'i'));
+
+  return (
+    <div>
+      {parts.map((part, idx) => (
+        <React.Fragment key={idx}>
+          {part ? (
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(part, {
+              ALLOWED_TAGS: ['b','i','em','strong','a','p','h1','h2','h3','h4','h5','ul','ol','li','br','span','div','img'],
+              ALLOWED_ATTR: ['href','src','alt','title','target','rel','class','style'],
+            }) }} />
+          ) : null}
+          {idx < parts.length - 1 ? (
+            <div className="html-placeholder" key={`ph-${idx}`}>
+              {childArr[idx] ?? null}
+            </div>
+          ) : null}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
+// PlaceholderDrop read-only mapping: just render its children inside a simple wrapper
+export const ReadOnlyPlaceholder: React.FC<any> = ({ children }) => {
+  return <div className="html-placeholder" style={{ minHeight: 40 }}>{children}</div>;
+};
+
 export const Fallback: React.FC<any> = ({ type, children, props }) => {
   return (
     <div style={{ border: '1px dashed #ffcc00', padding: 12, background: '#fff7dd' }}>
@@ -143,6 +175,8 @@ export const registry: Record<string, React.ComponentType<any>> = {
   Button: ReadOnlyButton,
   Video: ReadOnlyVideo,
   Image: ReadOnlyImage,
+  Html: ReadOnlyHtml,
+  PlaceholderDrop: ReadOnlyPlaceholder,
   // Add aliases or common editor-resolved names
   FlexColumn: ReadOnlyContainer,
   Flow: FlowReadOnly,
@@ -151,4 +185,3 @@ export const registry: Record<string, React.ComponentType<any>> = {
 };
 
 export default registry;
-

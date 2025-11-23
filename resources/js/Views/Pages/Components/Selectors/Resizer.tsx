@@ -26,7 +26,7 @@ const Indicators = styled.div<{ $bound?: 'row' | 'column' }>`
     background: #fff;
     border-radius: 100%;
     display: block;
-    box-shadow: 0px 0px 12px -1px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 12px -1px rgba(0, 0, 0, 0.25);
     z-index: 99999;
     pointer-events: none;
     border: 2px solid #36a9e0;
@@ -81,7 +81,7 @@ const Indicators = styled.div<{ $bound?: 'row' | 'column' }>`
   }
 `;
 
-export const Resizer = ({ propKey, children, ...props }: any) => {
+export const Resizer = React.forwardRef(({ propKey, children, ...props }: any, forwardedRef: any) => {
   const {
     id,
     actions: { setProp },
@@ -203,7 +203,18 @@ export const Resizer = ({ propKey, children, ...props }: any) => {
       ref={(ref) => {
         if (ref) {
           resizable.current = ref;
-          connect(resizable.current.resizable);
+          try {
+            // connect craft to the actual DOM element inside re-resizable
+            connect(resizable.current.resizable);
+          } catch (e) {}
+          // If a parent forwarded a ref, forward the actual DOM node so connect(drag(ref)) works
+          try {
+            const dom = resizable.current.resizable;
+            if (forwardedRef) {
+              if (typeof forwardedRef === 'function') forwardedRef(dom);
+              else forwardedRef.current = dom;
+            }
+          } catch (e) {}
         }
       }}
       size={internalDimensions}
@@ -266,4 +277,7 @@ export const Resizer = ({ propKey, children, ...props }: any) => {
       )}
     </Resizable>
   );
-};
+});
+
+// For better debugging name
+Resizer.displayName = 'Resizer';
